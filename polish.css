@@ -223,10 +223,18 @@ body:not(.dark) .result-right .luck-title { color:#b5742a; border-bottom-color:v
 
 /* 천체 글로우 (원국 카드 상단) */
 .oguk-card::before {
-  content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%);
-  width: 420px; height: 300px;
-  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255,150,90,0.20), rgba(255,90,120,0.07) 42%, transparent 72%);
-  pointer-events:none; z-index:0;
+  content:''; position:absolute; top:0; left:0; right:0; height: 250px;
+  background-image: url('cosmos.jpg');
+  background-size: cover; background-position: 50% 32%;
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 48%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.55) 48%, transparent 100%);
+  pointer-events:none; z-index:0; border-radius: 20px 20px 0 0;
+}
+body:not(.dark) .oguk-card::before {
+  background-image: none;
+  background: radial-gradient(ellipse 60% 70% at 50% 0%, rgba(255,150,90,0.16), transparent 70%);
+  opacity: 1; -webkit-mask-image:none; mask-image:none; height: 180px;
 }
 .oguk-card .result-head { position: relative; z-index:1; text-align:center; padding: 6px 0 14px; }
 .oguk-card .result-head .name { font-size: 22px; font-weight: 900; }
@@ -250,3 +258,62 @@ body:not(.dark) .sub-luck { background:#fafafa !important; border:1px solid var(
 body:not(.dark) .sub-luck-label { color:#b5742a; }
 .sub-luck-label .meta { color: var(--text-sub); }
 body.dark .sub-luck.inner { background: rgba(255,255,255,0.05) !important; }
+
+/* =========================================================
+   나머지 탭 프리미엄 카드 통일 (풀이·궁합·만세력·저장)
+   ========================================================= */
+
+/* ----- 풀이 ----- */
+body.dark .overall-card,
+body.dark .match-total-card {
+  background: linear-gradient(135deg, rgba(255,125,85,0.12), rgba(255,90,120,0.06)) !important;
+  border: 1px solid rgba(255,125,85,0.20) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 34px rgba(255,110,80,0.10);
+}
+body.dark .f-card {
+  background: rgba(255,255,255,0.025) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 16px !important;
+}
+.f-card-title { font-weight: 800; }
+.f-score-num { color: var(--fire); }
+body:not(.dark) .f-score-num { color: var(--fire-deep); }
+body.dark .f-bar { background: rgba(255,255,255,0.07) !important; }
+
+/* ----- 궁합 ----- */
+body.dark .match-slot {
+  background: rgba(255,255,255,0.022) !important;
+  border: 1.5px dashed rgba(255,255,255,0.16) !important;
+  border-radius: 16px !important;
+}
+body.dark .match-slot.filled { border-style: solid !important; border-color: rgba(255,125,85,0.35) !important; }
+.match-slot .plus, .match-slot svg { color: #ff7a59 !important; }
+body.dark .mb-bar { background: rgba(255,255,255,0.07) !important; }
+body.dark .match-reset { background: rgba(255,255,255,0.05) !important; border:1px solid rgba(255,255,255,0.09) !important; border-radius:12px; }
+
+/* ----- 만세력 ----- */
+body.dark .cal-grid {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 16px; padding: 6px;
+}
+.cal-day.today { outline: 2px solid var(--fire) !important; outline-offset:-2px; box-shadow: 0 0 14px rgba(255,110,80,0.35); border-radius:8px; }
+body.dark .cal-day.selected { background: rgba(255,120,80,0.12) !important; border-radius:8px; }
+#calDayDetail {
+  margin-top: 14px; padding: 16px 18px; text-align:center;
+  border-radius: 16px;
+}
+body.dark #calDayDetail { background: rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.07); }
+.cal-head { margin-bottom: 10px; }
+
+/* ----- 저장 ----- */
+body.dark .saved-card {
+  background: rgba(255,255,255,0.025) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 14px !important;
+}
+
+/* 궁합 슬롯 + 아이콘: 이모지 대신 주황 + */
+.match-slot .slot-ico { font-size: 0 !important; line-height: 0; }
+.match-slot .slot-ico::before { content: "+"; font-size: 42px; font-weight: 300; line-height: 1; color: #ff7a59; }
