@@ -1,0 +1,92 @@
+/* ============================================================
+   신의 음성 만세력 — 다듬기 레이어 (polish)
+   기존 디자인 톤(따뜻한 캘리그래피)을 유지하며 디테일만 보강.
+   index.html의 인라인 <style> 뒤에 로드되어 동일 특이도에서 우선.
+   ============================================================ */
+
+/* ---------- 1. 브랜드 텍스트 (신의 음성 만세력) ---------- */
+.top-bar .title .brand-main {
+  color: var(--fire-deep);
+  font-family: 'Gungsuh', '궁서', 'GungSeo', 'Batang', '바탕', serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+body.dark .top-bar .title .brand-main { color: var(--fire); }
+
+.input-intro .big .brand-main-big {
+  color: var(--fire-deep);
+  font-family: 'Gungsuh', '궁서', 'GungSeo', 'Batang', '바탕', serif;
+  font-weight: 900;
+  text-shadow: 0 1px 2px rgba(232,66,30,0.12);
+}
+body.dark .input-intro .big .brand-main-big {
+  color: var(--fire);
+  text-shadow: 0 1px 10px rgba(255,107,77,0.25);
+}
+
+/* ---------- 2. Safe-area (상태바 / 노치 / 하단 제스처바) ---------- */
+/* 폰 화면에서만 적용 — 데스크톱 미디어쿼리(top:75px 등)와 충돌 방지 */
+@media (max-width: 600px) {
+  .top-bar { padding-top: calc(14px + env(safe-area-inset-top)); }
+  .tabs    { top: calc(67px + env(safe-area-inset-top)); }
+}
+.bottom-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+body        { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* ---------- 3. 탭: 활성 인디케이터 부드럽게 ---------- */
+.tab { transition: color 0.18s ease; }
+.tab.active::after {
+  transition: left 0.22s cubic-bezier(.4,0,.2,1), right 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ---------- 4. 터치 피드백 (앱다운 눌림감) ---------- */
+.primary-btn, .person-search-btn, .bb, .icon-btn,
+.segmented button, .luck-item, .siju-item, .saved-card,
+.match-slot, .pick-item, .cal-day, .modal-actions button,
+.day-item, .tab {
+  transition: transform 0.08s ease, opacity 0.12s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+.primary-btn:active, .person-search-btn:active,
+.bb:active, .modal-actions button:active,
+.match-slot:active, .pick-item:active, .saved-card:active,
+.luck-item:active, .siju-item:active, .day-item:active {
+  transform: scale(0.978);
+}
+.icon-btn:active, .segmented button:active { transform: scale(0.92); }
+
+/* 주요 버튼: 미묘한 그림자/입체감 보강 (톤 유지) */
+.primary-btn {
+  box-shadow: 0 6px 18px rgba(232,66,30,0.22);
+}
+.primary-btn:active { box-shadow: 0 3px 10px rgba(232,66,30,0.20); }
+body.dark .primary-btn { box-shadow: 0 6px 20px rgba(255,90,58,0.18); }
+
+/* ---------- 5. 화면 진입: 카드 스태거 등장 (은은하게) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .view.active > * {
+    animation: polishRise 0.42s cubic-bezier(.2,.7,.2,1) both;
+  }
+  .view.active > *:nth-child(2) { animation-delay: 0.04s; }
+  .view.active > *:nth-child(3) { animation-delay: 0.08s; }
+  .view.active > *:nth-child(4) { animation-delay: 0.12s; }
+  .view.active > *:nth-child(5) { animation-delay: 0.16s; }
+  .view.active > *:nth-child(n+6) { animation-delay: 0.18s; }
+}
+@keyframes polishRise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- 6. 스크롤/렌더 매끄럽게 ---------- */
+html { scroll-behavior: smooth; }
+img, svg { -webkit-user-drag: none; user-drag: none; }
+
+/* ---------- 지장간(支藏干) 표시 ---------- */
+.jijanggan { display:flex; gap:4px; justify-content:center; align-items:baseline; margin:2px 0 1px; min-height:13px; }
+.jj { font-family:'Gungsuh','궁서','Batang','바탕',serif; font-size:11px; font-weight:800; line-height:1; opacity:0.9; }
+.jj-primary { font-size:13px; opacity:1; }
+.jj.el-wood{ color:#1f7a4d; } .jj.el-fire{ color:#d83a18; } .jj.el-earth{ color:#b07c0f; }
+.jj.el-metal{ color:#5b6470; } .jj.el-water{ color:#1e3a6e; }
+body.dark .jj.el-wood{ color:#4ac789; } body.dark .jj.el-fire{ color:#ff6b4d; }
+body.dark .jj.el-earth{ color:#ffd166; } body.dark .jj.el-metal{ color:#c8cdd6; }
+body.dark .jj.el-water{ color:#7aa0ff; }
