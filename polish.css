@@ -352,3 +352,17 @@ body.dark .saved-card {
   margin: 1px 0 !important;
 }
 #daeunScroll .label .meta, #seunScroll .label .meta { font-size: 0.82em !important; }
+
+/* =========================================================
+   토글(성별/양음력) 정돈 — 균등 pill, 글로우 축소 (막대 길이 일관)
+   ========================================================= */
+body.dark .segmented { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:4px; gap:4px; }
+body:not(.dark) .segmented { background:#eff0f3; border:1px solid var(--line); border-radius:14px; padding:4px; gap:4px; }
+.segmented button { border:none !important; background:transparent !important; border-radius:10px !important; padding:11px 2px !important; box-shadow:none; }
+.segmented button.active {
+  background: linear-gradient(135deg,#ff7a59,#ff5277) !important;
+  color:#fff !important;
+  box-shadow: 0 2px 8px rgba(255,90,80,0.30) !important;
+}
+body.dark .segmented button:not(.active) { color: var(--text-sub); }
+body:not(.dark) .segmented button:not(.active) { color: var(--text-sub); }
