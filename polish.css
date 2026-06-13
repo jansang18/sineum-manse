@@ -89,3 +89,6 @@ img, svg { -webkit-user-drag: none; user-drag: none; }
   font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',serif;
   font-size:11px; font-weight:800; line-height:1; }
 .jj-primary { font-weight:900; border-color:#9a9a9a; }
+
+/* ---------- 팔자 블록: CJK 글자 세로 중앙 보정 (글리프가 line-box 안에서 아래로 쏠림) ---------- */
+.pillar-block .han { transform: translateY(-0.08em); }
