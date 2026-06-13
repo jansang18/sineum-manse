@@ -317,3 +317,38 @@ body.dark .saved-card {
 /* 궁합 슬롯 + 아이콘: 이모지 대신 주황 + */
 .match-slot .slot-ico { font-size: 0 !important; line-height: 0; }
 .match-slot .slot-ico::before { content: "+"; font-size: 42px; font-weight: 300; line-height: 1; color: #ff7a59; }
+
+/* =========================================================
+   대운·세운: 가로 스크롤 제거 → 한 줄에 모두 보이게
+   ========================================================= */
+#daeunScroll, #seunScroll {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow: visible !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+#daeunScroll .luck-item, #seunScroll .luck-item {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 2px 0 !important;
+}
+#daeunScroll .luck-block, #seunScroll .luck-block {
+  padding: 6px 0 !important;
+  margin-bottom: 2px !important;
+  border-radius: 7px !important;
+}
+#daeunScroll .luck-block .han, #seunScroll .luck-block .han {
+  font-size: clamp(11px, 3.2vw, 22px) !important;
+}
+#daeunScroll .label, #seunScroll .label,
+#daeunScroll .sipsin-t, #seunScroll .sipsin-t,
+#daeunScroll .sipsin-b, #seunScroll .sipsin-b {
+  font-size: clamp(8px, 2vw, 11px) !important;
+  min-height: 0 !important;
+  line-height: 1.18 !important;
+  margin: 1px 0 !important;
+}
+#daeunScroll .label .meta, #seunScroll .label .meta { font-size: 0.82em !important; }
