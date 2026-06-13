@@ -1941,6 +1941,7 @@
       <span>인물 검색 <span style="opacity:0.7;font-weight:600;">(연예인·유명인 자동 입력)</span></span>
     </button>
 
+    <div class="input-card">
     <div class="field">
       <label class="field-label">이름</label>
       <input class="input" id="inputName" placeholder="이름을 입력하세요 (선택)" />
@@ -1972,6 +1973,7 @@
         <label class="field-label">태어난 시간 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(HHMM · 선택)</span></label>
         <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
       </div>
+    </div>
     </div>
 
     <button type="button" class="primary-btn" id="calcBtn">사주 펼치기</button>
@@ -2659,6 +2661,8 @@ function renderResult() {
   }
 
   const html = `
+    <div class="oguk-card">
+    <div class="card-title">&#10022; 사주 원국</div>
     <div class="result-head">
       <div class="name">${escapeHtml(s.name)} <span class="age-inline">(만 ${age}세)</span></div>
       <div class="info">
@@ -2687,8 +2691,10 @@ function renderResult() {
           })()}
         </div>
       </div>
+    </div>
+    </div>
 
-      <div class="result-right">
+    <div class="result-right">
         <div class="luck-section">
           <div class="luck-title">대운 흐름 <span class="meta">(대운수 ${s.daeun.num}, ${s.daeun.forward ? '순행' : '역행'})</span></div>
           <div class="luck-scroll" id="daeunScroll">
@@ -2700,7 +2706,6 @@ function renderResult() {
           <div id="seunArea"></div>
         </div>
       </div>
-    </div>
   `;
   $('#view-result').innerHTML = html;
 
@@ -3498,7 +3503,6 @@ function renderCalDayDetail() {
           ${lu ? ` · 음력 ${lu.m}.${lu.d}${lu.isLeap?'(윤)':''}` : ''}
         </div>
       </div>
-    </div>
   `;
 }
 
@@ -4370,7 +4374,6 @@ function renderMatchResult() {
       <div style="margin-top:16px; padding:14px; background:var(--bg-soft); border-radius:12px; font-size:11.5px; font-weight:500; color:var(--text-sub); line-height:1.7; text-align:center;">
         ⚠︎ 궁합은 일간·일지·오행보완·합충·용신을 종합한 참고용입니다. 명리는 관계의 경향이지 결과가 아닙니다.
       </div>
-    </div>
   `;
 
   $('#matchResetBtn2').addEventListener('click', () => {

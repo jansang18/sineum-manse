@@ -92,3 +92,161 @@ img, svg { -webkit-user-drag: none; user-drag: none; }
 
 /* ---------- 팔자 블록: CJK 글자 세로 중앙 보정 (글리프가 line-box 안에서 아래로 쏠림) ---------- */
 .pillar-block .han { transform: translateY(-0.08em); }
+
+/* =========================================================
+   프리미엄 다크 테마 (목업 기반) — v2
+   ========================================================= */
+
+/* ----- 배경: 더 깊은 블랙 + 상단 미묘한 글로우 ----- */
+body.dark { --bg:#0a0a0f; --bg-soft:#14141c; --bg-elev:#1a1a24; --line:#26262f; }
+body.dark {
+  background:
+    radial-gradient(80% 45% at 50% -8%, rgba(255,110,80,0.07), transparent 62%),
+    radial-gradient(60% 40% at 100% 0%, rgba(120,90,255,0.05), transparent 60%),
+    #0a0a0f;
+  background-attachment: fixed;
+}
+body.dark .top-bar { background: rgba(10,10,15,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); }
+body.dark .tabs { background: rgba(10,10,15,0.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom:1px solid rgba(255,255,255,0.06); }
+
+/* ----- 로고 그라데이션 텍스트 ----- */
+.brand-main, .brand-main-big {
+  background: linear-gradient(118deg, #ffd6ad 0%, #ff8f5c 42%, #ff5e7e 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  text-shadow: none !important;
+}
+body.dark .brand-main-big { filter: drop-shadow(0 3px 22px rgba(255,110,90,0.35)); }
+.tab.active::after { background: linear-gradient(90deg, #ff7a59, #ff5277); height:2.5px; }
+
+/* ----- 인물 검색: 글로우 아웃라인 ----- */
+body.dark .person-search-btn {
+  background: rgba(255,110,80,0.045) !important;
+  border: 1.5px solid rgba(255,125,85,0.55) !important;
+  border-radius: 16px;
+  box-shadow: 0 0 22px rgba(255,110,80,0.16), inset 0 0 18px rgba(255,110,80,0.05);
+  color: var(--text-sub);
+}
+body.dark .person-search-btn svg { color: #ff7a59; }
+
+/* ----- 입력 필드 카드 ----- */
+.input-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 18px;
+  padding: 20px 18px 6px;
+  margin-bottom: 6px;
+}
+body:not(.dark) .input-card { background:#fff; border:1px solid var(--line); box-shadow: var(--shadow-sm); }
+
+/* ----- 입력창 ----- */
+body.dark .input {
+  background: rgba(255,255,255,0.045);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 12px;
+  color: var(--text);
+}
+body.dark .input::placeholder { color: rgba(255,255,255,0.32); }
+body.dark .input:focus { border-color: rgba(255,125,85,0.65); box-shadow: 0 0 0 3px rgba(255,110,80,0.13); background: rgba(255,255,255,0.06); }
+
+/* ----- 세그먼트 토글 + 아이콘 ----- */
+body.dark .segmented { background: rgba(255,255,255,0.045); border:1px solid rgba(255,255,255,0.09); border-radius: 12px; }
+body.dark .segmented button { color: var(--text-sub); }
+.segmented button.active {
+  background: linear-gradient(135deg, #ff7a59, #ff5277) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(255,95,90,0.38);
+  border-radius: 10px;
+}
+#segGender button[data-val="M"]::before { content: "\2642"; margin-right:6px; opacity:0.95; }
+#segGender button[data-val="F"]::before { content: "\2640"; margin-right:6px; opacity:0.95; }
+#segCal button[data-val="solar"]::before { content: "\2600"; margin-right:6px; opacity:0.95; }
+#segCal button[data-val="lunar"]::before { content: "\263E"; margin-right:6px; opacity:0.95; }
+
+/* ----- 주 버튼: 그라데이션 + 글로우 + 스파클 ----- */
+.primary-btn {
+  background: linear-gradient(135deg, #ff5e62 0%, #ff8a4c 100%) !important;
+  color: #fff !important; border: none !important;
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(255,95,75,0.42), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+  position: relative; letter-spacing: 0.01em;
+}
+.primary-btn::after { content: "\2728"; position:absolute; right:24px; top:50%; transform:translateY(-50%); font-size:15px; }
+.primary-btn:active { box-shadow: 0 5px 18px rgba(255,95,75,0.4) !important; }
+
+/* ----- 안내 노트 카드 ----- */
+body.dark .note-text {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px; padding: 16px 18px;
+  color: var(--text-sub);
+}
+
+/* 세그먼트 토글: 줄바꿈 방지 + 아이콘 크기 조정 */
+.segmented button { white-space: nowrap; padding-left: 2px; padding-right: 2px; font-size: 13.5px; }
+.segmented button::before { margin-right: 4px !important; font-size: 0.82em; opacity: 0.9; }
+
+/* =========================================================
+   결과(원국) 화면 — 프리미엄 카드 (목업 기반)
+   ========================================================= */
+#view-result { max-width: 680px; margin: 0 auto; }
+
+/* 카드 공통 */
+.oguk-card,
+body.dark .result-right .luck-section,
+.result-right .luck-section {
+  background: rgba(255,255,255,0.022) !important;
+  border: 1px solid rgba(255,255,255,0.075);
+  border-radius: 20px;
+  padding: 18px 16px;
+  margin: 0 0 16px !important;
+  position: relative;
+  overflow: hidden;
+}
+body:not(.dark) .oguk-card,
+body:not(.dark) .result-right .luck-section { background:#ffffff !important; border:1px solid var(--line); box-shadow: var(--shadow-sm); }
+
+/* 카드 타이틀 (✧ 사주 원국) */
+.card-title {
+  font-size: 16px; font-weight: 800; letter-spacing:-0.01em;
+  margin-bottom: 14px; padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  color: #f3cda3; position: relative; z-index:2;
+}
+body:not(.dark) .card-title { color:#b5742a; border-bottom-color: var(--line); }
+
+/* 대운/세운 타이틀 → 카드 타이틀화 + ✧ */
+.result-right .luck-title { text-align:left !important; font-size:16px !important; margin-bottom:14px !important; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.07); color:#f3cda3; }
+body:not(.dark) .result-right .luck-title { color:#b5742a; border-bottom-color:var(--line); }
+.result-right .luck-title::before { content: "\2726"; margin-right:7px; opacity:0.9; }
+.result-right .luck-title .meta { color: var(--text-sub); }
+
+/* 천체 글로우 (원국 카드 상단) */
+.oguk-card::before {
+  content:''; position:absolute; top:-60px; left:50%; transform:translateX(-50%);
+  width: 420px; height: 300px;
+  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255,150,90,0.20), rgba(255,90,120,0.07) 42%, transparent 72%);
+  pointer-events:none; z-index:0;
+}
+.oguk-card .result-head { position: relative; z-index:1; text-align:center; padding: 6px 0 14px; }
+.oguk-card .result-head .name { font-size: 22px; font-weight: 900; }
+body.dark .oguk-card .result-head .name { color:#fff; }
+
+/* 저장하기 버튼 그라데이션 + 하단바 */
+.bottom-bar .bb.primary {
+  background: linear-gradient(135deg, #ff5e62 0%, #ff8a4c 100%) !important;
+  color:#fff !important; border:none !important;
+  box-shadow: 0 6px 22px rgba(255,95,75,0.4);
+}
+body.dark .bottom-bar { background: linear-gradient(180deg, transparent, rgba(10,10,15,0.95) 45%); }
+body.dark .bottom-bar .bb { background: rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.09); color: var(--text); }
+
+/* 세운/월운/일운: ✧ 좌측 타이틀 + 내부 카드 */
+.sub-luck { margin-left:0 !important; margin-right:0 !important; border-radius:16px; }
+body.dark .sub-luck { background: rgba(255,255,255,0.032) !important; border:1px solid rgba(255,255,255,0.07); }
+body:not(.dark) .sub-luck { background:#fafafa !important; border:1px solid var(--line); }
+.sub-luck-label { text-align:left !important; font-size:15px !important; font-weight:800; color:#f3cda3; margin-bottom:12px; }
+.sub-luck-label::before { content:"\2726"; margin-right:6px; opacity:0.9; }
+body:not(.dark) .sub-luck-label { color:#b5742a; }
+.sub-luck-label .meta { color: var(--text-sub); }
+body.dark .sub-luck.inner { background: rgba(255,255,255,0.05) !important; }
