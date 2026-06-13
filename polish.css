@@ -81,12 +81,11 @@ body.dark .primary-btn { box-shadow: 0 6px 20px rgba(255,90,58,0.18); }
 html { scroll-behavior: smooth; }
 img, svg { -webkit-user-drag: none; user-drag: none; }
 
-/* ---------- 지장간(支藏干) 표시 ---------- */
-.jijanggan { display:flex; gap:4px; justify-content:center; align-items:baseline; margin:2px 0 1px; min-height:13px; }
-.jj { font-family:'Gungsuh','궁서','Batang','바탕',serif; font-size:11px; font-weight:800; line-height:1; opacity:0.9; }
-.jj-primary { font-size:13px; opacity:1; }
-.jj.el-wood{ color:#1f7a4d; } .jj.el-fire{ color:#d83a18; } .jj.el-earth{ color:#b07c0f; }
-.jj.el-metal{ color:#5b6470; } .jj.el-water{ color:#1e3a6e; }
-body.dark .jj.el-wood{ color:#4ac789; } body.dark .jj.el-fire{ color:#ff6b4d; }
-body.dark .jj.el-earth{ color:#ffd166; } body.dark .jj.el-metal{ color:#c8cdd6; }
-body.dark .jj.el-water{ color:#7aa0ff; }
+/* ---------- 지장간(支藏干) 표시 — 흰 배경 검정 글씨 칩(작아도 잘 보이게) ---------- */
+.jijanggan { display:flex; gap:3px; justify-content:center; align-items:center; margin:3px 0 1px; min-height:16px; }
+.jj { display:inline-flex; align-items:center; justify-content:center;
+  min-width:15px; height:16px; padding:0 2px;
+  background:#ffffff; color:#1a1a1a; border:1px solid #cfcfcf; border-radius:4px;
+  font-family:'Apple SD Gothic Neo','Noto Sans KR','Malgun Gothic',serif;
+  font-size:11px; font-weight:800; line-height:1; }
+.jj-primary { font-weight:900; border-color:#9a9a9a; }
