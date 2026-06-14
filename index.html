@@ -3123,6 +3123,7 @@ onTap($('#saveConfirm'), async () => {
 
 onTap($('#shareBtn'), () => {
   if (!currentSaju) return;
+  if (window.shareCard) { window.shareCard(currentSaju); return; }
   const s = currentSaju;
   const txt = `${s.name}의 사주\n${s.year}.${pad(s.month)}.${pad(s.day)} ${s.unknown?'시 모름':(pad(s.hour)+':'+pad(s.minute))}\n${STEM[s.yStem]}${BRANCH[s.yBranch]} ${STEM[s.mStem]}${BRANCH[s.mBranch]} ${STEM[s.dStem]}${BRANCH[s.dBranch]} ${s.hStem>=0?STEM[s.hStem]+BRANCH[s.hBranch]:'시간모름'}\n\n신의 음성 만세력`;
   if (navigator.share) navigator.share({ text: txt });
@@ -3155,14 +3156,15 @@ async function renderSaved() {
     bindSavedToolbar(list);
     return;
   }
-  list.sort((a, b) => b.savedAt - a.savedAt);
+  list.sort((a, b) => (b.fav?1:0)-(a.fav?1:0) || b.savedAt - a.savedAt);
   $('#savedContent').innerHTML = `
     <div class="saved-toolbar">
       <button type="button" class="bb" id="savedExportBtn">📤 내보내기 (${list.length})</button>
       <button type="button" class="bb" id="savedImportBtn">📥 불러오기</button>
       <input type="file" id="savedImportFile" accept=".json,application/json" style="display:none">
     </div>
-    <div class="saved-list">${list.map(r => {
+    <input id="savedSearch" class="input" placeholder="🔍 이름·메모 검색" style="margin-bottom:10px" oninput="filterSaved(this.value)" />
+    <div class="saved-list" id="savedListEl">${list.map(r => {
     const pl = [
       { s: r.yStem, b: r.yBranch },
       { s: r.mStem, b: r.mBranch },
@@ -3172,7 +3174,7 @@ async function renderSaved() {
     return `<div class="saved-card" data-id="${r.id || ''}">
       <div class="row1">
         <div class="sname">${escapeHtml(r.name)} <span class="sgender">${r.gender==='M'?'남':'여'}</span></div>
-        <button class="sdelete" data-del="${r.id || ''}">✕</button>
+        <div class="scard-actions"><button class="sfav${r.fav?' on':''}" data-fav="${r.id || ''}">${r.fav?'★':'☆'}</button><button class="sdelete" data-del="${r.id || ''}">✕</button></div>
       </div>
       <div class="sdate">${r.year}.${pad(r.month)}.${pad(r.day)}${r.memo?` · ${escapeHtml(r.memo)}`:''}</div>
       <div class="spillars">
@@ -3219,6 +3221,27 @@ async function renderSaved() {
         renderSaved();
       });
     });
+  $$('.sfav').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      await toggleFav(btn.dataset.fav);
+      renderSaved();
+    });
+  });
+}
+
+async function updateSavedRecord(id, patch) {
+  try { const r = await window.storage.get('saju:' + id); if (r) { const rec = JSON.parse(r.value); Object.assign(rec, patch); await window.storage.set('saju:' + id, JSON.stringify(rec)); return; } } catch (e) {}
+  const arr = JSON.parse(localStorage.getItem('saju_list') || '[]'); const i = arr.findIndex(x => x.id === id); if (i >= 0) { Object.assign(arr[i], patch); localStorage.setItem('saju_list', JSON.stringify(arr)); }
+}
+async function toggleFav(id) {
+  let cur = false;
+  try { const r = await window.storage.get('saju:' + id); if (r) cur = !!JSON.parse(r.value).fav; } catch (e) { const arr = JSON.parse(localStorage.getItem('saju_list') || '[]'); const rec = arr.find(x => x.id === id); cur = rec && !!rec.fav; }
+  await updateSavedRecord(id, { fav: !cur });
+}
+function filterSaved(q) {
+  q = (q || '').trim().toLowerCase();
+  document.querySelectorAll('#savedListEl .saved-card').forEach(c => { const t = c.innerText.toLowerCase(); c.style.display = (!q || t.includes(q)) ? '' : 'none'; });
 }
 
 /* 사주 유사도 계산 — 8글자 중 몇 개 일치하는지로 점수화 */
@@ -4766,6 +4789,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 </script>
+<script src="share.js"></script>
 <script src="nav.js"></script>
 </body>
 </html>

@@ -388,3 +388,11 @@ body:not(.dark) .sub-luck, body:not(.dark) .sub-luck.inner { border-top-color: v
 
 /* 세운·월운 배경도 완전 투명 (옅은 박스 잔상 제거) — body.dark 특이도 일치 */
 body.dark .sub-luck, body.dark .sub-luck.inner { background: transparent !important; }
+
+/* ---------- 명식 저장 고도화: 즐겨찾기 ★ + 검색 ---------- */
+.scard-actions { display:flex; gap:8px; align-items:center; }
+.sfav { background:transparent; border:none; font-size:20px; line-height:1; color:rgba(255,255,255,0.3); cursor:pointer; padding:2px 4px; }
+.sfav.on { color:#ffcf4d; text-shadow:0 0 8px rgba(255,200,60,0.5); }
+body:not(.dark) .sfav { color:#c9c9c9; }
+body:not(.dark) .sfav.on { color:#f0a500; }
+#savedSearch { font-size:14px; }
