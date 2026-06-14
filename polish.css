@@ -216,7 +216,7 @@ body:not(.dark) .result-right .luck-section { background:#ffffff !important; bor
 body:not(.dark) .card-title { color:#b5742a; border-bottom-color: var(--line); }
 
 /* 대운/세운 타이틀 → 카드 타이틀화 + ✧ */
-.result-right .luck-title { text-align:left !important; font-size:16px !important; margin-bottom:14px !important; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.07); color:#f3cda3; }
+.result-right .luck-title { text-align:center !important; font-size:16px !important; margin-bottom:14px !important; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.07); color:#f3cda3; }
 body:not(.dark) .result-right .luck-title { color:#b5742a; border-bottom-color:var(--line); }
 .result-right .luck-title::before { content: "\2726"; margin-right:7px; opacity:0.9; }
 .result-right .luck-title .meta { color: var(--text-sub); }
@@ -253,7 +253,7 @@ body.dark .bottom-bar .bb { background: rgba(255,255,255,0.05); border:1px solid
 .sub-luck { margin-left:0 !important; margin-right:0 !important; border-radius:16px; }
 body.dark .sub-luck { background: rgba(255,255,255,0.032) !important; border:1px solid rgba(255,255,255,0.07); }
 body:not(.dark) .sub-luck { background:#fafafa !important; border:1px solid var(--line); }
-.sub-luck-label { text-align:left !important; font-size:15px !important; font-weight:800; color:#f3cda3; margin-bottom:12px; }
+.sub-luck-label { text-align:center !important; font-size:15px !important; font-weight:800; color:#f3cda3; margin-bottom:12px; }
 .sub-luck-label::before { content:"\2726"; margin-right:6px; opacity:0.9; }
 body:not(.dark) .sub-luck-label { color:#b5742a; }
 .sub-luck-label .meta { color: var(--text-sub); }
