@@ -366,3 +366,18 @@ body:not(.dark) .segmented { background:#eff0f3; border:1px solid var(--line); b
 }
 body.dark .segmented button:not(.active) { color: var(--text-sub); }
 body:not(.dark) .segmented button:not(.active) { color: var(--text-sub); }
+
+/* =========================================================
+   세운·월운: 중첩 박스 제거 → 대운과 같은 폭으로 아래에 펼침
+   (박스 대신 옅은 윗선으로 구분 / 폭이 좁아져 글자 작아지는 문제 해결)
+   ========================================================= */
+.sub-luck, .sub-luck.inner {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 16px 0 0 !important;
+  padding: 16px 0 0 !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+}
+body:not(.dark) .sub-luck, body:not(.dark) .sub-luck.inner { border-top-color: var(--line) !important; }
+.sub-luck .luck-scroll { padding: 0 !important; margin: 0 !important; }
