@@ -381,3 +381,10 @@ body:not(.dark) .segmented button:not(.active) { color: var(--text-sub); }
 }
 body:not(.dark) .sub-luck, body:not(.dark) .sub-luck.inner { border-top-color: var(--line) !important; }
 .sub-luck .luck-scroll { padding: 0 !important; margin: 0 !important; }
+
+/* 대운·세운 항목: 적을 때 박스가 과도하게 커지지 않게 최대폭 고정 + 좌측 정렬 */
+#daeunScroll, #seunScroll { justify-content: flex-start !important; }
+#daeunScroll .luck-item, #seunScroll .luck-item { max-width: 46px !important; }
+
+/* 세운·월운 배경도 완전 투명 (옅은 박스 잔상 제거) — body.dark 특이도 일치 */
+body.dark .sub-luck, body.dark .sub-luck.inner { background: transparent !important; }
