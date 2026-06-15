@@ -408,3 +408,10 @@ body:not(.dark) .sfav.on { color:#f0a500; }
 }
 /* 항목 최대폭 상향 (적을 때 더 크게, 많을 때는 폭에 맞춰 채움) */
 #daeunScroll .luck-item, #seunScroll .luck-item { max-width: 60px !important; }
+
+/* 일운·만세력 달력의 수(水) 글자가 다크모드에서 검푸른 남색이라 안 보이는 문제 → 밝은 파랑 */
+body.dark .day-item .d-han .d-s.el-water,
+body.dark .day-item .d-han .d-b.el-water,
+body.dark .cal-day .gj .c-s.el-water,
+body.dark .cal-day .gj .c-b.el-water,
+body.dark .siju-item .sj-gj .el-water { color: #6aa3ff !important; }
