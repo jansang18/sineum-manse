@@ -415,3 +415,49 @@ body.dark .day-item .d-han .d-b.el-water,
 body.dark .cal-day .gj .c-s.el-water,
 body.dark .cal-day .gj .c-b.el-water,
 body.dark .siju-item .sj-gj .el-water { color: #6aa3ff !important; }
+
+/* [보완1] 금(金) 글자: 다크모드에서 베이지색이 살짝 흐릿 → 밝은 은백색으로 또렷하게 */
+body.dark .day-item .d-han .d-s.el-metal,
+body.dark .day-item .d-han .d-b.el-metal,
+body.dark .cal-day .gj .c-s.el-metal,
+body.dark .cal-day .gj .c-b.el-metal,
+body.dark .siju-item .sj-gj .el-metal { color: #efe9da !important; }
+
+/* [보완2] 입력 검증 인라인 안내 배너 (alert 대체) */
+#inErr {
+  max-height: 0; opacity: 0; overflow: hidden;
+  margin-top: 0; padding: 0 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,82,119,0.16), rgba(255,122,89,0.16));
+  border: 1px solid rgba(255,90,110,0.45);
+  color: #ff8a8a;
+  font-size: 13.5px; font-weight: 700; line-height: 1.4;
+  transition: max-height .25s ease, opacity .25s ease, margin-top .25s ease, padding .25s ease;
+}
+#inErr.show {
+  max-height: 80px; opacity: 1;
+  margin-top: 12px; padding: 12px 14px;
+}
+body.dark #inErr { color: #ffb0b0; }
+.input.field-err, .field-err .input { border-color: rgba(255,90,110,0.85) !important; box-shadow: 0 0 0 2px rgba(255,90,110,0.18) !important; }
+
+/* [보완3] 일운 '오늘' 칩 — 현재 달을 보고 있을 때만 표시 */
+.today-chip {
+  display: inline-block; margin-left: 8px;
+  padding: 2px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 800; vertical-align: middle;
+  color: #fff; background: linear-gradient(135deg, #ff7a59, #ff5277);
+  box-shadow: 0 2px 8px rgba(255,90,110,0.35);
+}
+
+/* [보완3+] '오늘' 일운 셀을 칩과 함께 또렷하게 강조 */
+body.dark .day-item.today {
+  border-color: var(--fire-deep) !important;
+  background: rgba(255,122,89,0.13) !important;
+  box-shadow: 0 0 0 1.5px var(--fire-deep), 0 0 14px rgba(255,122,89,0.30);
+}
+body.dark .day-item.today .d-num { color: var(--fire-deep); }
+.day-item.today {
+  background: rgba(255,90,80,0.10) !important;
+  box-shadow: 0 0 0 1.5px var(--fire-deep);
+}
