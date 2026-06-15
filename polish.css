@@ -396,3 +396,15 @@ body.dark .sub-luck, body.dark .sub-luck.inner { background: transparent !import
 body:not(.dark) .sfav { color:#c9c9c9; }
 body:not(.dark) .sfav.on { color:#f0a500; }
 #savedSearch { font-size:14px; }
+
+/* =========================================================
+   대운·세운·월운·일운 가로폭 최대화 (결과화면 패딩 축소)
+   ========================================================= */
+@media (max-width: 600px) {
+  #view-result { padding-left: 6px !important; padding-right: 6px !important; }
+  .oguk-card,
+  .result-right .luck-section,
+  body.dark .result-right .luck-section { padding-left: 9px !important; padding-right: 9px !important; }
+}
+/* 항목 최대폭 상향 (적을 때 더 크게, 많을 때는 폭에 맞춰 채움) */
+#daeunScroll .luck-item, #seunScroll .luck-item { max-width: 60px !important; }
