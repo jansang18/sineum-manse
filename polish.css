@@ -461,3 +461,7 @@ body.dark .day-item.today .d-num { color: var(--fire-deep); }
   background: rgba(255,90,80,0.10) !important;
   box-shadow: 0 0 0 1.5px var(--fire-deep);
 }
+
+/* 월운 글자 네모박스 가로폭 살짝 확대 */
+#woonScroll.woon-grid { gap: 3px !important; margin-left: -6px !important; margin-right: -6px !important; }
+#woonScroll.woon-grid .luck-item { padding-left: 1px !important; padding-right: 1px !important; }
