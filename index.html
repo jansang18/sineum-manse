@@ -421,18 +421,19 @@
     padding: 1px 6px; border-radius: 999px;
   }
   body.dark .ps-item .ps-src { color: var(--fire); background: rgba(255,255,255,0.08); }
-  .ps-namu {
+  .ps-naver {
     display: inline-flex; align-items: center; gap: 4px;
     margin-top: 7px;
     font-size: 11px; font-weight: 700;
-    color: var(--fire-deep);
-    background: rgba(0,0,0,0.04);
+    color: #06a34a;
+    background: rgba(3,199,90,0.08);
     padding: 3px 9px; border-radius: 999px;
-    border: 1px solid var(--line);
+    border: 1px solid rgba(3,199,90,0.35);
     cursor: pointer; user-select: none;
+    text-decoration: none;
   }
-  body.dark .ps-namu { color: var(--fire); background: rgba(255,255,255,0.06); border-color: #3d2820; }
-  .ps-namu:active { opacity: 0.65; }
+  body.dark .ps-naver { color: #2fd97a; background: rgba(3,199,90,0.13); border-color: rgba(3,199,90,0.4); }
+  .ps-naver:active { opacity: 0.65; }
   .ps-online-note {
     text-align: center; padding: 10px 12px;
     color: var(--text-sub); font-size: 11px; font-weight: 500; line-height: 1.6;
@@ -2084,7 +2085,7 @@
   <div class="modal">
     <h3>인물 검색</h3>
     <div style="font-size:12px; font-weight:500; color:var(--text-sub); line-height:1.6; margin-bottom:10px;">
-      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>나무위키 ↗</b>로 상세 정보를 열 수 있어요.
+      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>네이버 🔍</b>로 인물정보·상세를 열 수 있어요.
     </div>
     <div style="position:relative;">
       <input class="input" id="psQuery" placeholder="예: 아이유, 방탄소년단 뷔, 세종대왕" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:44px;" />
@@ -7245,15 +7246,10 @@ function searchLocalPeople(query, limit) {
   return starts.concat(incl).slice(0, limit);
 }
 
-function buildNamuUrl(name) {
-  // 표제어 뒤 괄호 동음이의 표기는 제거(나무위키 표제어와 더 잘 맞음)
+function buildNaverUrl(name) {
+  // 뒤 괄호 동음이의 표기는 제거(검색 정확도↑). 네이버 통합검색은 404가 없고 유명인은 인물정보 카드가 뜸
   const base = (name || '').replace(/\s*\(.*$/, '').trim() || name;
-  return 'https://namu.wiki/w/' + encodeURIComponent(base);
-}
-
-function openNamu(url) {
-  if (!url) return;
-  try { window.open(url, '_blank', 'noopener'); } catch (e) { location.href = url; }
+  return 'https://search.naver.com/search.naver?query=' + encodeURIComponent(base);
 }
 
 function psItemHtml(o) {
@@ -7269,7 +7265,7 @@ function psItemHtml(o) {
     <div class="ps-info">
       <div class="ps-title">${escapeHtml(o.title)}${o.kind === 'local' ? '<span class="ps-src">즉시</span>' : ''}</div>
       <div class="ps-desc">${escapeHtml(o.desc || '설명 없음')}</div>
-      <span class="ps-namu" data-namu="${escapeHtml(buildNamuUrl(o.title))}">나무위키 ↗</span>
+      <a class="ps-naver" href="${escapeHtml(buildNaverUrl(o.title))}" target="_blank" rel="noopener noreferrer">네이버 🔍</a>
     </div>
   </div>`;
 }
@@ -7278,14 +7274,17 @@ function psBindItems(scope) {
   scope = scope || document.getElementById('psResults');
   if (!scope) return;
   // 멱등 바인딩(__psBound): 이미 묶인 항목은 건너뜀 → 위키 결과 append 시 로컬 항목 재바인딩/교체 방지
-  scope.querySelectorAll('.ps-namu').forEach(el => {
+  // 네이버 링크는 네이티브 <a target=_blank>. 부모 item의 onTap(touchend preventDefault)이
+  // 링크 이동을 막지 않도록 전파만 차단(preventDefault 안 함) → 모바일에서도 확실히 열림
+  scope.querySelectorAll('.ps-naver').forEach(el => {
     if (el.__psBound) return; el.__psBound = 1;
-    onTap(el, function () { openNamu(el.dataset.namu); });
+    el.addEventListener('touchend', e => e.stopPropagation(), { passive: true });
+    el.addEventListener('click', e => e.stopPropagation());
   });
   scope.querySelectorAll('.ps-item').forEach(el => {
     if (el.__psBound) return; el.__psBound = 1;
     onTap(el, function (e) {
-      if (e && e.target && e.target.closest && e.target.closest('.ps-namu')) return; // 나무위키 칩 탭은 제외
+      if (e && e.target && e.target.closest && e.target.closest('.ps-naver')) return; // 네이버 링크 탭은 제외
       if (el.dataset.kind === 'local') {
         const ymd = el.dataset.ymd;
         psShowConfirm(el.dataset.name,
@@ -7386,13 +7385,12 @@ function psShowConfirm(title, year, month, day, gender, source) {
       <div style="font-size:11px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
         ※ ${srcText} 입력 후 필요하면 수정하세요.
       </div>
-      <div style="margin-top:10px;"><span class="ps-namu" id="pcbNamu" data-namu="${escapeHtml(buildNamuUrl(title))}">나무위키에서 보기 ↗</span></div>
+      <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">네이버에서 보기 🔍</a></div>
       <div class="pcb-actions">
         <button type="button" id="pcbCancel">다시 검색</button>
         <button type="button" class="primary" id="pcbApply">자동 입력</button>
       </div>
     </div>`;
-  onTap($('#pcbNamu'), function () { openNamu($('#pcbNamu').dataset.namu); });
   onTap($('#pcbCancel'), () => { $('#psQuery').focus(); $('#psResults').innerHTML = ''; psSearch($('#psQuery').value.trim()); });
   onTap($('#pcbApply'), () => psApply(title, year, month, day, gender));
 }
