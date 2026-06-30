@@ -14921,39 +14921,38 @@ $('#personSearchModal').addEventListener('click', e => {
 });
 
 /* ============================================
-   PWA Service Worker 등록 (오프라인 지원)
+   PWA Service Worker 등록 (오프라인 + 항상 최신본)
+   - 원격 https(깃허브 페이지)에서만 등록. file://·앱(localhost)에서는 미등록.
+   - sw.js 는 HTML/CSS/JS를 '네트워크 우선'으로 받아 항상 최신 디자인을 보장.
    ============================================ */
 if ('serviceWorker' in navigator) {
-  // HTTPS 또는 localhost, file protocol에서만 동작. file://에서는 미등록
-  const isHttp = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if (isHttp) {
-    // SW 코드를 Blob으로 생성 - 별도 파일 없이 인라인으로
-    const swCode = `
-      const CACHE = 'saju-janjang-v1';
-      self.addEventListener('install', e => {
-        self.skipWaiting();
+  const usesSW = location.protocol === 'https:'
+    && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
+  if (usesSW) {
+    // 1) 과거에 등록된 인라인(blob) 서비스워커가 남아 있으면 제거
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(r => {
+        const u = ((r.active || r.waiting || r.installing) || {}).scriptURL || '';
+        if (u.startsWith('blob:')) r.unregister();
       });
-      self.addEventListener('activate', e => {
-        e.waitUntil(self.clients.claim());
+    }).catch(() => {});
+
+    // 2) 새 SW가 제어권을 넘겨받으면(업데이트 적용) 한 번만 새로고침 → 최신본 즉시 반영
+    let swReloaded = false;
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (swReloaded) return;
+        swReloaded = true;
+        location.reload();
       });
-      self.addEventListener('fetch', e => {
-        // HTML 자체를 캐시 - 오프라인에서도 앱이 로드되도록
-        if (e.request.mode === 'navigate' || (e.request.method === 'GET' && e.request.destination === 'document')) {
-          e.respondWith(
-            fetch(e.request).then(resp => {
-              const clone = resp.clone();
-              caches.open(CACHE).then(c => c.put(e.request, clone));
-              return resp;
-            }).catch(() => caches.match(e.request).then(r => r || caches.match('/')))
-          );
-        }
-      });
-    `;
-    try {
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const url = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(url).catch(err => console.warn('SW 등록 실패:', err));
-    } catch (e) { console.warn('SW Blob 생성 실패:', e); }
+    }
+
+    // 3) 실제 파일(sw.js) 등록 + 업데이트 확인
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => reg.update())
+        .catch(err => console.warn('SW 등록 실패:', err));
+    });
   }
 }
 
