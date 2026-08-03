@@ -40,6 +40,7 @@ async function inspectTheme(page, width, scheme) {
     };
     const arts = [...document.querySelectorAll('.manse-art')];
     const input = document.getElementById('inBirth');
+    const nameInput = document.getElementById('inputName');
     input.value = '19860219';
     return {
       stylesheet: [...document.styleSheets].some(sheet => sheet.href?.endsWith('/priestess.css')),
@@ -57,7 +58,11 @@ async function inspectTheme(page, width, scheme) {
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
       inputColor: getComputedStyle(input).color,
+      inputFillColor: getComputedStyle(input).webkitTextFillColor,
       placeholderColor: getComputedStyle(input, '::placeholder').color,
+      placeholderFillColor: getComputedStyle(input, '::placeholder').webkitTextFillColor,
+      namePlaceholderColor: getComputedStyle(nameInput, '::placeholder').color,
+      namePlaceholderFillColor: getComputedStyle(nameInput, '::placeholder').webkitTextFillColor,
       inputValue: input.value
     };
   });
@@ -73,7 +78,11 @@ async function inspectTheme(page, width, scheme) {
   assert.equal(state.inputDecoration, 'none');
   assert.equal(state.inputValue, '19860219');
   assert.equal(state.inputColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.72)' : 'rgba(26, 32, 34, 0.72)');
-  assert.equal(state.placeholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.42)' : 'rgba(26, 32, 34, 0.42)');
+  assert.equal(state.inputFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.72)' : 'rgba(26, 32, 34, 0.72)');
+  assert.equal(state.placeholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
+  assert.equal(state.placeholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
+  assert.equal(state.namePlaceholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
+  assert.equal(state.namePlaceholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.ok(state.hero.height >= 220, `${width}px hero is too short`);
   assert.ok(state.hero.top >= state.tabs.bottom - 1, `${width}px hero overlaps the sticky tabs`);
   assert.ok(state.button.height >= 52, `${width}px primary action is too short`);

@@ -371,6 +371,7 @@ body.dark #calDayDetail {
 #mnfBirth,
 #mnfTime {
   color: rgba(26, 32, 34, .72) !important;
+  -webkit-text-fill-color: rgba(26, 32, 34, .72) !important;
 }
 
 body.dark #inBirth,
@@ -378,20 +379,28 @@ body.dark #inTime,
 body.dark #mnfBirth,
 body.dark #mnfTime {
   color: rgba(237, 229, 213, .72) !important;
+  -webkit-text-fill-color: rgba(237, 229, 213, .72) !important;
 }
 
+#inputName::placeholder,
 #inBirth::placeholder,
 #inTime::placeholder,
+#mnfName::placeholder,
 #mnfBirth::placeholder,
 #mnfTime::placeholder {
-  color: rgba(26, 32, 34, .42) !important;
+  color: rgba(26, 32, 34, .36) !important;
+  -webkit-text-fill-color: rgba(26, 32, 34, .36) !important;
+  opacity: 1 !important;
 }
 
+body.dark #inputName::placeholder,
 body.dark #inBirth::placeholder,
 body.dark #inTime::placeholder,
+body.dark #mnfName::placeholder,
 body.dark #mnfBirth::placeholder,
 body.dark #mnfTime::placeholder {
-  color: rgba(237, 229, 213, .42) !important;
+  color: rgba(237, 229, 213, .36) !important;
+  -webkit-text-fill-color: rgba(237, 229, 213, .36) !important;
 }
 
 .input:focus,
