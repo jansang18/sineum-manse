@@ -12584,8 +12584,8 @@ function formatPillarPeriod(period) {
   return `${formatPillarDate(period.start)} – ${formatPillarDate(period.end)}`;
 }
 
-function renderSamePillars60(saju) {
-  const report = findSamePillars60(saju);
+function renderSamePillars60(saju, existingReport) {
+  const report = existingReport || findSamePillars60(saju);
   const pillarText = (stem, branch) => `${STEM[stem]}${BRANCH[branch]}`;
   const dateChips = dates => dates.length
     ? dates.map(date => `<span class="cycle-date-chip">${formatPillarDate(date)}</span>`).join('')
@@ -12630,6 +12630,21 @@ function renderSamePillars60(saju) {
           <div class="cycle-date-list">${dateChips(report.exactMatches)}</div>
         </article>
       </div>
+
+      <section class="cycle-people" id="samePillarPeople" aria-labelledby="samePillarPeopleTitle">
+        <div class="cycle-people-heading">
+          <div>
+            <span class="cycle-people-kicker">WIKIPEDIA · BIRTH DATE</span>
+            <h3 id="samePillarPeopleTitle">같은 세 기둥으로 태어난 인물</h3>
+          </div>
+          <span class="cycle-people-source">자동 검색</span>
+        </div>
+        <div class="cycle-people-body" role="status" aria-live="polite">
+          ${report.exactMatches.length
+            ? '<div class="cycle-people-loading"><span class="spinner"></span>위키백과 등재 인물을 찾고 있습니다</div>'
+            : '<p class="cycle-people-empty">년·월·일주가 모두 같은 과거 날짜가 없어 인물 검색을 건너뜁니다.</p>'}
+        </div>
+      </section>
 
       <p class="cycle-note">입춘·절입 기준 · 양력 날짜 단위 · 시주는 비교하지 않습니다${report.usedNoonForUnknownTime ? ' · 시각 미입력은 정오 기준' : ' · 입력한 출생 시각 기준'}.</p>
     </section>
@@ -12942,6 +12957,7 @@ function renderResult() {
   const ilgan = s.dStem;
   const thisYear = new Date().getFullYear();
   const age = thisYear - s.year;
+  const samePillarsReport = findSamePillars60(s);
 
   let curDaeunIdx = 0;
   for (let i = 0; i < s.daeun.list.length; i++) {
@@ -12983,7 +12999,7 @@ function renderResult() {
     </div>
     </div>
 
-    ${renderSamePillars60(s)}
+    ${renderSamePillars60(s, samePillarsReport)}
 
     <div class="result-right">
         <div class="luck-section">
@@ -12999,6 +13015,7 @@ function renderResult() {
       </div>
   `;
   $('#view-result').innerHTML = html;
+  loadSamePillarPeople(samePillarsReport);
 
   $$('#daeunScroll .luck-item').forEach(el => {
     el.addEventListener('click', () => {
@@ -15314,7 +15331,7 @@ function closePersonSearch() {
   $('#psClearBtn').style.display = 'none';
 }
 
-const ALLOWED_ENRICHMENT_HOSTS = new Set(['ko.wikipedia.org', 'www.wikidata.org']);
+const ALLOWED_ENRICHMENT_HOSTS = new Set(['ko.wikipedia.org', 'www.wikidata.org', 'query.wikidata.org']);
 
 function validateEnrichmentUrl(value) {
   const url = new URL(String(value));
@@ -15326,7 +15343,13 @@ function validateEnrichmentUrl(value) {
     url.pathname === '/w/api.php' ||
     /^\/wiki\/Special:EntityData\/Q\d{1,12}\.json$/.test(url.pathname)
   );
-  if (!wikipediaPath && !wikidataPath) {
+  const wikidataQueryPath = url.hostname === 'query.wikidata.org' &&
+    url.pathname === '/sparql' &&
+    url.searchParams.get('format') === 'json' &&
+    typeof url.searchParams.get('query') === 'string' &&
+    url.searchParams.get('query').length <= 6000 &&
+    [...url.searchParams.keys()].every(key => key === 'format' || key === 'query');
+  if (!wikipediaPath && !wikidataPath && !wikidataQueryPath) {
     throw new Error('허용되지 않은 외부 정보 경로입니다.');
   }
   return url;
@@ -15376,6 +15399,180 @@ async function wikidataQuery(qid) {
       origin: '*'
     }).toString();
     return await fetchAllowedJson(apiUrl, 6000);
+  }
+}
+
+const SAME_PILLAR_PEOPLE_CACHE = new Map();
+
+function samePillarPeopleDateKey(date) {
+  return `${String(date.year).padStart(4, '0')}-${pad(date.month)}-${pad(date.day)}`;
+}
+
+function buildWikidataBirthdayQueryUrl(date) {
+  const year = Number(date && date.year);
+  const month = Number(date && date.month);
+  const day = Number(date && date.day);
+  if (!Number.isInteger(year) || year < 1 || year > 9999 ||
+      !Number.isInteger(month) || month < 1 || month > 12 ||
+      !Number.isInteger(day) || day < 1 || day > 31) {
+    throw new Error('인물 검색 날짜가 올바르지 않습니다.');
+  }
+  const dateKey = samePillarPeopleDateKey({ year, month, day });
+  const query = `SELECT DISTINCT ?person ?personLabel ?personDescription ?article ?sitelinks WHERE {
+  ?person wdt:P31 wd:Q5;
+          wdt:P569 "${dateKey}T00:00:00Z"^^xsd:dateTime;
+          wikibase:sitelinks ?sitelinks.
+  ?article schema:about ?person;
+           schema:isPartOf <https://ko.wikipedia.org/>.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "ko,en". }
+}
+ORDER BY DESC(?sitelinks) ?personLabel
+LIMIT 16`;
+  const url = new URL('https://query.wikidata.org/sparql');
+  url.search = new URLSearchParams({ format: 'json', query }).toString();
+  return url.toString();
+}
+
+function parseWikidataBirthdayResults(data, date) {
+  const bindings = data && data.results && Array.isArray(data.results.bindings)
+    ? data.results.bindings
+    : [];
+  const seen = new Set();
+  const people = [];
+  for (const binding of bindings) {
+    const personUrl = String(binding && binding.person && binding.person.value || '');
+    const qidMatch = personUrl.match(/\/entity\/(Q\d{1,12})$/);
+    const name = String(binding && binding.personLabel && binding.personLabel.value || '').trim();
+    const description = String(binding && binding.personDescription && binding.personDescription.value || '').trim();
+    const articleValue = String(binding && binding.article && binding.article.value || '');
+    let article;
+    try { article = new URL(articleValue); } catch (error) { continue; }
+    if (!qidMatch || !name || name.length > 80 || article.protocol !== 'https:' ||
+        article.hostname !== 'ko.wikipedia.org' || !article.pathname.startsWith('/wiki/')) continue;
+    const qid = qidMatch[1];
+    if (seen.has(qid)) continue;
+    seen.add(qid);
+    people.push({
+      qid,
+      name,
+      description: description.slice(0, 120),
+      article: article.toString(),
+      sitelinks: Math.max(0, Number(binding && binding.sitelinks && binding.sitelinks.value) || 0),
+      date: { year: Number(date.year), month: Number(date.month), day: Number(date.day) }
+    });
+  }
+  return people
+    .sort((a, b) => b.sitelinks - a.sitelinks || a.name.localeCompare(b.name, 'ko'))
+    .slice(0, 12);
+}
+
+async function queryWikipediaBirthdays(date, forceRefresh) {
+  const key = samePillarPeopleDateKey(date);
+  if (forceRefresh) SAME_PILLAR_PEOPLE_CACHE.delete(key);
+  if (!SAME_PILLAR_PEOPLE_CACHE.has(key)) {
+    const request = fetchAllowedJson(buildWikidataBirthdayQueryUrl(date), 12000)
+      .then(data => parseWikidataBirthdayResults(data, date))
+      .catch(error => {
+        SAME_PILLAR_PEOPLE_CACHE.delete(key);
+        throw error;
+      });
+    SAME_PILLAR_PEOPLE_CACHE.set(key, request);
+  }
+  return await SAME_PILLAR_PEOPLE_CACHE.get(key);
+}
+
+function renderSamePillarPeople(root, people, dates) {
+  const body = root && root.querySelector('.cycle-people-body');
+  if (!body) return;
+  body.replaceChildren();
+  root.setAttribute('aria-busy', 'false');
+  if (!people.length) {
+    const empty = document.createElement('p');
+    empty.className = 'cycle-people-empty';
+    empty.textContent = `${dates.map(formatPillarDate).join(', ')} 출생으로 한국어 위키백과에 등재된 인물을 찾지 못했습니다.`;
+    body.appendChild(empty);
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'cycle-people-grid';
+  for (const person of people) {
+    const link = document.createElement('a');
+    link.className = 'cycle-person';
+    link.href = person.article;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+
+    const mark = document.createElement('span');
+    mark.className = 'cycle-person-mark';
+    mark.textContent = person.name.charAt(0) || '人';
+
+    const copy = document.createElement('span');
+    copy.className = 'cycle-person-copy';
+    const name = document.createElement('strong');
+    name.textContent = person.name;
+    const detail = document.createElement('small');
+    detail.textContent = `${formatPillarDate(person.date)} 출생 · ${person.description || '한국어 위키백과'}`;
+    copy.append(name, detail);
+
+    const arrow = document.createElement('span');
+    arrow.className = 'cycle-person-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    link.append(mark, copy, arrow);
+    grid.appendChild(link);
+  }
+  body.appendChild(grid);
+
+  const note = document.createElement('p');
+  note.className = 'cycle-people-note';
+  note.textContent = 'Wikidata의 정확한 생년월일과 한국어 위키백과 문서 기준입니다.';
+  body.appendChild(note);
+}
+
+async function loadSamePillarPeople(report, forceRefresh) {
+  const root = document.getElementById('samePillarPeople');
+  if (!root || !report || !Array.isArray(report.exactMatches) || !report.exactMatches.length) return;
+  const dates = report.exactMatches;
+  const requestKey = dates.map(samePillarPeopleDateKey).join('|');
+  root.dataset.requestKey = requestKey;
+  root.setAttribute('aria-busy', 'true');
+  const body = root.querySelector('.cycle-people-body');
+  if (body && forceRefresh) {
+    body.replaceChildren();
+    const loading = document.createElement('div');
+    loading.className = 'cycle-people-loading';
+    loading.textContent = '위키백과 등재 인물을 다시 찾고 있습니다';
+    body.appendChild(loading);
+  }
+  try {
+    const groups = await Promise.all(dates.map(date => queryWikipediaBirthdays(date, forceRefresh)));
+    const currentRoot = document.getElementById('samePillarPeople');
+    if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    const seen = new Set();
+    const people = groups.flat().filter(person => {
+      if (seen.has(person.qid)) return false;
+      seen.add(person.qid);
+      return true;
+    }).sort((a, b) => b.sitelinks - a.sitelinks || a.name.localeCompare(b.name, 'ko'));
+    renderSamePillarPeople(currentRoot, people, dates);
+  } catch (error) {
+    console.warn('같은 기둥 인물 검색 실패', error);
+    const currentRoot = document.getElementById('samePillarPeople');
+    if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    currentRoot.setAttribute('aria-busy', 'false');
+    const currentBody = currentRoot.querySelector('.cycle-people-body');
+    if (!currentBody) return;
+    currentBody.replaceChildren();
+    const message = document.createElement('p');
+    message.className = 'cycle-people-empty';
+    message.textContent = '온라인 인물 정보를 불러오지 못했습니다.';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'cycle-people-retry';
+    retry.textContent = '다시 검색';
+    retry.addEventListener('click', () => loadSamePillarPeople(report, true));
+    currentBody.append(message, retry);
   }
 }
 

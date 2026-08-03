@@ -59,6 +59,26 @@ async function inspectSamePillars60(page, width) {
       calendar: 'solar', gender: 'M', unknown: true
     });
     const feb1986Report = window.findSamePillars60(feb1986);
+    const peopleFixture = {
+      results: {
+        bindings: [
+          {
+            person: { value: 'http://www.wikidata.org/entity/Q512' },
+            personLabel: { value: '앨런 그린스펀' },
+            article: { value: 'https://ko.wikipedia.org/wiki/%EC%95%A8%EB%9F%B0_%EA%B7%B8%EB%A6%B0%EC%8A%A4%ED%8E%80' },
+            sitelinks: { value: '67' }
+          },
+          {
+            person: { value: 'http://www.wikidata.org/entity/Q51541' },
+            personLabel: { value: '안제이 바이다' },
+            article: { value: 'https://ko.wikipedia.org/wiki/%EC%95%88%EC%A0%9C%EC%9D%B4_%EB%B0%94%EC%9D%B4%EB%8B%A4' },
+            sitelinks: { value: '79' }
+          }
+        ]
+      }
+    };
+    const peopleUrl = window.buildWikidataBirthdayQueryUrl({ year: 1926, month: 3, day: 6 });
+    const parsedPeople = window.parseWikidataBirthdayResults(peopleFixture, { year: 1926, month: 3, day: 6 });
     const referenceMoment = (year, month, day, hour, minute) =>
       toJD(year, month, day) + (hour + minute / 60) / 24;
     const gyeongchip1926 = findJeolgiJD(1926, 345);
@@ -84,6 +104,14 @@ async function inspectSamePillars60(page, width) {
       functionType: typeof window.findSamePillars60,
       report,
       feb1986Exact: feb1986Report.exactMatches,
+      peopleApi: {
+        buildType: typeof window.buildWikidataBirthdayQueryUrl,
+        parseType: typeof window.parseWikidataBirthdayResults,
+        loadType: typeof window.loadSamePillarPeople,
+        url: peopleUrl,
+        parsedPeople,
+        regionExists: !!document.getElementById('samePillarPeople')
+      },
       solarTermReference: {
         gyeongchip1926MinuteDelta: Math.abs(gyeongchip1926 - referenceMoment(1926, 3, 6, 17, 0)) * 1440,
         ipchun2024MinuteDelta: Math.abs(ipchun2024 - referenceMoment(2024, 2, 4, 17, 27)) * 1440,
@@ -108,6 +136,25 @@ async function inspectSamePillars60(page, width) {
     state.feb1986Exact,
     [{ year: 1926, month: 3, day: 6 }],
     '1986-02-19 must find the prior-cycle exact date 1926-03-06'
+  );
+  assert.deepEqual(
+    {
+      buildType: state.peopleApi.buildType,
+      parseType: state.peopleApi.parseType,
+      loadType: state.peopleApi.loadType,
+      regionExists: state.peopleApi.regionExists
+    },
+    { buildType: 'function', parseType: 'function', loadType: 'function', regionExists: true },
+    'same-pillar Wikipedia people integration is incomplete'
+  );
+  const peopleUrl = new globalThis.URL(state.peopleApi.url);
+  assert.equal(peopleUrl.hostname, 'query.wikidata.org');
+  assert.equal(peopleUrl.pathname, '/sparql');
+  assert.match(peopleUrl.searchParams.get('query'), /1926-03-06T00:00:00Z/);
+  assert.deepEqual(
+    state.peopleApi.parsedPeople.map(person => person.name),
+    ['안제이 바이다', '앨런 그린스펀'],
+    'Wikipedia people must be ranked by Wikidata sitelink count'
   );
   assert.ok(state.solarTermReference.gyeongchip1926MinuteDelta <= 30, '1926 gyeongchip must stay within 30 minutes of the verified 17:00 KST reference');
   assert.ok(state.solarTermReference.ipchun2024MinuteDelta <= 30, '2024 ipchun must stay within 30 minutes of the verified 17:27 KST reference');
