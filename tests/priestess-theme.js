@@ -8,12 +8,12 @@ const root = path.resolve(__dirname, '..');
 const chrome = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const url = pathToFileURL(path.join(root, 'index.html')).href;
 
-for (const file of ['priestess.css', 'manse-hero-v2.webp']) {
+for (const file of ['priestess.css', 'manse-hero-v2.webp', 'jansang-calligraphy-brush.webp']) {
   assert.ok(fs.statSync(path.join(root, file)).size > 0, `${file} is missing or empty`);
 }
 
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-for (const asset of ['priestess.css', 'manse-hero-v2.webp']) {
+for (const asset of ['priestess.css', 'manse-hero-v2.webp', 'jansang-calligraphy-brush.webp']) {
   assert.ok(serviceWorker.includes(`'./${asset}'`), `${asset} is not precached`);
 }
 
@@ -47,7 +47,7 @@ async function inspectTheme(page, width, scheme) {
       artImages: arts.map(art => getComputedStyle(art).backgroundImage),
       brand: document.querySelector('.top-bar .title')?.textContent.trim(),
       heroCopy: document.querySelector('.manse-hero-copy')?.textContent.replace(/\s+/g, ' ').trim(),
-      calligraphy: document.querySelector('.manse-calligraphy')?.textContent.trim(),
+      calligraphySrc: document.querySelector('.manse-calligraphy')?.getAttribute('src'),
       hasDecorativeHanja: /[神命還]/.test(document.querySelector('.input-intro')?.textContent || ''),
       hasLegacyLogo: Boolean(document.querySelector('.intro-logo-img')),
       inputDecoration: getComputedStyle(document.querySelector('.input-card'), '::after').content,
@@ -57,6 +57,7 @@ async function inspectTheme(page, width, scheme) {
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
       inputColor: getComputedStyle(input).color,
+      placeholderColor: getComputedStyle(input, '::placeholder').color,
       inputValue: input.value
     };
   });
@@ -66,12 +67,13 @@ async function inspectTheme(page, width, scheme) {
   assert.ok(state.artImages.some(value => value.includes('manse-hero-v2.webp')));
   assert.equal(state.brand, '잔상 만세력');
   assert.match(state.heroCopy, /천년의 시간을 펼치다/);
-  assert.equal(state.calligraphy, '殘像');
+  assert.equal(state.calligraphySrc, 'jansang-calligraphy-brush.webp');
   assert.equal(state.hasDecorativeHanja, false);
   assert.equal(state.hasLegacyLogo, false);
   assert.equal(state.inputDecoration, 'none');
   assert.equal(state.inputValue, '19860219');
-  assert.equal(state.inputColor, scheme === 'dark' ? 'rgb(237, 229, 213)' : 'rgb(26, 32, 34)');
+  assert.equal(state.inputColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.72)' : 'rgba(26, 32, 34, 0.72)');
+  assert.equal(state.placeholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.42)' : 'rgba(26, 32, 34, 0.42)');
   assert.ok(state.hero.height >= 220, `${width}px hero is too short`);
   assert.ok(state.hero.top >= state.tabs.bottom - 1, `${width}px hero overlaps the sticky tabs`);
   assert.ok(state.button.height >= 52, `${width}px primary action is too short`);

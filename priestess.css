@@ -237,16 +237,12 @@ body.dark .tab.active {
 
 .manse-calligraphy {
   display: block;
-  color: #fff;
-  font-family: "Gungsuh", "궁서", "STKaiti", "KaiTi", "Yu Mincho", "Batang", serif;
-  font-size: clamp(68px, 19vw, 88px);
-  font-weight: 400;
-  line-height: .96;
-  letter-spacing: -.07em;
-  white-space: nowrap;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
   transform: rotate(-2deg);
   transform-origin: left center;
-  text-shadow: 0 3px 22px rgba(0, 0, 0, .42);
+  filter: drop-shadow(0 3px 11px rgba(0, 0, 0, .42));
 }
 
 .input-intro .sub {
@@ -368,6 +364,34 @@ body.dark #calDayDetail {
 .input::placeholder {
   color: var(--apple-tertiary) !important;
   opacity: 1 !important;
+}
+
+#inBirth,
+#inTime,
+#mnfBirth,
+#mnfTime {
+  color: rgba(26, 32, 34, .72) !important;
+}
+
+body.dark #inBirth,
+body.dark #inTime,
+body.dark #mnfBirth,
+body.dark #mnfTime {
+  color: rgba(237, 229, 213, .72) !important;
+}
+
+#inBirth::placeholder,
+#inTime::placeholder,
+#mnfBirth::placeholder,
+#mnfTime::placeholder {
+  color: rgba(26, 32, 34, .42) !important;
+}
+
+body.dark #inBirth::placeholder,
+body.dark #inTime::placeholder,
+body.dark #mnfBirth::placeholder,
+body.dark #mnfTime::placeholder {
+  color: rgba(237, 229, 213, .42) !important;
 }
 
 .input:focus,
@@ -706,10 +730,6 @@ body.dark .bottom-bar .bb.primary {
     font-size: 11px;
   }
 
-  .manse-calligraphy {
-    font-size: 108px;
-  }
-
   .input-intro .sub {
     left: 38px;
     right: 32px;
@@ -733,10 +753,6 @@ body.dark .bottom-bar .bb.primary {
     left: 20px;
     top: 20px;
     width: 220px;
-  }
-
-  .manse-calligraphy {
-    font-size: 66px;
   }
 
   .input-intro .sub {
