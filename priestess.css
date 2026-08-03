@@ -660,7 +660,24 @@ body.dark .match-slot.b.filled {
   font-family: var(--priestess-serif) !important;
 }
 
+.cal-title {
+  align-self: stretch;
+  box-sizing: border-box;
+  line-height: 1;
+}
+
+.cal-title .ganji,
+.cal-current-year {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
 .cal-nav {
+  display: grid;
+  place-items: center;
+  padding: 0 !important;
+  line-height: 1;
   color: var(--apple-accent) !important;
   border-color: var(--apple-separator) !important;
   background: var(--apple-inset) !important;

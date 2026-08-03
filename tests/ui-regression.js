@@ -206,13 +206,25 @@ async function inspectCalendarShellWidth(page, width) {
   const geometry = await page.evaluate(() => {
     const box = selector => {
       const rect = document.querySelector(selector).getBoundingClientRect();
-      return { left: rect.left, right: rect.right, width: rect.width };
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height,
+        centerY: rect.top + rect.height / 2
+      };
     };
     return {
       viewport: document.documentElement.clientWidth,
       header: box('.top-bar'),
       tabs: box('.tabs'),
-      calendar: box('.cal-grid')
+      calendar: box('.cal-grid'),
+      calendarHead: box('.cal-head'),
+      previous: box('#calPrev'),
+      title: box('#calTitle'),
+      next: box('#calNext')
     };
   });
   for (const name of ['header', 'tabs']) {
@@ -225,6 +237,10 @@ async function inspectCalendarShellWidth(page, width) {
       `${width}px calendar ${name} left edge must match calendar card`
     );
   }
+  assert.ok(Math.abs(geometry.previous.centerY - geometry.title.centerY) <= .5, `${width}px previous button and calendar title must share a vertical center`);
+  assert.ok(Math.abs(geometry.next.centerY - geometry.title.centerY) <= .5, `${width}px next button and calendar title must share a vertical center`);
+  assert.ok(Math.abs(geometry.previous.height - geometry.title.height) <= .5, `${width}px calendar title height must match navigation buttons`);
+  assert.ok(Math.abs(geometry.next.height - geometry.title.height) <= .5, `${width}px calendar title height must match navigation buttons`);
   assert.ok(geometry.calendar.left >= 0 && geometry.calendar.right <= geometry.viewport + 1, `${width}px calendar shell overflows viewport`);
 }
 
