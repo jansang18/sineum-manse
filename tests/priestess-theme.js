@@ -105,6 +105,22 @@ async function inspectTheme(page, width, scheme) {
       await page.close();
     }
 
+    const scrollingPage = await browser.newPage();
+    await scrollingPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
+    await scrollingPage.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+    await scrollingPage.goto(url, { waitUntil: 'networkidle0' });
+    await scrollingPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const scrolledHeader = await scrollingPage.evaluate(() => ({
+      scrollY: window.scrollY,
+      topBarBottom: document.querySelector('.top-bar').getBoundingClientRect().bottom,
+      tabsBottom: document.querySelector('.tabs').getBoundingClientRect().bottom
+    }));
+    assert.ok(scrolledHeader.scrollY >= 120, 'page must scroll far enough to test header behavior');
+    assert.ok(scrolledHeader.topBarBottom < 0, 'title bar must scroll away with the page');
+    assert.ok(scrolledHeader.tabsBottom < 0, 'navigation bar must scroll away with the page');
+    await scrollingPage.close();
+
     const resultPage = await browser.newPage();
     await resultPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
     await resultPage.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);

@@ -98,6 +98,8 @@ body.dark::before {
 
 .top-bar,
 .tabs {
+  position: relative !important;
+  top: auto !important;
   background: color-mix(in srgb, var(--apple-surface) 86%, transparent) !important;
   border-color: var(--apple-separator) !important;
   backdrop-filter: saturate(118%) blur(22px) !important;
