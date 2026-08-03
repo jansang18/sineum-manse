@@ -1,14 +1,14 @@
 {
   "name": "취명선 만세력",
   "short_name": "취명선 만세력",
-  "description": "취명선 만세력 · 자평명리학 1000년 만세력 · 운세풀이 · 궁합",
+  "description": "취명선 만세력 · 자평명리학 · 1000년 만세력 · 운세풀이 · 궁합",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F2F2F7",
-  "theme_color": "#F2F2F7",
+  "background_color": "#E9DFCC",
+  "theme_color": "#18222A",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
