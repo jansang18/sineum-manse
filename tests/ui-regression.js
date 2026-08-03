@@ -44,6 +44,71 @@ const runsShellWidth = () => TEST_GROUP === 'shell-width';
 const runsFoldLayout = () => TEST_GROUP === 'fold-layout';
 const runsResultHeaderCompact = () => !TEST_GROUP || TEST_GROUP === 'result-header-compact';
 const runsAndroidSafeArea = () => !TEST_GROUP || TEST_GROUP === 'android-safe-area';
+const runsSamePillars60 = () => !TEST_GROUP || TEST_GROUP === 'same-pillars-60';
+
+async function inspectSamePillars60(page, width) {
+  if (!runsSamePillars60() || width !== 390) return;
+
+  const state = await page.evaluate(() => {
+    const report = window.findSamePillars60(currentSaju);
+    const snapshot = date => {
+      const timeFraction = currentSaju.unknown ? 0.5 : (currentSaju.hour + currentSaju.minute / 60) / 24;
+      const jd = toJD(date.year, date.month, date.day) + timeFraction;
+      const year = getYearStemBranch(jd, date.year);
+      const month = getMonthBranch(jd, date.year);
+      return {
+        yStem: year.stem,
+        yBranch: year.branch,
+        mStem: getMonthStem(year.stem, month.branch),
+        mBranch: month.branch,
+        ...dayGanji(toJD(date.year, date.month, date.day))
+      };
+    };
+    const region = document.getElementById('samePillars60');
+    const rect = region.getBoundingClientRect();
+    return {
+      functionType: typeof window.findSamePillars60,
+      report,
+      exactSnapshots: report.exactMatches.map(snapshot),
+      text: region.textContent,
+      regionRole: region.getAttribute('aria-labelledby'),
+      overflow: Math.max(0, rect.right - document.documentElement.clientWidth),
+      documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+
+  assert.equal(state.functionType, 'function', '60-year pillar search API missing');
+  assert.ok(state.report.exactMatches.length > 0, 'an exact year/month/day pillar match should exist in the prior cycle');
+  assert.ok(state.report.dayMatches.length >= 5, 'the prior same-year-pillar period should contain recurring same day pillars');
+  assert.ok(state.report.yearPeriod.start && state.report.yearPeriod.end, 'same year-pillar period missing');
+  assert.ok(state.report.monthPeriod.start && state.report.monthPeriod.end, 'same month-pillar period missing');
+  for (const match of state.report.exactMatches) {
+    assert.ok(Math.abs(match.year - 1989) >= 59 && Math.abs(match.year - 1989) <= 61, `unexpected prior-cycle year: ${match.year}`);
+  }
+  for (const pillar of state.exactSnapshots) {
+    assert.deepEqual(
+      pillar,
+      {
+        yStem: state.report.target.yStem,
+        yBranch: state.report.target.yBranch,
+        mStem: state.report.target.mStem,
+        mBranch: state.report.target.mBranch,
+        stem: state.report.target.dStem,
+        branch: state.report.target.dBranch
+      },
+      'reported exact date must independently reproduce all three natal pillars'
+    );
+  }
+  assert.match(state.text, /60년 전 같은 기둥/);
+  assert.match(state.text, /년주가 같은 기간/);
+  assert.match(state.text, /월주가 같은 기간/);
+  assert.match(state.text, /일주가 같은 날/);
+  assert.match(state.text, /년·월·일주가 모두 같은 날/);
+  assert.match(state.text, /입춘·절입 기준/);
+  assert.equal(state.regionRole, 'samePillars60Title');
+  assert.ok(state.overflow <= 1, `${width}px 60-year card overflows viewport`);
+  assert.ok(state.documentOverflow <= 1, `${width}px document overflows after 60-year card`);
+}
 
 async function inspectCalendarShellWidth(page, width) {
   await page.click('.tab[data-tab="calendar"]');
@@ -2623,6 +2688,12 @@ async function inspectWidth(browser, width) {
   }
 
   await fillAndCalculate(page);
+
+  await inspectSamePillars60(page, width);
+  if (TEST_GROUP === 'same-pillars-60') {
+    await page.close();
+    return;
+  }
 
   if (TEST_GROUP === 'all-tab-shell-width') {
     await inspectAllTabShellWidths(page, width);

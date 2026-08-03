@@ -467,6 +467,237 @@ body.dark {
   }
 }
 
+/* Previous sexagenary cycle: calculated from the same natal-chart engine. */
+.same-pillars-card {
+  position: relative;
+  max-width: 900px;
+  margin: 16px auto;
+  padding: 20px;
+  overflow: hidden;
+  border: 1px solid var(--apple-separator);
+  border-radius: var(--apple-radius-card);
+  background: var(--apple-surface);
+  color: var(--apple-label);
+  box-shadow: var(--apple-card-shadow);
+}
+
+.same-pillars-card::after {
+  content: "六十";
+  position: absolute;
+  right: -8px;
+  bottom: -24px;
+  color: color-mix(in srgb, var(--apple-label) 4%, transparent);
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: 108px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.cycle-heading,
+.cycle-target,
+.cycle-rows,
+.cycle-note {
+  position: relative;
+  z-index: 1;
+}
+
+.cycle-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cycle-kicker {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--apple-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.cycle-heading h2 {
+  margin: 0;
+  color: var(--apple-label);
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 700;
+  letter-spacing: -.04em;
+}
+
+.cycle-heading p {
+  margin: 7px 0 0;
+  color: var(--apple-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.cycle-seal {
+  display: grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--apple-label) 24%, transparent);
+  color: var(--apple-secondary);
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: 23px;
+  transform: rotate(-3deg);
+}
+
+.cycle-target {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 14px;
+  background: var(--apple-inset);
+}
+
+.cycle-target > span {
+  display: grid;
+  min-width: 0;
+  min-height: 76px;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+}
+
+.cycle-target > span + span {
+  border-left: 1px solid var(--apple-separator);
+}
+
+.cycle-target small {
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cycle-target strong {
+  color: var(--apple-label);
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.cycle-rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cycle-row {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--apple-surface-2) 78%, var(--apple-surface));
+}
+
+.cycle-row-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.cycle-row-label > span {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--apple-separator);
+  border-radius: 50%;
+  color: var(--apple-secondary);
+  font-family: "Noto Serif KR", "Batang", serif;
+  font-size: 16px;
+}
+
+.cycle-row-label strong {
+  display: block;
+  color: var(--apple-label);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cycle-row-label small {
+  display: block;
+  margin-top: 2px;
+  color: var(--apple-secondary);
+  font-size: 10px;
+}
+
+.cycle-row > p {
+  margin: 11px 0 0;
+  color: var(--apple-label);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.cycle-row-exact {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--apple-accent) 32%, var(--apple-separator));
+  background: color-mix(in srgb, var(--apple-accent) 7%, var(--apple-surface));
+}
+
+.cycle-date-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.cycle-date-chip,
+.cycle-empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 999px;
+  background: var(--apple-surface);
+  color: var(--apple-label);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cycle-row-exact .cycle-date-chip {
+  border-color: color-mix(in srgb, var(--apple-accent) 34%, var(--apple-separator));
+  color: var(--apple-accent);
+}
+
+.cycle-note {
+  margin: 14px 2px 0;
+  color: var(--apple-tertiary);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .same-pillars-card {
+    padding: 16px;
+  }
+
+  .cycle-rows {
+    grid-template-columns: 1fr;
+  }
+
+  .cycle-row-exact {
+    grid-column: auto;
+  }
+
+  .cycle-heading p {
+    max-width: 250px;
+  }
+}
+
 /* Final release hardening: retire remaining legacy-gold presentation. */
 .icon-btn,
 .top-bar .icon-btn,

@@ -12342,6 +12342,7 @@ function yearGanji(y) {
 
 const JEOLGI_LON = [315,345,15,45,75,105,135,165,195,225,255,285];
 const JEOLGI_BRANCH = [2,3,4,5,6,7,8,9,10,11,0,1];
+const JEOLGI_JD_CACHE = new Map();
 
 function sunLon(jd) {
   const T = (jd - 2451545.0) / 36525.0;
@@ -12357,6 +12358,8 @@ function sunLon(jd) {
 }
 
 function findJeolgiJD(year, targetLon) {
+  const cacheKey = `${year}:${targetLon}`;
+  if (JEOLGI_JD_CACHE.has(cacheKey)) return JEOLGI_JD_CACHE.get(cacheKey);
   const ms = [315,345,15,45,75,105,135,165,195,225,255,285];
   const mi = ms.indexOf(targetLon);
   const am = [2,3,4,5,6,7,8,9,10,11,12,1];
@@ -12370,7 +12373,9 @@ function findJeolgiJD(year, targetLon) {
     if (Math.abs(diff) < 0.0001) break;
     jd -= diff / 0.9856;
   }
-  return jd + 9/24;
+  const result = jd + 9/24;
+  JEOLGI_JD_CACHE.set(cacheKey, result);
+  return result;
 }
 
 function getMonthBranch(jd, year) {
@@ -12499,6 +12504,134 @@ function calcSaju(opts) {
     sipsin, sipsinJi, ohaeng, interactions, shinsal, daeun, gongmang,
     unknown, gender, jd
   };
+}
+
+function getDatePillars(year, month, day, timeFraction = 0.5) {
+  const dateJD = toJD(year, month, day);
+  const momentJD = dateJD + timeFraction;
+  const yearPillar = getYearStemBranch(momentJD, year);
+  const monthPillar = getMonthBranch(momentJD, year);
+  return {
+    year,
+    month,
+    day,
+    yStem: yearPillar.stem,
+    yBranch: yearPillar.branch,
+    mStem: getMonthStem(yearPillar.stem, monthPillar.branch),
+    mBranch: monthPillar.branch,
+    dStem: dayGanji(dateJD).stem,
+    dBranch: dayGanji(dateJD).branch
+  };
+}
+
+function findSamePillars60(saju) {
+  const targetYear = getYearStemBranch(saju.jd, saju.year).useYear;
+  const priorCycleYear = targetYear - 60;
+  const timeFraction = saju.unknown ? 0.5 : (saju.hour + saju.minute / 60) / 24;
+  const target = {
+    yStem: saju.yStem,
+    yBranch: saju.yBranch,
+    mStem: saju.mStem,
+    mBranch: saju.mBranch,
+    dStem: saju.dStem,
+    dBranch: saju.dBranch
+  };
+  const yearDates = [];
+  const monthDates = [];
+  const dayMatches = [];
+  const exactMatches = [];
+  const startJD = toJD(priorCycleYear, 1, 1);
+  const endJD = toJD(priorCycleYear + 1, 12, 31);
+
+  for (let jd = startJD; jd <= endJD; jd++) {
+    const date = fromJD(jd);
+    const pillars = getDatePillars(date.y, date.m, date.d, timeFraction);
+    const sameYear = pillars.yStem === target.yStem && pillars.yBranch === target.yBranch;
+    const sameMonth = pillars.mStem === target.mStem && pillars.mBranch === target.mBranch;
+    const sameDay = pillars.dStem === target.dStem && pillars.dBranch === target.dBranch;
+    const item = { year: date.y, month: date.m, day: date.d };
+    if (sameYear) yearDates.push(item);
+    if (sameYear && sameMonth) monthDates.push(item);
+    if (sameYear && sameDay) dayMatches.push(item);
+    if (sameYear && sameMonth && sameDay) exactMatches.push(item);
+  }
+
+  const toPeriod = dates => ({
+    start: dates.length ? dates[0] : null,
+    end: dates.length ? dates[dates.length - 1] : null
+  });
+
+  return {
+    priorCycleYear,
+    target,
+    yearPeriod: toPeriod(yearDates),
+    monthPeriod: toPeriod(monthDates),
+    dayMatches,
+    exactMatches,
+    usedNoonForUnknownTime: saju.unknown
+  };
+}
+
+function formatPillarDate(date) {
+  if (!date) return '찾을 수 없음';
+  return `${date.year}.${pad(date.month)}.${pad(date.day)}`;
+}
+
+function formatPillarPeriod(period) {
+  if (!period.start || !period.end) return '찾을 수 없음';
+  return `${formatPillarDate(period.start)} – ${formatPillarDate(period.end)}`;
+}
+
+function renderSamePillars60(saju) {
+  const report = findSamePillars60(saju);
+  const pillarText = (stem, branch) => `${STEM[stem]}${BRANCH[branch]}`;
+  const dateChips = dates => dates.length
+    ? dates.map(date => `<span class="cycle-date-chip">${formatPillarDate(date)}</span>`).join('')
+    : '<span class="cycle-empty">해당 날짜를 찾지 못했습니다</span>';
+  const exactText = report.exactMatches.length === 1 ? '한 날' : `${report.exactMatches.length}일`;
+
+  return `
+    <section class="same-pillars-card" id="samePillars60" aria-labelledby="samePillars60Title">
+      <div class="cycle-heading">
+        <div>
+          <span class="cycle-kicker">六十甲子 · PREVIOUS CYCLE</span>
+          <h2 id="samePillars60Title">60년 전 같은 기둥</h2>
+          <p>${report.priorCycleYear}년을 중심으로 현재 명식의 세 기둥을 다시 대조했습니다.</p>
+        </div>
+        <div class="cycle-seal" aria-hidden="true">還</div>
+      </div>
+
+      <div class="cycle-target" aria-label="비교한 원국 기둥">
+        <span><small>년주</small><strong>${pillarText(report.target.yStem, report.target.yBranch)}</strong></span>
+        <span><small>월주</small><strong>${pillarText(report.target.mStem, report.target.mBranch)}</strong></span>
+        <span><small>일주</small><strong>${pillarText(report.target.dStem, report.target.dBranch)}</strong></span>
+      </div>
+
+      <div class="cycle-rows">
+        <article class="cycle-row">
+          <div class="cycle-row-label"><span>年</span><strong>년주가 같은 기간</strong></div>
+          <p>${formatPillarPeriod(report.yearPeriod)}</p>
+        </article>
+        <article class="cycle-row">
+          <div class="cycle-row-label"><span>月</span><strong>월주가 같은 기간</strong></div>
+          <p>${formatPillarPeriod(report.monthPeriod)}</p>
+        </article>
+        <article class="cycle-row">
+          <div class="cycle-row-label"><span>日</span><strong>일주가 같은 날</strong></div>
+          <div class="cycle-date-list">${dateChips(report.dayMatches)}</div>
+        </article>
+        <article class="cycle-row cycle-row-exact">
+          <div class="cycle-row-label">
+            <span>合</span>
+            <div><strong>년·월·일주가 모두 같은 날</strong><small>${exactText}</small></div>
+          </div>
+          <div class="cycle-date-list">${dateChips(report.exactMatches)}</div>
+        </article>
+      </div>
+
+      <p class="cycle-note">입춘·절입 기준 · 양력 날짜 단위 · 시주는 비교하지 않습니다${report.usedNoonForUnknownTime ? ' · 시각 미입력은 정오 기준' : ' · 입력한 출생 시각 기준'}.</p>
+    </section>
+  `;
 }
 
 function calcShinsal(yB, dB, all, dS) {
@@ -12847,6 +12980,8 @@ function renderResult() {
       </div>
     </div>
     </div>
+
+    ${renderSamePillars60(s)}
 
     <div class="result-right">
         <div class="luck-section">
