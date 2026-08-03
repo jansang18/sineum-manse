@@ -12646,6 +12646,19 @@ function renderSamePillars60(saju, existingReport) {
         </div>
       </section>
 
+      <section class="cycle-people birthday-people" id="sameBirthdayPeople" aria-labelledby="sameBirthdayPeopleTitle" aria-busy="true">
+        <div class="cycle-people-heading">
+          <div>
+            <span class="cycle-people-kicker">WIKIPEDIA · SAME BIRTHDAY</span>
+            <h3 id="sameBirthdayPeopleTitle">같은 생일 유명인</h3>
+          </div>
+          <span class="cycle-people-source">최근 인기순</span>
+        </div>
+        <div class="cycle-people-body" role="status" aria-live="polite">
+          <div class="cycle-people-loading"><span class="spinner"></span>같은 월·일에 태어난 인물을 찾고 있습니다</div>
+        </div>
+      </section>
+
       <p class="cycle-note">입춘·절입 기준 · 양력 날짜 단위 · 시주는 비교하지 않습니다${report.usedNoonForUnknownTime ? ' · 시각 미입력은 정오 기준' : ' · 입력한 출생 시각 기준'}.</p>
     </section>
   `;
@@ -13016,6 +13029,7 @@ function renderResult() {
   `;
   $('#view-result').innerHTML = html;
   loadSamePillarPeople(samePillarsReport);
+  loadSameBirthdayPeople(s);
 
   $$('#daeunScroll .luck-item').forEach(el => {
     el.addEventListener('click', () => {
@@ -15572,6 +15586,281 @@ async function loadSamePillarPeople(report, forceRefresh) {
     retry.className = 'cycle-people-retry';
     retry.textContent = '다시 검색';
     retry.addEventListener('click', () => loadSamePillarPeople(report, true));
+    currentBody.append(message, retry);
+  }
+}
+
+const SAME_BIRTHDAY_PEOPLE_CACHE = new Map();
+
+function sameBirthdayDateKey(date) {
+  const month = Number(date && date.month);
+  const day = Number(date && date.day);
+  const probe = new Date(Date.UTC(2000, month - 1, day));
+  if (!Number.isInteger(month) || !Number.isInteger(day) ||
+      probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day) {
+    throw new Error('생일 인물 검색 날짜가 올바르지 않습니다.');
+  }
+  return `${pad(month)}-${pad(day)}`;
+}
+
+function buildWikipediaSameBirthdayUrl(date) {
+  sameBirthdayDateKey(date);
+  const url = new URL('https://ko.wikipedia.org/w/api.php');
+  url.search = new URLSearchParams({
+    action: 'parse',
+    format: 'json',
+    origin: '*',
+    page: `${Number(date.month)}월 ${Number(date.day)}일`,
+    prop: 'text',
+    redirects: '1'
+  }).toString();
+  return url.toString();
+}
+
+function parseWikipediaSameBirthdayBirths(data, date) {
+  sameBirthdayDateKey(date);
+  const rawText = data && data.parse && data.parse.text;
+  const html = typeof rawText === 'string' ? rawText : rawText && rawText['*'];
+  if (typeof html !== 'string' || !html.trim()) return [];
+
+  const documentNode = new DOMParser().parseFromString(html, 'text/html');
+  const birthHeading = Array.from(documentNode.querySelectorAll('h2')).find(heading =>
+    heading.id === '탄생' || heading.textContent.trim() === '탄생'
+  );
+  if (!birthHeading) return [];
+
+  const sectionLists = [];
+  let cursor = birthHeading.closest('.mw-heading') || birthHeading;
+  while ((cursor = cursor.nextElementSibling)) {
+    if (cursor.matches('h2') || cursor.querySelector(':scope > h2')) break;
+    if (cursor.matches('ul, ol')) sectionLists.push(cursor);
+  }
+
+  const seen = new Set();
+  const people = [];
+  const yearPattern = /^(\d{3,4})년$/;
+  const addPerson = (item, birthYear) => {
+    const links = Array.from(item.querySelectorAll('a[title]')).filter(link => {
+      const title = String(link.getAttribute('title') || '').trim();
+      const href = String(link.getAttribute('href') || '');
+      return title && !yearPattern.test(title) && href.startsWith('/wiki/') && !link.closest('sup');
+    });
+    const personLink = links.at(-1);
+    if (!personLink) return;
+    const title = String(personLink.getAttribute('title') || '').trim();
+    const name = String(personLink.textContent || '').trim();
+    let article;
+    try { article = new URL(personLink.getAttribute('href'), 'https://ko.wikipedia.org'); } catch (error) { return; }
+    if (!title || !name || name.length > 80 || seen.has(title) ||
+        article.hostname !== 'ko.wikipedia.org' || !article.pathname.startsWith('/wiki/')) return;
+    seen.add(title);
+    people.push({ title, name, birthYear, article: article.toString() });
+  };
+
+  for (const list of sectionLists) {
+    for (const item of list.querySelectorAll(':scope > li')) {
+      const yearLink = Array.from(item.querySelectorAll('a[title]')).find(link =>
+        yearPattern.test(String(link.getAttribute('title') || '').trim())
+      );
+      const yearMatch = yearLink && String(yearLink.getAttribute('title')).trim().match(yearPattern);
+      if (!yearMatch) continue;
+      const birthYear = Number(yearMatch[1]);
+      const nestedItems = item.querySelectorAll(':scope > ul > li, :scope > ol > li');
+      if (nestedItems.length) nestedItems.forEach(nestedItem => addPerson(nestedItem, birthYear));
+      else addPerson(item, birthYear);
+    }
+  }
+  return people.slice(0, 120);
+}
+
+function buildWikipediaBirthdayPopularityUrl(titles) {
+  const safeTitles = Array.from(new Set((Array.isArray(titles) ? titles : [])
+    .map(title => String(title || '').trim())
+    .filter(title => title && title.length <= 120 && !/[|\u0000-\u001f]/.test(title))))
+    .slice(0, 20);
+  if (!safeTitles.length) throw new Error('조회할 위키백과 인물이 없습니다.');
+  const url = new URL('https://ko.wikipedia.org/w/api.php');
+  url.search = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    formatversion: '2',
+    origin: '*',
+    prop: 'pageviews|description',
+    pvipdays: '30',
+    redirects: '1',
+    titles: safeTitles.join('|')
+  }).toString();
+  return url.toString();
+}
+
+function rankWikipediaBirthdayPeople(data, candidates) {
+  const query = data && data.query || {};
+  const rawPages = query.pages;
+  const pages = Array.isArray(rawPages)
+    ? rawPages
+    : rawPages && typeof rawPages === 'object' ? Object.values(rawPages) : [];
+  const aliases = new Map();
+  for (const changes of [query.normalized, query.redirects]) {
+    const entries = Array.isArray(changes) ? changes : changes && typeof changes === 'object' ? Object.values(changes) : [];
+    for (const entry of entries) {
+      const from = String(entry && entry.from || '').trim();
+      const to = String(entry && entry.to || '').trim();
+      if (from && to) aliases.set(from, to);
+    }
+  }
+  const canonicalTitle = value => {
+    let title = String(value || '').trim();
+    for (let count = 0; count < 4 && aliases.has(title); count++) title = aliases.get(title);
+    return title;
+  };
+  const candidatesByTitle = new Map();
+  for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    const title = canonicalTitle(candidate && candidate.title);
+    if (title && !candidatesByTitle.has(title)) candidatesByTitle.set(title, candidate);
+  }
+
+  const ranked = [];
+  for (const page of pages) {
+    if (!page || page.missing === true || page.missing === '') continue;
+    const title = canonicalTitle(page.title);
+    const candidate = candidatesByTitle.get(title);
+    if (!candidate) continue;
+    const dailyViews = page.pageviews && typeof page.pageviews === 'object'
+      ? Object.values(page.pageviews)
+      : [];
+    const views = dailyViews.reduce((sum, value) => sum + (Number(value) || 0), 0);
+    ranked.push({
+      ...candidate,
+      title: String(page.title || candidate.title),
+      description: String(page.description || '').trim().slice(0, 120),
+      views
+    });
+  }
+  return ranked
+    .sort((a, b) => b.views - a.views || a.name.localeCompare(b.name, 'ko'))
+    .slice(0, 8);
+}
+
+async function queryWikipediaSameBirthday(date, forceRefresh) {
+  const key = sameBirthdayDateKey(date);
+  if (forceRefresh) SAME_BIRTHDAY_PEOPLE_CACHE.delete(key);
+  if (!SAME_BIRTHDAY_PEOPLE_CACHE.has(key)) {
+    const request = fetchAllowedJson(buildWikipediaSameBirthdayUrl(date), 10000)
+      .then(data => parseWikipediaSameBirthdayBirths(data, date))
+      .then(async candidates => {
+        if (!candidates.length) return [];
+        const batches = [];
+        for (let index = 0; index < candidates.length; index += 20) batches.push(candidates.slice(index, index + 20));
+        const groups = await Promise.all(batches.map(async batch => {
+          const data = await fetchAllowedJson(
+            buildWikipediaBirthdayPopularityUrl(batch.map(person => person.title)),
+            8000
+          );
+          return rankWikipediaBirthdayPeople(data, batch);
+        }));
+        return groups.flat()
+          .sort((a, b) => b.views - a.views || a.name.localeCompare(b.name, 'ko'))
+          .slice(0, 8);
+      })
+      .catch(error => {
+        SAME_BIRTHDAY_PEOPLE_CACHE.delete(key);
+        throw error;
+      });
+    SAME_BIRTHDAY_PEOPLE_CACHE.set(key, request);
+  }
+  return await SAME_BIRTHDAY_PEOPLE_CACHE.get(key);
+}
+
+function renderSameBirthdayPeople(root, people, date) {
+  const body = root && root.querySelector('.cycle-people-body');
+  if (!body) return;
+  body.replaceChildren();
+  root.setAttribute('aria-busy', 'false');
+  if (!people.length) {
+    const empty = document.createElement('p');
+    empty.className = 'cycle-people-empty';
+    empty.textContent = `${Number(date.month)}월 ${Number(date.day)}일 출생 인물을 한국어 위키백과에서 찾지 못했습니다.`;
+    body.appendChild(empty);
+    return;
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'cycle-people-grid';
+  people.slice(0, 8).forEach((person, index) => {
+    const link = document.createElement('a');
+    link.className = 'cycle-person birthday-person';
+    link.href = person.article;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.dataset.views = String(person.views);
+    link.setAttribute('aria-label', `${index + 1}위 ${person.name}, 한국어 위키백과에서 보기`);
+
+    const mark = document.createElement('span');
+    mark.className = 'cycle-person-mark birthday-person-rank';
+    mark.textContent = String(index + 1);
+
+    const copy = document.createElement('span');
+    copy.className = 'cycle-person-copy';
+    const name = document.createElement('strong');
+    name.textContent = person.name;
+    const detail = document.createElement('small');
+    detail.textContent = `${person.birthYear}년 출생 · ${person.description || '한국어 위키백과 인물'}`;
+    const metric = document.createElement('small');
+    metric.className = 'cycle-person-views';
+    metric.textContent = `최근 30일 ${Number(person.views).toLocaleString('ko-KR')}회`;
+    copy.append(name, detail, metric);
+
+    const arrow = document.createElement('span');
+    arrow.className = 'cycle-person-arrow';
+    arrow.setAttribute('aria-hidden', 'true');
+    arrow.textContent = '↗';
+    link.append(mark, copy, arrow);
+    grid.appendChild(link);
+  });
+  body.appendChild(grid);
+
+  const note = document.createElement('p');
+  note.className = 'cycle-people-note';
+  note.textContent = '한국어 위키백과의 최근 30일 조회수 합계 기준입니다.';
+  body.appendChild(note);
+}
+
+async function loadSameBirthdayPeople(saju, forceRefresh) {
+  const root = document.getElementById('sameBirthdayPeople');
+  if (!root || !saju) return;
+  const date = { month: Number(saju.month), day: Number(saju.day) };
+  const requestKey = sameBirthdayDateKey(date);
+  root.dataset.requestKey = requestKey;
+  root.setAttribute('aria-busy', 'true');
+  const body = root.querySelector('.cycle-people-body');
+  if (body && forceRefresh) {
+    body.replaceChildren();
+    const loading = document.createElement('div');
+    loading.className = 'cycle-people-loading';
+    loading.textContent = '같은 생일 인물을 다시 찾고 있습니다';
+    body.appendChild(loading);
+  }
+  try {
+    const people = await queryWikipediaSameBirthday(date, forceRefresh);
+    const currentRoot = document.getElementById('sameBirthdayPeople');
+    if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    renderSameBirthdayPeople(currentRoot, people, date);
+  } catch (error) {
+    console.warn('같은 생일 인물 검색 실패', error);
+    const currentRoot = document.getElementById('sameBirthdayPeople');
+    if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    currentRoot.setAttribute('aria-busy', 'false');
+    const currentBody = currentRoot.querySelector('.cycle-people-body');
+    if (!currentBody) return;
+    currentBody.replaceChildren();
+    const message = document.createElement('p');
+    message.className = 'cycle-people-empty';
+    message.textContent = '한국어 위키백과의 같은 생일 인물을 불러오지 못했습니다.';
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'cycle-people-retry';
+    retry.textContent = '다시 검색';
+    retry.addEventListener('click', () => loadSameBirthdayPeople(saju, true));
     currentBody.append(message, retry);
   }
 }

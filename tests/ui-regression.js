@@ -79,6 +79,64 @@ async function inspectSamePillars60(page, width) {
     };
     const peopleUrl = window.buildWikidataBirthdayQueryUrl({ year: 1926, month: 3, day: 6 });
     const parsedPeople = window.parseWikidataBirthdayResults(peopleFixture, { year: 1926, month: 3, day: 6 });
+    const sameBirthdayFixture = {
+      parse: {
+        text: {
+          '*': `
+            <div class="mw-heading mw-heading2"><h2 id="탄생">탄생</h2></div>
+            <ul>
+              <li><a href="/wiki/1473년" title="1473년">1473년</a> - 폴란드의 천문학자 <a href="/wiki/니콜라우스_코페르니쿠스" title="니콜라우스 코페르니쿠스">니콜라우스 코페르니쿠스</a>. (~<a href="/wiki/1543년" title="1543년">1543년</a>)</li>
+              <li><a href="/wiki/2004년" title="2004년">2004년</a> - 영국의 배우 <a href="/wiki/밀리_바비_브라운" title="밀리 바비 브라운">밀리 바비 브라운</a>.</li>
+            </ul>
+            <div class="mw-heading mw-heading2"><h2 id="사망">사망</h2></div>
+            <ul><li><a href="/wiki/제외될_인물" title="제외될 인물">제외될 인물</a></li></ul>
+          `
+        }
+      }
+    };
+    const birthdayCandidates = window.parseWikipediaSameBirthdayBirths(
+      sameBirthdayFixture,
+      { month: 2, day: 19 }
+    );
+    const birthdayPopularityFixture = {
+      query: {
+        pages: {
+          1: {
+            title: '니콜라우스 코페르니쿠스',
+            description: '폴란드의 천문학자',
+            pageviews: { '2026-07-01': 100, '2026-07-02': 50 }
+          },
+          2: {
+            title: '밀리 바비 브라운',
+            description: '영국의 배우',
+            pageviews: { '2026-07-01': 700, '2026-07-02': 200 }
+          }
+        }
+      }
+    };
+    const birthdayDateUrl = window.buildWikipediaSameBirthdayUrl({ month: 2, day: 19 });
+    const birthdayPopularityUrl = window.buildWikipediaBirthdayPopularityUrl(
+      birthdayCandidates.map(person => person.title)
+    );
+    const rankedBirthdayPeople = window.rankWikipediaBirthdayPeople(
+      birthdayPopularityFixture,
+      birthdayCandidates
+    );
+    const limitCandidates = Array.from({ length: 9 }, (_, index) => ({
+      title: `인물 ${index + 1}`,
+      name: `인물 ${index + 1}`,
+      birthYear: 1900 + index,
+      article: `https://ko.wikipedia.org/wiki/${encodeURIComponent(`인물_${index + 1}`)}`
+    }));
+    const limitFixture = {
+      query: {
+        pages: limitCandidates.map((person, index) => ({
+          title: person.title,
+          pageviews: { '2026-07-01': index + 1 }
+        }))
+      }
+    };
+    const limitedBirthdayPeople = window.rankWikipediaBirthdayPeople(limitFixture, limitCandidates);
     const referenceMoment = (year, month, day, hour, minute) =>
       toJD(year, month, day) + (hour + minute / 60) / 24;
     const gyeongchip1926 = findJeolgiJD(1926, 345);
@@ -111,6 +169,19 @@ async function inspectSamePillars60(page, width) {
         url: peopleUrl,
         parsedPeople,
         regionExists: !!document.getElementById('samePillarPeople')
+      },
+      sameBirthdayApi: {
+        dateUrlType: typeof window.buildWikipediaSameBirthdayUrl,
+        parseType: typeof window.parseWikipediaSameBirthdayBirths,
+        popularityUrlType: typeof window.buildWikipediaBirthdayPopularityUrl,
+        rankType: typeof window.rankWikipediaBirthdayPeople,
+        loadType: typeof window.loadSameBirthdayPeople,
+        dateUrl: birthdayDateUrl,
+        popularityUrl: birthdayPopularityUrl,
+        candidates: birthdayCandidates,
+        rankedPeople: rankedBirthdayPeople,
+        limitedPeople: limitedBirthdayPeople,
+        regionExists: !!document.getElementById('sameBirthdayPeople')
       },
       solarTermReference: {
         gyeongchip1926MinuteDelta: Math.abs(gyeongchip1926 - referenceMoment(1926, 3, 6, 17, 0)) * 1440,
@@ -156,6 +227,48 @@ async function inspectSamePillars60(page, width) {
     ['안제이 바이다', '앨런 그린스펀'],
     'Wikipedia people must be ranked by Wikidata sitelink count'
   );
+  assert.deepEqual(
+    {
+      dateUrlType: state.sameBirthdayApi.dateUrlType,
+      parseType: state.sameBirthdayApi.parseType,
+      popularityUrlType: state.sameBirthdayApi.popularityUrlType,
+      rankType: state.sameBirthdayApi.rankType,
+      loadType: state.sameBirthdayApi.loadType,
+      regionExists: state.sameBirthdayApi.regionExists
+    },
+    {
+      dateUrlType: 'function',
+      parseType: 'function',
+      popularityUrlType: 'function',
+      rankType: 'function',
+      loadType: 'function',
+      regionExists: true
+    },
+    'same-birthday Korean Wikipedia integration is incomplete'
+  );
+  const birthdayDateUrl = new globalThis.URL(state.sameBirthdayApi.dateUrl);
+  assert.equal(birthdayDateUrl.hostname, 'ko.wikipedia.org');
+  assert.equal(birthdayDateUrl.pathname, '/w/api.php');
+  assert.equal(birthdayDateUrl.searchParams.get('action'), 'parse');
+  assert.equal(birthdayDateUrl.searchParams.get('page'), '2월 19일');
+  assert.equal(birthdayDateUrl.searchParams.get('prop'), 'text');
+  const birthdayPopularityUrl = new globalThis.URL(state.sameBirthdayApi.popularityUrl);
+  assert.equal(birthdayPopularityUrl.hostname, 'ko.wikipedia.org');
+  assert.match(birthdayPopularityUrl.searchParams.get('prop'), /pageviews/);
+  assert.equal(birthdayPopularityUrl.searchParams.get('pvipdays'), '30');
+  assert.match(birthdayPopularityUrl.searchParams.get('titles'), /니콜라우스 코페르니쿠스/);
+  assert.deepEqual(
+    state.sameBirthdayApi.candidates.map(person => [person.name, person.birthYear]),
+    [['니콜라우스 코페르니쿠스', 1473], ['밀리 바비 브라운', 2004]],
+    'the birth section parser must exclude year links and people from later sections'
+  );
+  assert.deepEqual(
+    state.sameBirthdayApi.rankedPeople.map(person => [person.name, person.views]),
+    [['밀리 바비 브라운', 900], ['니콜라우스 코페르니쿠스', 150]],
+    'same-birthday people must be ranked by recent Korean Wikipedia views'
+  );
+  assert.equal(state.sameBirthdayApi.limitedPeople.length, 8, 'same-birthday popularity list must show at most eight people');
+  assert.equal(state.sameBirthdayApi.limitedPeople[0].name, '인물 9', 'the highest-viewed person must rank first');
   assert.ok(state.solarTermReference.gyeongchip1926MinuteDelta <= 30, '1926 gyeongchip must stay within 30 minutes of the verified 17:00 KST reference');
   assert.ok(state.solarTermReference.ipchun2024MinuteDelta <= 30, '2024 ipchun must stay within 30 minutes of the verified 17:27 KST reference');
   assert.deepEqual(
@@ -193,6 +306,7 @@ async function inspectSamePillars60(page, width) {
   assert.match(state.text, /월주가 같은 기간/);
   assert.match(state.text, /일주가 같은 날/);
   assert.match(state.text, /년·월·일주가 모두 같은 날/);
+  assert.match(state.text, /같은 생일 유명인/);
   assert.match(state.text, /입춘·절입 기준/);
   assert.equal(state.regionRole, 'samePillars60Title');
   assert.ok(state.overflow <= 1, `${width}px 60-year card overflows viewport`);

@@ -816,6 +816,23 @@ body.dark {
   font-size: 9px;
 }
 
+.birthday-person {
+  min-height: 70px;
+}
+
+.birthday-person-rank {
+  color: var(--apple-accent);
+  font-family: "Cormorant Garamond", "Times New Roman", serif;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cycle-person-copy .cycle-person-views {
+  color: var(--apple-accent);
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+}
+
 .cycle-person-arrow {
   color: var(--apple-tertiary);
   font-size: 13px;
