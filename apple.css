@@ -639,8 +639,12 @@ body.dark {
   line-height: 1.5;
 }
 
+.cycle-row-day,
 .cycle-row-exact {
   grid-column: 1 / -1;
+}
+
+.cycle-row-exact {
   border-color: color-mix(in srgb, var(--apple-accent) 32%, var(--apple-separator));
   background: color-mix(in srgb, var(--apple-accent) 7%, var(--apple-surface));
 }
@@ -689,6 +693,7 @@ body.dark {
     grid-template-columns: 1fr;
   }
 
+  .cycle-row-day,
   .cycle-row-exact {
     grid-column: auto;
   }

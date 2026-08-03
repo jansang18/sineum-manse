@@ -24,6 +24,8 @@ const URL = pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'result-width-brand' || TEST_GROUP === 'shell-width'
   ? [390, 1220]
+  : TEST_GROUP === 'same-pillars-60'
+    ? [390, 768]
   : TEST_GROUP === 'fold-layout'
     ? [720, 884]
   : TEST_GROUP === 'calendar-shell-width'
@@ -47,7 +49,7 @@ const runsAndroidSafeArea = () => !TEST_GROUP || TEST_GROUP === 'android-safe-ar
 const runsSamePillars60 = () => !TEST_GROUP || TEST_GROUP === 'same-pillars-60';
 
 async function inspectSamePillars60(page, width) {
-  if (!runsSamePillars60() || width !== 390) return;
+  if (!runsSamePillars60() || (!TEST_GROUP && width !== 390)) return;
 
   const state = await page.evaluate(() => {
     const report = window.findSamePillars60(currentSaju);
@@ -66,6 +68,8 @@ async function inspectSamePillars60(page, width) {
     };
     const region = document.getElementById('samePillars60');
     const rect = region.getBoundingClientRect();
+    const dayRect = region.querySelector('.cycle-row-day').getBoundingClientRect();
+    const exactRect = region.querySelector('.cycle-row-exact').getBoundingClientRect();
     return {
       functionType: typeof window.findSamePillars60,
       report,
@@ -73,7 +77,9 @@ async function inspectSamePillars60(page, width) {
       text: region.textContent,
       regionRole: region.getAttribute('aria-labelledby'),
       overflow: Math.max(0, rect.right - document.documentElement.clientWidth),
-      documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+      documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      dayWidth: dayRect.width,
+      exactWidth: exactRect.width
     };
   });
 
@@ -108,6 +114,7 @@ async function inspectSamePillars60(page, width) {
   assert.equal(state.regionRole, 'samePillars60Title');
   assert.ok(state.overflow <= 1, `${width}px 60-year card overflows viewport`);
   assert.ok(state.documentOverflow <= 1, `${width}px document overflows after 60-year card`);
+  assert.ok(Math.abs(state.dayWidth - state.exactWidth) <= 1, 'same-day pillar card must span the full row');
 }
 
 async function inspectCalendarShellWidth(page, width) {
