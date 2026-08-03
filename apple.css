@@ -820,6 +820,20 @@ body.dark {
   min-height: 70px;
 }
 
+.birthday-calendar-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 10px;
+  background: var(--apple-inset);
+  color: var(--apple-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .birthday-person-rank {
   color: var(--apple-accent);
   font-family: "Cormorant Garamond", "Times New Roman", serif;

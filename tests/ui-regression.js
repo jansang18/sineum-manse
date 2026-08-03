@@ -96,7 +96,11 @@ async function inspectSamePillars60(page, width) {
     };
     const birthdayCandidates = window.parseWikipediaSameBirthdayBirths(
       sameBirthdayFixture,
-      { month: 2, day: 19 }
+      { year: 2004, month: 2, day: 19 }
+    );
+    const wrongYearCandidates = window.parseWikipediaSameBirthdayBirths(
+      sameBirthdayFixture,
+      { year: 1986, month: 2, day: 19 }
     );
     const birthdayPopularityFixture = {
       query: {
@@ -114,7 +118,7 @@ async function inspectSamePillars60(page, width) {
         }
       }
     };
-    const birthdayDateUrl = window.buildWikipediaSameBirthdayUrl({ month: 2, day: 19 });
+    const birthdayDateUrl = window.buildWikipediaSameBirthdayUrl({ year: 2004, month: 2, day: 19 });
     const birthdayPopularityUrl = window.buildWikipediaBirthdayPopularityUrl(
       birthdayCandidates.map(person => person.title)
     );
@@ -137,6 +141,12 @@ async function inspectSamePillars60(page, width) {
       }
     };
     const limitedBirthdayPeople = window.rankWikipediaBirthdayPeople(limitFixture, limitCandidates);
+    const lunarBirthdaySaju = calcSaju({
+      year: 1986, month: 2, day: 19,
+      hour: 0, minute: 0,
+      calendar: 'lunar', gender: 'M', unknown: true
+    });
+    const lunarBirthdayComparison = window.getSameBirthdayComparisonDate(lunarBirthdaySaju);
     const referenceMoment = (year, month, day, hour, minute) =>
       toJD(year, month, day) + (hour + minute / 60) / 24;
     const gyeongchip1926 = findJeolgiJD(1926, 345);
@@ -179,9 +189,13 @@ async function inspectSamePillars60(page, width) {
         dateUrl: birthdayDateUrl,
         popularityUrl: birthdayPopularityUrl,
         candidates: birthdayCandidates,
+        wrongYearCandidates,
         rankedPeople: rankedBirthdayPeople,
         limitedPeople: limitedBirthdayPeople,
-        regionExists: !!document.getElementById('sameBirthdayPeople')
+        regionExists: !!document.getElementById('sameBirthdayPeople'),
+        requestKey: document.getElementById('sameBirthdayPeople')?.dataset.requestKey,
+        calendarText: document.querySelector('#sameBirthdayPeople .birthday-calendar-note')?.textContent.trim(),
+        lunarComparison: lunarBirthdayComparison
       },
       solarTermReference: {
         gyeongchip1926MinuteDelta: Math.abs(gyeongchip1926 - referenceMoment(1926, 3, 6, 17, 0)) * 1440,
@@ -256,16 +270,29 @@ async function inspectSamePillars60(page, width) {
   assert.equal(birthdayPopularityUrl.hostname, 'ko.wikipedia.org');
   assert.match(birthdayPopularityUrl.searchParams.get('prop'), /pageviews/);
   assert.equal(birthdayPopularityUrl.searchParams.get('pvipdays'), '30');
-  assert.match(birthdayPopularityUrl.searchParams.get('titles'), /니콜라우스 코페르니쿠스/);
+  assert.match(birthdayPopularityUrl.searchParams.get('titles'), /밀리 바비 브라운/);
   assert.deepEqual(
     state.sameBirthdayApi.candidates.map(person => [person.name, person.birthYear]),
-    [['니콜라우스 코페르니쿠스', 1473], ['밀리 바비 브라운', 2004]],
-    'the birth section parser must exclude year links and people from later sections'
+    [['밀리 바비 브라운', 2004]],
+    'the birth section parser must keep only people born on the exact year, month, and day'
   );
+  assert.deepEqual(state.sameBirthdayApi.wrongYearCandidates, [], 'a different birth year must not appear as the same birthday');
   assert.deepEqual(
     state.sameBirthdayApi.rankedPeople.map(person => [person.name, person.views]),
-    [['밀리 바비 브라운', 900], ['니콜라우스 코페르니쿠스', 150]],
+    [['밀리 바비 브라운', 900]],
     'same-birthday people must be ranked by recent Korean Wikipedia views'
+  );
+  assert.equal(state.sameBirthdayApi.requestKey, '1989-03-19', 'same-birthday requests must include the full birth date');
+  assert.equal(state.sameBirthdayApi.calendarText, '양력 1989.03.19 출생 기준');
+  assert.deepEqual(
+    state.sameBirthdayApi.lunarComparison,
+    {
+      date: { year: 1986, month: 3, day: 28 },
+      inputCalendar: 'lunar',
+      inputDate: { year: 1986, month: 2, day: 19 },
+      label: '음력 1986.02.19 입력 → 양력 1986.03.28 출생 기준'
+    },
+    'lunar input must be preserved and compared using its converted solar birth date'
   );
   assert.equal(state.sameBirthdayApi.limitedPeople.length, 8, 'same-birthday popularity list must show at most eight people');
   assert.equal(state.sameBirthdayApi.limitedPeople[0].name, '인물 9', 'the highest-viewed person must rank first');
@@ -306,7 +333,7 @@ async function inspectSamePillars60(page, width) {
   assert.match(state.text, /월주가 같은 기간/);
   assert.match(state.text, /일주가 같은 날/);
   assert.match(state.text, /년·월·일주가 모두 같은 날/);
-  assert.match(state.text, /같은 생일 유명인/);
+  assert.match(state.text, /같은 생년월일 유명인/);
   assert.match(state.text, /입춘·절입 기준/);
   assert.equal(state.regionRole, 'samePillars60Title');
   assert.ok(state.overflow <= 1, `${width}px 60-year card overflows viewport`);

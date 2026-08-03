@@ -12457,6 +12457,8 @@ function solarToLunar(y, m, d) {
 
 function calcSaju(opts) {
   let { year, month, day, hour, minute, calendar, gender, unknown } = opts;
+  const inputCalendar = calendar === 'lunar' ? 'lunar' : 'solar';
+  const inputDate = { year: Number(year), month: Number(month), day: Number(day) };
   let lunar = null;
   if (calendar === 'lunar') {
     const sol = lunarToSolar(year, month, day, false);
@@ -12499,6 +12501,7 @@ function calcSaju(opts) {
 
   return {
     year, month, day, hour, minute, lunar,
+    inputCalendar, inputDate,
     yStem: yi.stem, yBranch: yi.branch,
     mStem, mBranch: mi.branch,
     dStem: di.stem, dBranch: di.branch,
@@ -12586,6 +12589,7 @@ function formatPillarPeriod(period) {
 
 function renderSamePillars60(saju, existingReport) {
   const report = existingReport || findSamePillars60(saju);
+  const birthdayComparison = getSameBirthdayComparisonDate(saju);
   const pillarText = (stem, branch) => `${STEM[stem]}${BRANCH[branch]}`;
   const dateChips = dates => dates.length
     ? dates.map(date => `<span class="cycle-date-chip">${formatPillarDate(date)}</span>`).join('')
@@ -12649,13 +12653,14 @@ function renderSamePillars60(saju, existingReport) {
       <section class="cycle-people birthday-people" id="sameBirthdayPeople" aria-labelledby="sameBirthdayPeopleTitle" aria-busy="true">
         <div class="cycle-people-heading">
           <div>
-            <span class="cycle-people-kicker">WIKIPEDIA · SAME BIRTHDAY</span>
-            <h3 id="sameBirthdayPeopleTitle">같은 생일 유명인</h3>
+            <span class="cycle-people-kicker">WIKIPEDIA · SAME BIRTH DATE</span>
+            <h3 id="sameBirthdayPeopleTitle">같은 생년월일 유명인</h3>
           </div>
           <span class="cycle-people-source">최근 인기순</span>
         </div>
+        <p class="birthday-calendar-note">${birthdayComparison.label}</p>
         <div class="cycle-people-body" role="status" aria-live="polite">
-          <div class="cycle-people-loading"><span class="spinner"></span>같은 월·일에 태어난 인물을 찾고 있습니다</div>
+          <div class="cycle-people-loading"><span class="spinner"></span>같은 생년월일에 태어난 인물을 찾고 있습니다</div>
         </div>
       </section>
 
@@ -15603,6 +15608,49 @@ function sameBirthdayDateKey(date) {
   return `${pad(month)}-${pad(day)}`;
 }
 
+function sameBirthdayExactDateKey(date) {
+  const year = Number(date && date.year);
+  const monthDay = sameBirthdayDateKey(date);
+  const probe = new Date(Date.UTC(year, Number(date.month) - 1, Number(date.day)));
+  if (!Number.isInteger(year) || year < 1 || year > 9999 || probe.getUTCFullYear() !== year) {
+    throw new Error('생년월일 인물 검색 날짜가 올바르지 않습니다.');
+  }
+  return `${String(year).padStart(4, '0')}-${monthDay}`;
+}
+
+function getSameBirthdayComparisonDate(saju) {
+  if (!saju) throw new Error('생년월일 비교 명식이 없습니다.');
+  const date = {
+    year: Number(saju.year),
+    month: Number(saju.month),
+    day: Number(saju.day)
+  };
+  sameBirthdayExactDateKey(date);
+  const inputCalendar = saju.inputCalendar === 'lunar' ? 'lunar' : 'solar';
+  const fallbackInput = inputCalendar === 'lunar' && saju.lunar
+    ? { year: Number(saju.lunar.y), month: Number(saju.lunar.m), day: Number(saju.lunar.d) }
+    : date;
+  const storedInput = saju.inputDate && typeof saju.inputDate === 'object' ? saju.inputDate : fallbackInput;
+  const inputDate = {
+    year: Number(storedInput.year),
+    month: Number(storedInput.month),
+    day: Number(storedInput.day)
+  };
+  if (!Number.isInteger(inputDate.year) || !Number.isInteger(inputDate.month) || !Number.isInteger(inputDate.day) ||
+      inputDate.month < 1 || inputDate.month > 12 || inputDate.day < 1 || inputDate.day > 31) {
+    throw new Error('입력 생년월일이 올바르지 않습니다.');
+  }
+  const solarLabel = `양력 ${date.year}.${pad(date.month)}.${pad(date.day)} 출생 기준`;
+  return {
+    date,
+    inputCalendar,
+    inputDate,
+    label: inputCalendar === 'lunar'
+      ? `음력 ${inputDate.year}.${pad(inputDate.month)}.${pad(inputDate.day)} 입력 → ${solarLabel}`
+      : solarLabel
+  };
+}
+
 function buildWikipediaSameBirthdayUrl(date) {
   sameBirthdayDateKey(date);
   const url = new URL('https://ko.wikipedia.org/w/api.php');
@@ -15618,7 +15666,7 @@ function buildWikipediaSameBirthdayUrl(date) {
 }
 
 function parseWikipediaSameBirthdayBirths(data, date) {
-  sameBirthdayDateKey(date);
+  sameBirthdayExactDateKey(date);
   const rawText = data && data.parse && data.parse.text;
   const html = typeof rawText === 'string' ? rawText : rawText && rawText['*'];
   if (typeof html !== 'string' || !html.trim()) return [];
@@ -15670,7 +15718,8 @@ function parseWikipediaSameBirthdayBirths(data, date) {
       else addPerson(item, birthYear);
     }
   }
-  return people.slice(0, 120);
+  const targetYear = Number(date.year);
+  return people.filter(person => person.birthYear === targetYear).slice(0, 120);
 }
 
 function buildWikipediaBirthdayPopularityUrl(titles) {
@@ -15742,7 +15791,7 @@ function rankWikipediaBirthdayPeople(data, candidates) {
 }
 
 async function queryWikipediaSameBirthday(date, forceRefresh) {
-  const key = sameBirthdayDateKey(date);
+  const key = sameBirthdayExactDateKey(date);
   if (forceRefresh) SAME_BIRTHDAY_PEOPLE_CACHE.delete(key);
   if (!SAME_BIRTHDAY_PEOPLE_CACHE.has(key)) {
     const request = fetchAllowedJson(buildWikipediaSameBirthdayUrl(date), 10000)
@@ -15779,7 +15828,7 @@ function renderSameBirthdayPeople(root, people, date) {
   if (!people.length) {
     const empty = document.createElement('p');
     empty.className = 'cycle-people-empty';
-    empty.textContent = `${Number(date.month)}월 ${Number(date.day)}일 출생 인물을 한국어 위키백과에서 찾지 못했습니다.`;
+    empty.textContent = `양력 ${Number(date.year)}년 ${Number(date.month)}월 ${Number(date.day)}일 출생 인물을 한국어 위키백과에서 찾지 못했습니다.`;
     body.appendChild(empty);
     return;
   }
@@ -15821,23 +15870,26 @@ function renderSameBirthdayPeople(root, people, date) {
 
   const note = document.createElement('p');
   note.className = 'cycle-people-note';
-  note.textContent = '한국어 위키백과의 최근 30일 조회수 합계 기준입니다.';
+  note.textContent = '한국어 위키백과의 양력 생년월일과 최근 30일 조회수 합계 기준입니다.';
   body.appendChild(note);
 }
 
 async function loadSameBirthdayPeople(saju, forceRefresh) {
   const root = document.getElementById('sameBirthdayPeople');
   if (!root || !saju) return;
-  const date = { month: Number(saju.month), day: Number(saju.day) };
-  const requestKey = sameBirthdayDateKey(date);
+  const comparison = getSameBirthdayComparisonDate(saju);
+  const date = comparison.date;
+  const requestKey = sameBirthdayExactDateKey(date);
   root.dataset.requestKey = requestKey;
   root.setAttribute('aria-busy', 'true');
+  const calendarNote = root.querySelector('.birthday-calendar-note');
+  if (calendarNote) calendarNote.textContent = comparison.label;
   const body = root.querySelector('.cycle-people-body');
   if (body && forceRefresh) {
     body.replaceChildren();
     const loading = document.createElement('div');
     loading.className = 'cycle-people-loading';
-    loading.textContent = '같은 생일 인물을 다시 찾고 있습니다';
+    loading.textContent = '같은 생년월일 인물을 다시 찾고 있습니다';
     body.appendChild(loading);
   }
   try {
@@ -15855,7 +15907,7 @@ async function loadSameBirthdayPeople(saju, forceRefresh) {
     currentBody.replaceChildren();
     const message = document.createElement('p');
     message.className = 'cycle-people-empty';
-    message.textContent = '한국어 위키백과의 같은 생일 인물을 불러오지 못했습니다.';
+    message.textContent = '한국어 위키백과의 같은 생년월일 인물을 불러오지 못했습니다.';
     const retry = document.createElement('button');
     retry.type = 'button';
     retry.className = 'cycle-people-retry';
