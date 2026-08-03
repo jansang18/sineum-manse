@@ -12373,7 +12373,9 @@ function findJeolgiJD(year, targetLon) {
     if (Math.abs(diff) < 0.0001) break;
     jd -= diff / 0.9856;
   }
-  const result = jd + 9/24;
+  // sunLon uses astronomical JD (day starts at noon), while the calendar engine
+  // represents a civil date from midnight. Shift by 12 hours before adding KST.
+  const result = jd + 0.5 + 9/24;
   JEOLGI_JD_CACHE.set(cacheKey, result);
   return result;
 }
