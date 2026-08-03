@@ -8,12 +8,12 @@ const root = path.resolve(__dirname, '..');
 const chrome = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const url = pathToFileURL(path.join(root, 'index.html')).href;
 
-for (const file of ['priestess.css', 'priestess.webp', 'empress.webp', 'fool.webp']) {
+for (const file of ['priestess.css', 'manse-hero-v2.webp']) {
   assert.ok(fs.statSync(path.join(root, file)).size > 0, `${file} is missing or empty`);
 }
 
 const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-for (const asset of ['priestess.css', 'priestess.webp', 'empress.webp', 'fool.webp']) {
+for (const asset of ['priestess.css', 'manse-hero-v2.webp']) {
   assert.ok(serviceWorker.includes(`'./${asset}'`), `${asset} is not precached`);
 }
 
@@ -29,16 +29,30 @@ async function inspectTheme(page, width, scheme) {
   const state = await page.evaluate(() => {
     const rect = selector => {
       const box = document.querySelector(selector).getBoundingClientRect();
-      return { width: box.width, height: box.height, left: box.left, right: box.right };
+      return {
+        width: box.width,
+        height: box.height,
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom
+      };
     };
-    const arts = [...document.querySelectorAll('.archetype-art')];
+    const arts = [...document.querySelectorAll('.manse-art')];
     const input = document.getElementById('inBirth');
     input.value = '19860219';
     return {
       stylesheet: [...document.styleSheets].some(sheet => sheet.href?.endsWith('/priestess.css')),
       artCount: arts.length,
       artImages: arts.map(art => getComputedStyle(art).backgroundImage),
+      brand: document.querySelector('.top-bar .title')?.textContent.trim(),
+      heroCopy: document.querySelector('.manse-hero-copy')?.textContent.replace(/\s+/g, ' ').trim(),
+      calligraphy: document.querySelector('.manse-calligraphy')?.textContent.trim(),
+      hasDecorativeHanja: /[神命還]/.test(document.querySelector('.input-intro')?.textContent || ''),
+      hasLegacyLogo: Boolean(document.querySelector('.intro-logo-img')),
+      inputDecoration: getComputedStyle(document.querySelector('.input-card'), '::after').content,
       hero: rect('.input-intro'),
+      tabs: rect('.tabs'),
       button: rect('#calcBtn'),
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -48,13 +62,18 @@ async function inspectTheme(page, width, scheme) {
   });
 
   assert.equal(state.stylesheet, true, `${width}px ${scheme} theme stylesheet missing`);
-  assert.equal(state.artCount, 3, `${width}px ${scheme} archetype art count`);
-  assert.ok(state.artImages.some(value => value.includes('priestess.webp')));
-  assert.ok(state.artImages.some(value => value.includes('empress.webp')));
-  assert.ok(state.artImages.some(value => value.includes('fool.webp')));
+  assert.equal(state.artCount, 1, `${width}px ${scheme} manseryeok art count`);
+  assert.ok(state.artImages.some(value => value.includes('manse-hero-v2.webp')));
+  assert.equal(state.brand, '잔상 만세력');
+  assert.match(state.heroCopy, /천년의 시간을 펼치다/);
+  assert.equal(state.calligraphy, '殘像');
+  assert.equal(state.hasDecorativeHanja, false);
+  assert.equal(state.hasLegacyLogo, false);
+  assert.equal(state.inputDecoration, 'none');
   assert.equal(state.inputValue, '19860219');
   assert.equal(state.inputColor, scheme === 'dark' ? 'rgb(237, 229, 213)' : 'rgb(26, 32, 34)');
   assert.ok(state.hero.height >= 220, `${width}px hero is too short`);
+  assert.ok(state.hero.top >= state.tabs.bottom - 1, `${width}px hero overlaps the sticky tabs`);
   assert.ok(state.button.height >= 52, `${width}px primary action is too short`);
   assert.ok(state.hero.left >= 0 && state.hero.right <= state.viewport + 1, `${width}px hero overflows`);
   assert.ok(state.scrollWidth <= state.viewport + 1, `${width}px document overflows`);
@@ -68,7 +87,7 @@ async function inspectTheme(page, width, scheme) {
   });
 
   try {
-    for (const width of [360, 390, 412, 768]) {
+    for (const width of [320, 360, 390, 412, 768]) {
       const page = await browser.newPage();
       await inspectTheme(page, width, 'dark');
       await inspectTheme(page, width, 'light');
@@ -103,20 +122,18 @@ async function inspectTheme(page, width, scheme) {
     ]);
     await reducedPage.goto(url, { waitUntil: 'networkidle0' });
     const reduced = await reducedPage.evaluate(() => ({
-      priestessOpacity: getComputedStyle(document.querySelector('.art-priestess')).opacity,
-      empressDisplay: getComputedStyle(document.querySelector('.art-empress')).display,
-      foolDisplay: getComputedStyle(document.querySelector('.art-fool')).display,
+      heroOpacity: getComputedStyle(document.querySelector('.manse-art')).opacity,
+      heroTransform: getComputedStyle(document.querySelector('.manse-art')).transform,
       running: document.querySelector('.input-intro').getAnimations({ subtree: true }).length
     }));
     assert.deepEqual(reduced, {
-      priestessOpacity: '1',
-      empressDisplay: 'none',
-      foolDisplay: 'none',
+      heroOpacity: '1',
+      heroTransform: 'none',
       running: 0
     });
     await reducedPage.close();
 
-    console.log('Priestess theme regression PASS');
+    console.log('Jansang manseryeok theme regression PASS');
   } finally {
     await browser.close();
   }

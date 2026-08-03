@@ -457,7 +457,7 @@ async function inspectResultWidthAndBrand(page, width) {
     Math.abs(state.tabs.left - state.card.left) <= 1,
     `${width}px tabs and natal card must share the same left edge`
   );
-  assert.deepEqual(state.brand, state.suffix, `${width}px 취명선 and 만세력 typography must match`);
+  assert.deepEqual(state.brand, state.suffix, `${width}px 잔상 and 만세력 typography must match`);
   assert.equal(state.pillars.length, 8, `${width}px natal Hanja block count`);
   for (const pillar of state.pillars) {
     assert.ok(pillar.width >= 83 && pillar.width <= 85, `${width}px natal block must be about 84px, got ${pillar.width}px`);
@@ -685,10 +685,10 @@ function inspectFinalSecuritySourceContracts() {
   );
   assert.match(indexHtml, /const ALLOWED_ENRICHMENT_HOSTS\s*=\s*new Set/);
   assert.match(indexHtml, /function fetchAllowedJson\(/);
-  assert.match(indexHtml, /취명선만세력_백업_/);
+  assert.match(indexHtml, /잔상만세력_백업_/);
   assert.doesNotMatch(indexHtml, /신의음성만세력_백업_/);
-  assert.match(stringsXml, /<string name="app_name">취명선 만세력<\/string>/);
-  assert.match(stringsXml, /<string name="title_activity_main">취명선 만세력<\/string>/);
+  assert.match(stringsXml, /<string name="app_name">잔상 만세력<\/string>/);
+  assert.match(stringsXml, /<string name="title_activity_main">잔상 만세력<\/string>/);
   assert.match(
     appleCss,
     /\.result-right \.luck-title::before[\s\S]*\.sub-luck-label::before[\s\S]*content:\s*none\s*!important/,
@@ -724,7 +724,7 @@ async function inspectFinalSecurityRuntime(page, width) {
     await renderSaved();
     const input = document.getElementById('savedImportFile');
     const file = new File(
-      [JSON.stringify({ app: '취명선 만세력', version: 1, records: [sample, invalid] })],
+      [JSON.stringify({ app: '잔상 만세력', version: 1, records: [sample, invalid] })],
       'malicious-backup.json',
       { type: 'application/json' }
     );
@@ -958,7 +958,7 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
     await renderSaved();
     const input = document.getElementById('savedImportFile');
     const file = new File(
-      [JSON.stringify({ app: '취명선 만세력', version: 1, records: [record] })],
+      [JSON.stringify({ app: '잔상 만세력', version: 1, records: [record] })],
       'downstream-xss.json',
       { type: 'application/json' }
     );
@@ -1869,8 +1869,8 @@ async function inspectAppleSecondaryScreens(page, width) {
       `${width}px ${theme} share PNG still contains a dark/cosmic field`
     );
     assert.equal(state.shareState.image.legacyGoldSamples, 0, `${width}px ${theme} share PNG retains legacy gold pixels`);
-    assert.match(state.shareState.payload.filename, /취명선_만세력\.png$/, `${width}px ${theme} share filename branding`);
-    assert.match(state.shareState.payload.text, /취명선 만세력/, `${width}px ${theme} share text branding`);
+    assert.match(state.shareState.payload.filename, /잔상_만세력\.png$/, `${width}px ${theme} share filename branding`);
+    assert.match(state.shareState.payload.text, /잔상 만세력/, `${width}px ${theme} share text branding`);
     for (const control of state.shareState.buttons) {
       assert.ok(control.width >= 43.5 && control.height >= 43.5, `${width}px ${theme} share control is below 44x44px`);
     }
@@ -2331,7 +2331,7 @@ async function inspectWidth(browser, width) {
 
       assert.deepEqual({ semantics, aboutEntry, aboutTrappedId, aboutExit, saveEntryId, saveForwardTrapId, saveBackwardTrapId, saveExit }, {
         semantics: {
-          about: { role: 'dialog', ariaModal: 'true', name: '취명선 만세력' },
+          about: { role: 'dialog', ariaModal: 'true', name: '잔상 만세력' },
           save: { role: 'dialog', ariaModal: 'true', name: '명반 저장' }
         },
         aboutEntry: { activeId: 'aboutClose', inside: true, appInert: true, bottomBarInert: true },
@@ -2747,21 +2747,15 @@ async function inspectWidth(browser, width) {
   assert.equal(await page.$eval('link[href="luxury.css"]', () => true), true);
   const bg = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--obsidian-bg').trim());
   assert.equal(bg, '#07080d');
-  const introLogo = await page.$eval('.intro-logo-img', element => ({
-    src: element.getAttribute('src'),
-    width: element.naturalWidth,
-    height: element.naturalHeight,
-    boxShadow: getComputedStyle(element).boxShadow
+  const heroArt = await page.$eval('.manse-art', element => ({
+    backgroundImage: getComputedStyle(element).backgroundImage
   }));
-  assert.equal(introLogo.src, 'main-logo.png', `${width}px intro logo source`);
-  assert.ok(introLogo.width > 0 && introLogo.height > 0, `${width}px intro logo failed to load`);
-  assert.equal(introLogo.boxShadow, 'none', `${width}px intro logo must not have a rectangular background shadow`);
+  assert.match(heroArt.backgroundImage, /manse-hero-v2\.webp/, `${width}px manseryeok hero source`);
+  assert.equal(await page.$('.intro-logo-img'), null, `${width}px decorative Hanja logo must be removed`);
   const inputPolish = await page.evaluate(() => ({
-    logoWidth: document.querySelector('.intro-logo-img').getBoundingClientRect().width,
     cardBorder: getComputedStyle(document.querySelector('.input-card')).borderTopColor,
     collapsedErrorBorder: getComputedStyle(document.getElementById('inErr')).borderTopColor
   }));
-  assert.ok(inputPolish.logoWidth <= 190, `${width}px intro logo is too large: ${inputPolish.logoWidth}`);
   assert.equal(inputPolish.cardBorder, 'rgba(255, 255, 255, 0.08)', `${width}px input card border`);
   assert.equal(inputPolish.collapsedErrorBorder, 'rgba(0, 0, 0, 0)', `${width}px collapsed error line`);
 
@@ -2955,11 +2949,11 @@ async function inspectWidth(browser, width) {
     assert.match(appleCss, /--apple-accent:\s*#007aff/i);
     assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#0a84ff/i);
     assert.doesNotMatch(appleCss, /#d8b56a|#f0d69a|#a97732/i);
-    assert.match(indexHtml, /<title>취명선 만세력<\/title>/, 'document title must use the current product name');
-    assert.match(indexHtml, /<meta name="apple-mobile-web-app-title" content="취명선 만세력">/, 'Apple web app title must use the current product name');
+    assert.match(indexHtml, /<title>잔상 만세력<\/title>/, 'document title must use the current product name');
+    assert.match(indexHtml, /<meta name="apple-mobile-web-app-title" content="잔상 만세력">/, 'Apple web app title must use the current product name');
     assert.deepEqual(
       { name: webManifest.name, shortName: webManifest.short_name },
-      { name: '취명선 만세력', shortName: '취명선 만세력' },
+      { name: '잔상 만세력', shortName: '잔상 만세력' },
       'PWA manifest names must use the current product name'
     );
   }
@@ -2970,7 +2964,7 @@ async function inspectWidth(browser, width) {
 
   const serviceWorker = fs.readFileSync(path.join(WEB_ROOT, 'sw.js'), 'utf8');
   assert.match(serviceWorker, /'\.\/luxury\.css'/, 'web service worker must precache luxury.css');
-  assert.match(serviceWorker, /'\.\/main-logo\.png'/, 'web service worker must precache main-logo.png');
+  assert.match(serviceWorker, /'\.\/manse-hero-v2\.webp'/, 'web service worker must precache manse-hero-v2.webp');
   if (runsGroup('service-worker')) {
     await inspectServiceWorkerInstall(serviceWorker);
     assert.doesNotMatch(serviceWorker, /addAll\(PRECACHE\)\.catch/, 'core addAll rejection must not be swallowed');

@@ -1,4 +1,4 @@
-/* High Priestess visual layer: aged paper, ink navy, tarnished gold, and moon motifs. */
+/* Jansang Manseryeok visual layer: aged paper, ink navy, astronomy, and landscape motifs. */
 :root {
   --priestess-ink: #18222a;
   --priestess-ink-deep: #090e12;
@@ -166,85 +166,87 @@ body.dark .tab.active {
   isolation: isolate;
 }
 
+/* The old logo layout pulled the hero under the sticky tabs. */
+#view-input .input-intro {
+  margin-top: 2px !important;
+}
+
 .input-intro::before {
   content: "";
   position: absolute;
   z-index: 1;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(13, 18, 22, .96) 0%, rgba(13, 18, 22, .76) 32%, rgba(13, 18, 22, .16) 70%),
-    linear-gradient(0deg, rgba(8, 12, 15, .90) 0%, transparent 51%);
+    linear-gradient(90deg, rgba(7, 13, 18, .78) 0%, rgba(7, 13, 18, .48) 35%, rgba(7, 13, 18, .06) 72%),
+    linear-gradient(0deg, rgba(7, 12, 16, .94) 0%, rgba(7, 12, 16, .08) 54%);
 }
 
 .input-intro::after {
-  content: "II";
-  position: absolute;
-  z-index: 3;
-  top: 15px;
-  right: 18px;
-  color: rgba(237, 229, 213, .72);
-  font-family: Georgia, var(--priestess-serif);
-  font-size: 18px;
-  letter-spacing: .16em;
+  content: none;
 }
 
-.archetype-scenes,
-.archetype-art {
+.manse-scene,
+.manse-art {
   position: absolute;
   inset: 0;
 }
 
-.archetype-scenes {
+.manse-scene {
   z-index: 0;
   overflow: hidden;
   background: #0b1115;
 }
 
-.archetype-art {
-  opacity: 0;
+.manse-art {
+  opacity: 1;
+  background-image: url("manse-hero-v2.webp");
   background-repeat: no-repeat;
   background-size: cover;
-  filter: saturate(.64) sepia(.12) contrast(1.06);
-  transform: scale(1.03) translate3d(0, 0, 0);
-  animation: archetype-cycle 24s cubic-bezier(.45, 0, .25, 1) infinite;
-  will-change: opacity, transform;
+  background-position: 58% 50%;
+  filter: saturate(.78) sepia(.04) contrast(1.04);
+  transform: scale(1.015) translate3d(0, 0, 0);
+  animation: manse-scene-breathe 18s cubic-bezier(.45, 0, .25, 1) infinite alternate;
+  will-change: transform;
 }
 
-.art-priestess {
-  background-image: url("priestess.webp");
-  background-position: 50% 34%;
+@keyframes manse-scene-breathe {
+  from { transform: scale(1.015) translate3d(0, 0, 0); }
+  to { transform: scale(1.045) translate3d(-.45%, -.35%, 0); }
 }
 
-.art-empress {
-  background-image: url("empress.webp");
-  background-position: 50% 31%;
-  animation-delay: 8s;
-}
-
-.art-fool {
-  background-image: url("fool.webp");
-  background-position: 50% 37%;
-  animation-delay: 16s;
-}
-
-@keyframes archetype-cycle {
-  0% { opacity: 0; transform: scale(1.03) translate3d(0, 4px, 0); }
-  5% { opacity: 1; }
-  30% { opacity: 1; }
-  37% { opacity: 0; transform: scale(1.065) translate3d(0, -5px, 0); }
-  100% { opacity: 0; transform: scale(1.065) translate3d(0, -5px, 0); }
-}
-
-.input-intro .intro-logo-img {
+.manse-hero-copy {
   position: absolute !important;
   z-index: 2;
-  left: 22px;
+  left: 28px;
   top: 25px;
-  width: clamp(96px, 28vw, 132px) !important;
-  max-height: none !important;
-  margin: 0 !important;
-  opacity: .94;
-  filter: brightness(0) invert(92%) sepia(17%) saturate(609%) hue-rotate(357deg) brightness(94%) contrast(88%) drop-shadow(0 8px 22px rgba(0, 0, 0, .32)) !important;
+  width: min(66%, 280px);
+  color: #fff;
+  font-family: var(--priestess-serif);
+  text-align: left;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, .36);
+}
+
+.manse-hero-copy > span {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 255, 255, .78);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+}
+
+.manse-calligraphy {
+  display: block;
+  color: #fff;
+  font-family: "Gungsuh", "궁서", "STKaiti", "KaiTi", "Yu Mincho", "Batang", serif;
+  font-size: clamp(68px, 19vw, 88px);
+  font-weight: 400;
+  line-height: .96;
+  letter-spacing: -.07em;
+  white-space: nowrap;
+  transform: rotate(-2deg);
+  transform-origin: left center;
+  text-shadow: 0 3px 22px rgba(0, 0, 0, .42);
 }
 
 .input-intro .sub {
@@ -264,14 +266,7 @@ body.dark .tab.active {
 }
 
 .input-intro .sub::before {
-  content: "THREE ARCHETYPES · 命";
-  display: block;
-  margin-bottom: 5px;
-  color: var(--priestess-gold-bright);
-  font-family: Georgia, var(--priestess-serif);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: .17em;
+  content: none;
 }
 
 .person-search-btn {
@@ -338,18 +333,7 @@ body.dark #calDayDetail {
 }
 
 .input-card::after {
-  content: "";
-  position: absolute;
-  right: -28px;
-  bottom: -44px;
-  width: 128px;
-  height: 128px;
-  border: 1px solid color-mix(in srgb, var(--priestess-gold) 14%, transparent);
-  border-radius: 50%;
-  box-shadow:
-    -29px -23px 0 -28px color-mix(in srgb, var(--priestess-rust) 25%, transparent),
-    -54px -57px 0 -52px color-mix(in srgb, var(--priestess-gold) 25%, transparent);
-  pointer-events: none;
+  content: none;
 }
 
 .input-card > * {
@@ -464,7 +448,7 @@ body.dark .note-text strong {
   display: block !important;
   pointer-events: none;
   opacity: .045 !important;
-  background: url("priestess.webp") 50% 34% / cover no-repeat !important;
+  background: url("manse-hero-v2.webp") 58% 50% / cover no-repeat !important;
   filter: grayscale(1) sepia(.18) !important;
   -webkit-mask-image: linear-gradient(to bottom, #000, transparent 76%);
   mask-image: linear-gradient(to bottom, #000, transparent 76%);
@@ -712,10 +696,18 @@ body.dark .bottom-bar .bb.primary {
     height: 360px !important;
   }
 
-  .input-intro .intro-logo-img {
+  .manse-hero-copy {
     left: 38px;
     top: 38px;
-    width: 150px !important;
+    width: 340px;
+  }
+
+  .manse-hero-copy > span {
+    font-size: 11px;
+  }
+
+  .manse-calligraphy {
+    font-size: 108px;
   }
 
   .input-intro .sub {
@@ -737,10 +729,14 @@ body.dark .bottom-bar .bb.primary {
     height: 226px !important;
   }
 
-  .input-intro .intro-logo-img {
-    left: 18px;
+  .manse-hero-copy {
+    left: 20px;
     top: 20px;
-    width: 92px !important;
+    width: 220px;
+  }
+
+  .manse-calligraphy {
+    font-size: 66px;
   }
 
   .input-intro .sub {
@@ -752,14 +748,10 @@ body.dark .bottom-bar .bb.primary {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .archetype-art {
+  .manse-art {
     animation: none !important;
     transform: none !important;
   }
-
-  .art-priestess { opacity: 1 !important; }
-  .art-empress,
-  .art-fool { display: none !important; }
 }
 
 @media (prefers-contrast: more) {

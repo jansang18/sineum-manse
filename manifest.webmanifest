@@ -1,7 +1,7 @@
 {
-  "name": "취명선 만세력",
-  "short_name": "취명선 만세력",
-  "description": "취명선 만세력 · 자평명리학 · 1000년 만세력 · 운세풀이 · 궁합",
+  "name": "잔상 만세력",
+  "short_name": "잔상 만세력",
+  "description": "잔상 만세력 · 자평명리학 · 1000년 만세력 · 운세풀이 · 궁합",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
