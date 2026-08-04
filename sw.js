@@ -1,7 +1,7 @@
 // 잔상 만세력 서비스워커
 // 전략: HTML/CSS/JS = 네트워크 우선(항상 최신 디자인), 이미지/아이콘 = 캐시 우선(빠름).
 // 오프라인일 때만 캐시로 폴백한다. 배포 시 VERSION만 올리면 옛 캐시는 자동 삭제됨.
-const VERSION = 'v33-20260804-exact-birth-date';
+const VERSION = 'v34-20260804-birth-date-crosscheck';
 const CACHE = 'jansang-manse-' + VERSION;
 
 // 오프라인 첫 진입에도 동작하도록 핵심 자원을 미리 캐시(이후 온라인이면 네트워크본으로 갱신)

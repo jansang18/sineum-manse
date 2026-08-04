@@ -73,12 +73,30 @@ async function inspectSamePillars60(page, width) {
             personLabel: { value: '안제이 바이다' },
             article: { value: 'https://ko.wikipedia.org/wiki/%EC%95%88%EC%A0%9C%EC%9D%B4_%EB%B0%94%EC%9D%B4%EB%8B%A4' },
             sitelinks: { value: '79' }
+          },
+          {
+            person: { value: 'http://www.wikidata.org/entity/Q623475' },
+            personLabel: { value: '김재규' },
+            article: { value: 'https://ko.wikipedia.org/wiki/%EA%B9%80%EC%9E%AC%EA%B7%9C' },
+            sitelinks: { value: '90' }
           }
         ]
       }
     };
     const peopleUrl = window.buildWikidataBirthdayQueryUrl({ year: 1926, month: 3, day: 6 });
     const parsedPeople = window.parseWikidataBirthdayResults(peopleFixture, { year: 1926, month: 3, day: 6 });
+    const biographyFixture = {
+      query: {
+        pages: [
+          { title: '김재규', extract: '김재규(金載圭, 1924년 4월 9일 ~ 1980년 5월 24일)는 대한민국의 군인, 정치인이다.' },
+          { title: '앨런 그린스펀', extract: '앨런 그린스펀(1926년 3월 6일 ~ )은 미국의 경제학자이다.' },
+          { title: '안제이 바이다', extract: '안제이 바이다(1926년 3월 6일 ~ 2016년 10월 9일)는 폴란드의 영화 감독이다.' }
+        ]
+      }
+    };
+    const biographyUrl = window.buildWikipediaBiographyUrl(parsedPeople);
+    const verifiedPeople = window.filterSamePillarPeopleByWikipedia(biographyFixture, parsedPeople);
+    const kimJaeGyu = window.searchLocalPeople('김재규', 1)[0];
     const sameBirthdayFixture = {
       parse: {
         text: {
@@ -175,9 +193,14 @@ async function inspectSamePillars60(page, width) {
       peopleApi: {
         buildType: typeof window.buildWikidataBirthdayQueryUrl,
         parseType: typeof window.parseWikidataBirthdayResults,
+        biographyBuildType: typeof window.buildWikipediaBiographyUrl,
+        verifyType: typeof window.filterSamePillarPeopleByWikipedia,
         loadType: typeof window.loadSamePillarPeople,
         url: peopleUrl,
+        biographyUrl,
         parsedPeople,
+        verifiedPeople,
+        kimJaeGyu,
         regionExists: !!document.getElementById('samePillarPeople')
       },
       sameBirthdayApi: {
@@ -226,10 +249,19 @@ async function inspectSamePillars60(page, width) {
     {
       buildType: state.peopleApi.buildType,
       parseType: state.peopleApi.parseType,
+      biographyBuildType: state.peopleApi.biographyBuildType,
+      verifyType: state.peopleApi.verifyType,
       loadType: state.peopleApi.loadType,
       regionExists: state.peopleApi.regionExists
     },
-    { buildType: 'function', parseType: 'function', loadType: 'function', regionExists: true },
+    {
+      buildType: 'function',
+      parseType: 'function',
+      biographyBuildType: 'function',
+      verifyType: 'function',
+      loadType: 'function',
+      regionExists: true
+    },
     'same-pillar Wikipedia people integration is incomplete'
   );
   const peopleUrl = new globalThis.URL(state.peopleApi.url);
@@ -238,9 +270,20 @@ async function inspectSamePillars60(page, width) {
   assert.match(peopleUrl.searchParams.get('query'), /1926-03-06T00:00:00Z/);
   assert.deepEqual(
     state.peopleApi.parsedPeople.map(person => person.name),
-    ['안제이 바이다', '앨런 그린스펀'],
+    ['김재규', '안제이 바이다', '앨런 그린스펀'],
     'Wikipedia people must be ranked by Wikidata sitelink count'
   );
+  const biographyUrl = new globalThis.URL(state.peopleApi.biographyUrl);
+  assert.equal(biographyUrl.hostname, 'ko.wikipedia.org');
+  assert.equal(biographyUrl.searchParams.get('prop'), 'extracts');
+  assert.match(biographyUrl.searchParams.get('titles'), /김재규/);
+  assert.deepEqual(
+    state.peopleApi.verifiedPeople.map(person => person.name),
+    ['안제이 바이다', '앨런 그린스펀'],
+    'a person whose Korean Wikipedia birth date conflicts with Wikidata must not be shown as an exact same-pillar match'
+  );
+  assert.equal(state.peopleApi.kimJaeGyu.y, '19240409', 'the built-in Kim Jae-gyu date must use the corrected solar date');
+  assert.match(state.peopleApi.kimJaeGyu.d, /음력 1924-03-06/, 'the corrected record must preserve the source lunar date');
   assert.deepEqual(
     {
       dateUrlType: state.sameBirthdayApi.dateUrlType,

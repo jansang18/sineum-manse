@@ -2571,7 +2571,7 @@ Key|19910923|M|대한민국의 가수
 유인나|19820605|F|대한민국의 배우
 박진영|19940922|M|대한민국의 가수, 배우 (1994년 9월 22일)
 하리수|19750217||대한민국의 트랜스젠더(성소수자 여성) 가수, 모델
-김재규|19260306|M|대한민국의 군인 출신 정치가, 박정희 대통령 살해범
+김재규|19240409|M|대한민국의 군인 출신 정치가 · 양력 1924-04-09(음력 1924-03-06)
 하대성|19850302|M|대한민국의 축구 지도자
 오은선|19660301|F|여성 최초 히말라야14좌 완등자
 김사랑|19780112|F|대한민국의 배우
@@ -15485,12 +15485,92 @@ function parseWikidataBirthdayResults(data, date) {
     .slice(0, 12);
 }
 
+function samePillarPersonArticleTitle(person) {
+  try {
+    const article = new URL(String(person && person.article || ''));
+    if (article.hostname !== 'ko.wikipedia.org' || !article.pathname.startsWith('/wiki/')) return '';
+    return decodeURIComponent(article.pathname.slice('/wiki/'.length)).replace(/_/g, ' ').trim();
+  } catch (error) {
+    return '';
+  }
+}
+
+function buildWikipediaBiographyUrl(people) {
+  const titles = Array.from(new Set((Array.isArray(people) ? people : [])
+    .map(samePillarPersonArticleTitle)
+    .filter(title => title && title.length <= 120 && !/[|\u0000-\u001f]/.test(title))))
+    .slice(0, 20);
+  if (!titles.length) throw new Error('교차 확인할 위키백과 인물이 없습니다.');
+  const url = new URL('https://ko.wikipedia.org/w/api.php');
+  url.search = new URLSearchParams({
+    action: 'query',
+    format: 'json',
+    formatversion: '2',
+    origin: '*',
+    prop: 'extracts',
+    exintro: '1',
+    explaintext: '1',
+    redirects: '1',
+    titles: titles.join('|')
+  }).toString();
+  return url.toString();
+}
+
+function extractKoreanWikipediaBirthDate(extract) {
+  const match = String(extract || '').match(/(?:^|[(（,\s])([12]\d{3})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+  if (!match) return null;
+  const date = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]) };
+  try {
+    samePillarPeopleDateKey(date);
+    const probe = new Date(Date.UTC(date.year, date.month - 1, date.day));
+    if (probe.getUTCFullYear() !== date.year || probe.getUTCMonth() !== date.month - 1 || probe.getUTCDate() !== date.day) return null;
+    return date;
+  } catch (error) {
+    return null;
+  }
+}
+
+function filterSamePillarPeopleByWikipedia(data, people) {
+  const query = data && data.query || {};
+  const pages = Array.isArray(query.pages)
+    ? query.pages
+    : query.pages && typeof query.pages === 'object' ? Object.values(query.pages) : [];
+  const aliases = new Map();
+  for (const changes of [query.normalized, query.redirects]) {
+    const entries = Array.isArray(changes) ? changes : changes && typeof changes === 'object' ? Object.values(changes) : [];
+    for (const entry of entries) {
+      const from = String(entry && entry.from || '').trim();
+      const to = String(entry && entry.to || '').trim();
+      if (from && to) aliases.set(from, to);
+    }
+  }
+  const canonicalTitle = value => {
+    let title = String(value || '').trim();
+    for (let count = 0; count < 4 && aliases.has(title); count++) title = aliases.get(title);
+    return title;
+  };
+  const pageByTitle = new Map(pages.map(page => [canonicalTitle(page && page.title), page]));
+
+  return (Array.isArray(people) ? people : []).filter(person => {
+    const title = canonicalTitle(samePillarPersonArticleTitle(person));
+    const page = pageByTitle.get(title);
+    const articleBirthDate = extractKoreanWikipediaBirthDate(page && page.extract);
+    if (!articleBirthDate) return true;
+    return samePillarPeopleDateKey(articleBirthDate) === samePillarPeopleDateKey(person.date);
+  });
+}
+
 async function queryWikipediaBirthdays(date, forceRefresh) {
   const key = samePillarPeopleDateKey(date);
   if (forceRefresh) SAME_PILLAR_PEOPLE_CACHE.delete(key);
   if (!SAME_PILLAR_PEOPLE_CACHE.has(key)) {
     const request = fetchAllowedJson(buildWikidataBirthdayQueryUrl(date), 12000)
       .then(data => parseWikidataBirthdayResults(data, date))
+      .then(async people => {
+        if (!people.length) return people;
+        const biographyData = await fetchAllowedJson(buildWikipediaBiographyUrl(people), 10000);
+        return filterSamePillarPeopleByWikipedia(biographyData, people);
+      })
       .catch(error => {
         SAME_PILLAR_PEOPLE_CACHE.delete(key);
         throw error;
@@ -15545,7 +15625,7 @@ function renderSamePillarPeople(root, people, dates) {
 
   const note = document.createElement('p');
   note.className = 'cycle-people-note';
-  note.textContent = 'Wikidata의 정확한 생년월일과 한국어 위키백과 문서 기준입니다.';
+  note.textContent = 'Wikidata 후보를 한국어 위키백과 본문의 생년월일과 교차 확인한 결과입니다.';
   body.appendChild(note);
 }
 
