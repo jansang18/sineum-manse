@@ -12530,8 +12530,8 @@ function getDatePillars(year, month, day, timeFraction = 0.5) {
 }
 
 function findSamePillars60(saju) {
+  const searchStartYear = 1026;
   const targetYear = getYearStemBranch(saju.jd, saju.year).useYear;
-  const priorCycleYear = targetYear - 60;
   const timeFraction = saju.unknown ? 0.5 : (saju.hour + saju.minute / 60) / 24;
   const target = {
     yStem: saju.yStem,
@@ -12541,37 +12541,71 @@ function findSamePillars60(saju) {
     dStem: saju.dStem,
     dBranch: saju.dBranch
   };
-  const yearDates = [];
-  const monthDates = [];
-  const dayMatches = [];
-  const exactMatches = [];
-  const startJD = toJD(priorCycleYear, 1, 1);
-  const endJD = toJD(priorCycleYear + 1, 12, 31);
-
-  for (let jd = startJD; jd <= endJD; jd++) {
-    const date = fromJD(jd);
-    const pillars = getDatePillars(date.y, date.m, date.d, timeFraction);
-    const sameYear = pillars.yStem === target.yStem && pillars.yBranch === target.yBranch;
-    const sameMonth = pillars.mStem === target.mStem && pillars.mBranch === target.mBranch;
-    const sameDay = pillars.dStem === target.dStem && pillars.dBranch === target.dBranch;
-    const item = { year: date.y, month: date.m, day: date.d };
-    if (sameYear) yearDates.push(item);
-    if (sameYear && sameMonth) monthDates.push(item);
-    if (sameYear && sameDay) dayMatches.push(item);
-    if (sameYear && sameMonth && sameDay) exactMatches.push(item);
-  }
-
   const toPeriod = dates => ({
     start: dates.length ? dates[0] : null,
     end: dates.length ? dates[dates.length - 1] : null
   });
 
+  const cycles = [];
+  for (let cycleIndex = 1; ; cycleIndex++) {
+    const centerYear = targetYear - cycleIndex * 60;
+    if (centerYear + 1 < searchStartYear) break;
+
+    const yearDates = [];
+    const monthDates = [];
+    const dayMatches = [];
+    const exactMatches = [];
+    const scanStartYear = Math.max(searchStartYear, centerYear);
+    const scanEndYear = Math.min(saju.year - 1, centerYear + 1);
+    if (scanStartYear > scanEndYear) continue;
+
+    const startJD = toJD(scanStartYear, 1, 1);
+    const endJD = toJD(scanEndYear, 12, 31);
+    for (let jd = startJD; jd <= endJD; jd++) {
+      const date = fromJD(jd);
+      const pillars = getDatePillars(date.y, date.m, date.d, timeFraction);
+      const sameYear = pillars.yStem === target.yStem && pillars.yBranch === target.yBranch;
+      const sameMonth = pillars.mStem === target.mStem && pillars.mBranch === target.mBranch;
+      const sameDay = pillars.dStem === target.dStem && pillars.dBranch === target.dBranch;
+      const item = { year: date.y, month: date.m, day: date.d };
+      if (sameYear) yearDates.push(item);
+      if (sameYear && sameMonth) monthDates.push(item);
+      if (sameYear && sameDay) dayMatches.push(item);
+      if (sameYear && sameMonth && sameDay) {
+        exactMatches.push({ ...item, yearsAgo: saju.year - date.y, cycleIndex });
+      }
+    }
+
+    cycles.push({
+      cycleIndex,
+      yearsAgo: cycleIndex * 60,
+      centerYear,
+      yearPeriod: toPeriod(yearDates),
+      monthPeriod: toPeriod(monthDates),
+      dayMatches,
+      exactMatches
+    });
+  }
+
+  const nearestCycle = cycles[0] || {
+    centerYear: targetYear - 60,
+    yearPeriod: toPeriod([]),
+    monthPeriod: toPeriod([]),
+    dayMatches: [],
+    exactMatches: []
+  };
+  const exactMatches = cycles.flatMap(cycle => cycle.exactMatches);
+
   return {
-    priorCycleYear,
+    priorCycleYear: nearestCycle.centerYear,
+    searchStartYear,
+    searchEndYear: saju.year - 1,
+    cycleCount: cycles.length,
+    cycles,
     target,
-    yearPeriod: toPeriod(yearDates),
-    monthPeriod: toPeriod(monthDates),
-    dayMatches,
+    yearPeriod: nearestCycle.yearPeriod,
+    monthPeriod: nearestCycle.monthPeriod,
+    dayMatches: nearestCycle.dayMatches,
     exactMatches,
     usedNoonForUnknownTime: saju.unknown
   };
@@ -12590,9 +12624,8 @@ function formatPillarPeriod(period) {
 function renderSamePillars60(saju, existingReport) {
   const report = existingReport || findSamePillars60(saju);
   const birthdayComparison = getSameBirthdayComparisonDate(saju);
-  const pillarText = (stem, branch) => `${STEM[stem]}${BRANCH[branch]}`;
-  const dateChips = dates => dates.length
-    ? dates.map(date => `<span class="cycle-date-chip">${formatPillarDate(date)}</span>`).join('')
+  const dateChips = (dates, showDistance = false) => dates.length
+    ? dates.map(date => `<span class="cycle-date-chip">${formatPillarDate(date)}${showDistance && date.yearsAgo ? ` · ${date.yearsAgo}년 전` : ''}</span>`).join('')
     : '<span class="cycle-empty">해당 날짜를 찾지 못했습니다</span>';
   const exactText = report.exactMatches.length === 1 ? '한 날' : `${report.exactMatches.length}일`;
 
@@ -12600,38 +12633,20 @@ function renderSamePillars60(saju, existingReport) {
     <section class="same-pillars-card" id="samePillars60" aria-labelledby="samePillars60Title">
       <div class="cycle-heading">
         <div>
-          <span class="cycle-kicker">六十甲子 · PREVIOUS CYCLE</span>
-          <h2 id="samePillars60Title">60년 전 같은 기둥</h2>
-          <p>${report.priorCycleYear}년을 중심으로 현재 명식의 세 기둥을 다시 대조했습니다.</p>
+          <span class="cycle-kicker">MILLENNIUM CYCLES · ${report.searchStartYear}–${report.searchEndYear}</span>
+          <h2 id="samePillars60Title">1,000년 같은 기둥</h2>
+          <p>${report.searchStartYear}년부터 ${report.searchEndYear}년까지 ${report.cycleCount}개의 60년 순환을 대조했습니다.</p>
         </div>
         <div class="cycle-seal" aria-hidden="true">↺</div>
       </div>
 
-      <div class="cycle-target" aria-label="비교한 원국 기둥">
-        <span><small>년주</small><strong>${pillarText(report.target.yStem, report.target.yBranch)}</strong></span>
-        <span><small>월주</small><strong>${pillarText(report.target.mStem, report.target.mBranch)}</strong></span>
-        <span><small>일주</small><strong>${pillarText(report.target.dStem, report.target.dBranch)}</strong></span>
-      </div>
-
       <div class="cycle-rows">
-        <article class="cycle-row">
-          <div class="cycle-row-label"><span>년</span><strong>년주가 같은 기간</strong></div>
-          <p>${formatPillarPeriod(report.yearPeriod)}</p>
-        </article>
-        <article class="cycle-row">
-          <div class="cycle-row-label"><span>월</span><strong>월주가 같은 기간</strong></div>
-          <p>${formatPillarPeriod(report.monthPeriod)}</p>
-        </article>
-        <article class="cycle-row cycle-row-day">
-          <div class="cycle-row-label"><span>일</span><strong>일주가 같은 날</strong></div>
-          <div class="cycle-date-list">${dateChips(report.dayMatches)}</div>
-        </article>
         <article class="cycle-row cycle-row-exact">
           <div class="cycle-row-label">
             <span>✓</span>
             <div><strong>년·월·일주가 모두 같은 날</strong><small>${exactText}</small></div>
           </div>
-          <div class="cycle-date-list">${dateChips(report.exactMatches)}</div>
+          <div class="cycle-date-list">${dateChips(report.exactMatches, true)}</div>
         </article>
       </div>
 

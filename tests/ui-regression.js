@@ -59,6 +59,12 @@ async function inspectSamePillars60(page, width) {
       calendar: 'solar', gender: 'M', unknown: true
     });
     const feb1986Report = window.findSamePillars60(feb1986);
+    const nov1994 = calcSaju({
+      year: 1994, month: 11, day: 27,
+      hour: 0, minute: 0,
+      calendar: 'solar', gender: 'M', unknown: true
+    });
+    const nov1994Report = window.findSamePillars60(nov1994);
     const peopleFixture = {
       results: {
         bindings: [
@@ -184,12 +190,18 @@ async function inspectSamePillars60(page, width) {
     };
     const region = document.getElementById('samePillars60');
     const rect = region.getBoundingClientRect();
-    const dayRect = region.querySelector('.cycle-row-day').getBoundingClientRect();
     const exactRect = region.querySelector('.cycle-row-exact').getBoundingClientRect();
     return {
       functionType: typeof window.findSamePillars60,
       report,
       feb1986Exact: feb1986Report.exactMatches,
+      nov1994Report: {
+        exactMatches: nov1994Report.exactMatches,
+        searchStartYear: nov1994Report.searchStartYear,
+        cycleCount: nov1994Report.cycleCount,
+        cycles: nov1994Report.cycles
+      },
+      nov1994Html: window.renderSamePillars60(nov1994, nov1994Report),
       peopleApi: {
         buildType: typeof window.buildWikidataBirthdayQueryUrl,
         parseType: typeof window.parseWikidataBirthdayResults,
@@ -233,17 +245,31 @@ async function inspectSamePillars60(page, width) {
       regionRole: region.getAttribute('aria-labelledby'),
       overflow: Math.max(0, rect.right - document.documentElement.clientWidth),
       documentOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      dayWidth: dayRect.width,
-      exactWidth: exactRect.width
+      exactWidth: exactRect.width,
+      hasTargetGrid: !!region.querySelector('.cycle-target'),
+      hasNearestBreakdown: !!region.querySelector('.cycle-nearest-label, .cycle-row:not(.cycle-row-exact)')
     };
   });
 
-  assert.equal(state.functionType, 'function', '60-year pillar search API missing');
-  assert.ok(state.report.exactMatches.length > 0, 'an exact year/month/day pillar match should exist in the prior cycle');
-  assert.deepEqual(
-    state.feb1986Exact,
-    [{ year: 1926, month: 3, day: 6 }],
-    '1986-02-19 must find the prior-cycle exact date 1926-03-06'
+  assert.equal(state.functionType, 'function', 'millennium pillar search API missing');
+  assert.ok(state.report.exactMatches.length > 0, 'an exact year/month/day pillar match should exist in the supported history');
+  assert.ok(
+    state.feb1986Exact.some(date => date.year === 1926 && date.month === 3 && date.day === 6),
+    '1986-02-19 must retain the exact date 1926-03-06'
+  );
+  assert.ok(
+    state.nov1994Report.exactMatches.some(date => date.year === 1814 && date.month === 11 && date.day === 11),
+    '1994-11-27 must find the exact three-pillar date 1814-11-11'
+  );
+  assert.ok(
+    state.nov1994Report.exactMatches.some(date => date.year === 1034 && date.month === 11 && date.day === 20),
+    'the search must reach the lower end of the 1,000-year calendar range'
+  );
+  assert.equal(state.nov1994Report.searchStartYear, 1026, 'history search must begin at the supported year 1026');
+  assert.ok(state.nov1994Report.cycleCount >= 16, '1994 input must compare every prior 60-year cycle back to 1026');
+  assert.ok(
+    state.nov1994Report.cycles.every(cycle => cycle.exactMatches.every(date => date.year >= 1026)),
+    'history search must not return dates outside the supported calendar range'
   );
   assert.deepEqual(
     {
@@ -355,7 +381,7 @@ async function inspectSamePillars60(page, width) {
   assert.ok(state.report.yearPeriod.start && state.report.yearPeriod.end, 'same year-pillar period missing');
   assert.ok(state.report.monthPeriod.start && state.report.monthPeriod.end, 'same month-pillar period missing');
   for (const match of state.report.exactMatches) {
-    assert.ok(Math.abs(match.year - 1989) >= 59 && Math.abs(match.year - 1989) <= 61, `unexpected prior-cycle year: ${match.year}`);
+    assert.ok(match.year >= 1026 && match.year < 1989, `unexpected history year: ${match.year}`);
   }
   for (const pillar of state.exactSnapshots) {
     assert.deepEqual(
@@ -371,17 +397,17 @@ async function inspectSamePillars60(page, width) {
       'reported exact date must independently reproduce all three natal pillars'
     );
   }
-  assert.match(state.text, /60년 전 같은 기둥/);
-  assert.match(state.text, /년주가 같은 기간/);
-  assert.match(state.text, /월주가 같은 기간/);
-  assert.match(state.text, /일주가 같은 날/);
+  assert.match(state.text, /1,000년 같은 기둥/);
+  assert.match(state.nov1994Html, /180년 전/);
   assert.match(state.text, /년·월·일주가 모두 같은 날/);
   assert.match(state.text, /같은 생년월일 유명인/);
   assert.match(state.text, /입춘·절입 기준/);
   assert.equal(state.regionRole, 'samePillars60Title');
   assert.ok(state.overflow <= 1, `${width}px 60-year card overflows viewport`);
   assert.ok(state.documentOverflow <= 1, `${width}px document overflows after 60-year card`);
-  assert.ok(Math.abs(state.dayWidth - state.exactWidth) <= 1, 'same-day pillar card must span the full row');
+  assert.ok(state.exactWidth > 0, 'exact same-pillar dates must remain visible');
+  assert.equal(state.hasTargetGrid, false, 'the redundant target-pillar rectangle must be removed');
+  assert.equal(state.hasNearestBreakdown, false, 'the year/month/day breakdown rectangles must be removed');
 }
 
 async function inspectCalendarShellWidth(page, width) {

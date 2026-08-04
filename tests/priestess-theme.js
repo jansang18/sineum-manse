@@ -140,7 +140,7 @@ async function inspectTheme(page, width, scheme) {
       bottomBackground: getComputedStyle(document.getElementById('bottomBar')).backgroundColor,
       cardBackground: getComputedStyle(document.querySelector('.oguk-card')).backgroundColor
     }));
-    assert.equal(result.exactDate, '1926.03.06');
+    assert.equal(result.exactDate, '1926.03.06 · 60년 전');
     assert.ok(result.overflow <= 1, `result overflow is ${result.overflow}px`);
     assert.equal(result.bottomBackground, 'rgba(8, 13, 17, 0.97)');
     assert.equal(result.cardBackground, 'rgba(17, 24, 30, 0.95)');
