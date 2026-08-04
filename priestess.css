@@ -385,6 +385,7 @@ body.dark #mnfTime {
 }
 
 #inputName::placeholder,
+#psQuery::placeholder,
 #inBirth::placeholder,
 #inTime::placeholder,
 #mnfName::placeholder,
@@ -396,6 +397,7 @@ body.dark #mnfTime {
 }
 
 body.dark #inputName::placeholder,
+body.dark #psQuery::placeholder,
 body.dark #inBirth::placeholder,
 body.dark #inTime::placeholder,
 body.dark #mnfName::placeholder,

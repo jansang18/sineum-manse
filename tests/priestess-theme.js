@@ -41,6 +41,7 @@ async function inspectTheme(page, width, scheme) {
     const arts = [...document.querySelectorAll('.manse-art')];
     const input = document.getElementById('inBirth');
     const nameInput = document.getElementById('inputName');
+    const personSearchInput = document.getElementById('psQuery');
     input.value = '19860219';
     return {
       stylesheet: [...document.styleSheets].some(sheet => sheet.href?.endsWith('/priestess.css')),
@@ -63,6 +64,8 @@ async function inspectTheme(page, width, scheme) {
       placeholderFillColor: getComputedStyle(input, '::placeholder').webkitTextFillColor,
       namePlaceholderColor: getComputedStyle(nameInput, '::placeholder').color,
       namePlaceholderFillColor: getComputedStyle(nameInput, '::placeholder').webkitTextFillColor,
+      personSearchPlaceholderColor: getComputedStyle(personSearchInput, '::placeholder').color,
+      personSearchPlaceholderFillColor: getComputedStyle(personSearchInput, '::placeholder').webkitTextFillColor,
       inputValue: input.value
     };
   });
@@ -83,6 +86,8 @@ async function inspectTheme(page, width, scheme) {
   assert.equal(state.placeholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.equal(state.namePlaceholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.equal(state.namePlaceholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
+  assert.equal(state.personSearchPlaceholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
+  assert.equal(state.personSearchPlaceholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.ok(state.hero.height >= 220, `${width}px hero is too short`);
   assert.ok(state.hero.top >= state.tabs.bottom - 1, `${width}px hero overlaps the sticky tabs`);
   assert.ok(state.button.height >= 52, `${width}px primary action is too short`);
