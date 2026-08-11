@@ -1532,6 +1532,32 @@ body.dark .f-tips .f-tip {
   transform: translateX(-50%);
 }
 
+/* Desktop result actions use the empty right gutter instead of covering the chart. */
+@media (min-width: 1025px) {
+  .bottom-bar {
+    left: calc(50% + 328px) !important;
+    right: auto !important;
+    bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    width: 120px !important;
+    max-width: none !important;
+    padding: 8px !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    transform: none;
+    border: 1px solid var(--apple-separator);
+    border-radius: 14px;
+  }
+
+  .bottom-bar .bb {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 8px;
+  }
+}
+
 /* Align the primary navigation rail with the chart below it. */
 .tabs {
   width: var(--apple-content-measure) !important;

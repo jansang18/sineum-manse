@@ -24,8 +24,12 @@ const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html
 const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'luck-flow-responsive'
   ? [390, 560, 561, 768, 1220]
-  : TEST_GROUP === 'result-width-brand' || TEST_GROUP === 'shell-width'
-    ? [390, 1220]
+  : TEST_GROUP === 'desktop-action-rail'
+    ? [390, 1024, 1025, 1280]
+    : TEST_GROUP === 'result-width-brand'
+      ? [390, 1220, 1280]
+      : TEST_GROUP === 'shell-width'
+        ? [390, 1220]
     : TEST_GROUP === 'same-pillars-60'
       ? [390, 768]
       : TEST_GROUP === 'fold-layout'
@@ -55,6 +59,7 @@ const runsLuckFlowAccessibility = () =>
 const runsLuckFlowResponsive = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-responsive';
 const runsLongReading = () => !TEST_GROUP || TEST_GROUP === 'long-reading';
+const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
 
 async function resetLuckFlow(page) {
   await page.evaluate(() => {
@@ -648,6 +653,10 @@ async function inspectResultWidthAndBrand(page, width) {
     const bottomBar = document.getElementById('bottomBar').getBoundingClientRect();
     const card = document.querySelector('.oguk-card').getBoundingClientRect();
     const tabs = document.querySelector('.tabs').getBoundingClientRect();
+    const bottomBarStyle = getComputedStyle(document.getElementById('bottomBar'));
+    const resultRects = [...document.querySelectorAll(
+      '#view-result > .oguk-card, #view-result > .result-right, #view-result > .same-pillars-card'
+    )].map(element => element.getBoundingClientRect());
     const brand = getComputedStyle(document.querySelector('.top-bar .brand-main'));
     const suffix = getComputedStyle(document.querySelector('.top-bar .title-sub'));
     const typography = style => ({
@@ -671,27 +680,74 @@ async function inspectResultWidthAndBrand(page, width) {
       };
     });
     return {
-      bottomBar: { left: bottomBar.left, right: bottomBar.right, width: bottomBar.width },
+      bottomBar: {
+        left: bottomBar.left,
+        top: bottomBar.top,
+        right: bottomBar.right,
+        bottom: bottomBar.bottom,
+        width: bottomBar.width,
+        height: bottomBar.height,
+        position: bottomBarStyle.position,
+        flexDirection: bottomBarStyle.flexDirection
+      },
       card: { left: card.left, right: card.right, width: card.width },
+      resultContent: {
+        left: Math.min(...resultRects.map(rect => rect.left)),
+        right: Math.max(...resultRects.map(rect => rect.right))
+      },
       tabs: { left: tabs.left, right: tabs.right, width: tabs.width },
       viewportWidth: document.documentElement.clientWidth,
+      viewportHeight: document.documentElement.clientHeight,
+      buttonRects: [...document.querySelectorAll('#bottomBar .bb')].map(button => {
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
       brand: typography(brand),
       suffix: typography(suffix),
       pillars
     };
   });
 
+  if (width >= 1025) {
+    assert.ok(
+      state.bottomBar.left >= state.resultContent.right + 16,
+      `${width}px desktop action rail must sit at least 16px to the right of app content: ${JSON.stringify(state)}`
+    );
+    assert.ok(state.bottomBar.width <= 128, `${width}px desktop action rail must stay compact`);
+    assert.ok(state.bottomBar.height > state.bottomBar.width, `${width}px desktop action rail must stack vertically`);
+    assert.equal(state.bottomBar.flexDirection, 'column', `${width}px desktop action rail direction`);
+  } else {
+    assert.ok(
+      Math.abs(state.bottomBar.width - state.card.width) <= 1,
+      `${width}px bottom bar width ${state.bottomBar.width}px must match natal card ${state.card.width}px`
+    );
+    assert.ok(
+      Math.abs(state.bottomBar.left - state.card.left) <= 1,
+      `${width}px bottom bar and natal card must share the same left edge`
+    );
+    assert.ok(
+      state.bottomBar.left >= 0 && state.bottomBar.right <= state.viewportWidth + 1,
+      `${width}px bottom bar overflows viewport`
+    );
+    assert.ok(
+      state.bottomBar.top >= 0 && state.bottomBar.bottom <= state.viewportHeight + 1,
+      `${width}px bottom bar exceeds viewport bounds`
+    );
+  }
+  if (width >= 1025) {
+    assert.ok(
+      state.bottomBar.left >= 16 && state.bottomBar.right <= state.viewportWidth - 16,
+      `${width}px desktop action rail exceeds horizontal safe bounds`
+    );
+    assert.ok(
+      state.bottomBar.top >= 16 && state.bottomBar.bottom <= state.viewportHeight - 16,
+      `${width}px desktop action rail exceeds vertical safe bounds`
+    );
+  }
+  assert.equal(state.bottomBar.position, 'fixed', `${width}px bottom actions must remain fixed`);
   assert.ok(
-    Math.abs(state.bottomBar.width - state.card.width) <= 1,
-    `${width}px bottom bar width ${state.bottomBar.width}px must match natal card ${state.card.width}px`
-  );
-  assert.ok(
-    Math.abs(state.bottomBar.left - state.card.left) <= 1,
-    `${width}px bottom bar and natal card must share the same left edge`
-  );
-  assert.ok(
-    state.bottomBar.left >= 0 && state.bottomBar.right <= state.viewportWidth + 1,
-    `${width}px bottom bar overflows viewport`
+    state.buttonRects.every(rect => rect.width >= 44 && rect.height >= 44),
+    `${width}px bottom action target below 44px: ${JSON.stringify(state.buttonRects)}`
   );
   assert.ok(
     Math.abs(state.tabs.width - state.card.width) <= 1,
@@ -726,6 +782,99 @@ function parseCssColor(value) {
     b: Number(srgb[3]) * 255,
     a: srgb[4] === undefined ? 1 : Number(srgb[4])
   };
+}
+
+async function inspectDesktopActionRail(page, width) {
+  if (!runsDesktopActionRail()) return;
+
+  const geometry = await page.evaluate(() => {
+    const rect = selector => {
+      const bounds = document.querySelector(selector).getBoundingClientRect();
+      return {
+        left: bounds.left,
+        top: bounds.top,
+        right: bounds.right,
+        bottom: bounds.bottom,
+        width: bounds.width,
+        height: bounds.height
+      };
+    };
+    const bar = document.getElementById('bottomBar');
+    const resultRects = [...document.querySelectorAll(
+      '#view-result > .oguk-card, #view-result > .result-right, #view-result > .same-pillars-card'
+    )].map(element => element.getBoundingClientRect());
+    return {
+      viewport: {
+        width: document.documentElement.clientWidth,
+        height: document.documentElement.clientHeight
+      },
+      resultContent: {
+        left: Math.min(...resultRects.map(bounds => bounds.left)),
+        right: Math.max(...resultRects.map(bounds => bounds.right))
+      },
+      card: rect('.oguk-card'),
+      bar: rect('#bottomBar'),
+      style: {
+        position: getComputedStyle(bar).position,
+        flexDirection: getComputedStyle(bar).flexDirection
+      },
+      buttons: [...bar.querySelectorAll('.bb')].map(button => {
+        const bounds = button.getBoundingClientRect();
+        const textRange = document.createRange();
+        textRange.selectNodeContents(button);
+        const lineTops = [...textRange.getClientRects()]
+          .filter(rect => rect.width > 0 && rect.height > 0)
+          .map(rect => Math.round(rect.top * 10) / 10);
+        return {
+          text: button.textContent.trim(),
+          width: bounds.width,
+          height: bounds.height,
+          clientWidth: button.clientWidth,
+          clientHeight: button.clientHeight,
+          scrollWidth: button.scrollWidth,
+          scrollHeight: button.scrollHeight,
+          lineCount: new Set(lineTops).size
+        };
+      })
+    };
+  });
+
+  assert.equal(geometry.style.position, 'fixed');
+  if (width >= 1025) {
+    assert.ok(
+      geometry.bar.left >= geometry.resultContent.right + 16,
+      `${width}px action rail overlaps app content: ${JSON.stringify(geometry)}`
+    );
+    assert.ok(
+      geometry.bar.left >= 16 && geometry.bar.right <= geometry.viewport.width - 16 &&
+        geometry.bar.top >= 16 && geometry.bar.bottom <= geometry.viewport.height - 16,
+      `${width}px action rail exceeds viewport-safe bounds: ${JSON.stringify(geometry)}`
+    );
+    assert.equal(geometry.style.flexDirection, 'column');
+    assert.ok(geometry.bar.width <= 128 && geometry.bar.height > geometry.bar.width);
+    assert.ok(
+      geometry.buttons.every(button => button.lineCount === 1),
+      `${width}px desktop action labels must stay on one line: ${JSON.stringify(geometry.buttons)}`
+    );
+  } else {
+    assert.equal(geometry.style.flexDirection, 'row');
+    if (width === 390) {
+      assert.ok(Math.abs(geometry.bar.width - geometry.card.width) <= 1);
+      assert.ok(Math.abs(geometry.bar.left - geometry.card.left) <= 1);
+    }
+    assert.ok(Math.abs(geometry.bar.left - (geometry.viewport.width - geometry.bar.width) / 2) <= 1);
+    assert.ok(geometry.bar.left >= 0 && geometry.bar.right <= geometry.viewport.width + 1);
+  }
+  assert.ok(
+    geometry.buttons.every(button => button.width >= 44 && button.height >= 44),
+    `${width}px action rail target below 44px: ${JSON.stringify(geometry.buttons)}`
+  );
+  assert.ok(
+    geometry.buttons.every(button =>
+      button.scrollWidth <= button.clientWidth + 1 && button.scrollHeight <= button.clientHeight + 1
+    ),
+    `${width}px bottom action label clips or overflows: ${JSON.stringify(geometry.buttons)}`
+  );
 }
 
 function assertCssColorClose(actual, expected, message) {
@@ -3602,6 +3751,12 @@ async function inspectWidth(browser, width) {
   }
 
   await fillAndCalculate(page);
+
+  await inspectDesktopActionRail(page, width);
+  if (TEST_GROUP === 'desktop-action-rail') {
+    await page.close();
+    return;
+  }
 
   await inspectLuckFlowOrder(page, width);
   if (TEST_GROUP === 'luck-flow-order') {
