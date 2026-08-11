@@ -1427,6 +1427,39 @@ async function inspectLongReading(page, width) {
     const phases = Array.from(life?.querySelectorAll('[data-life-phase]') || []);
     const phaseParagraphs = Array.from(life?.querySelectorAll('.life-phase__prose p') || []);
     const events = Array.from(life?.querySelectorAll('[data-life-event]') || []);
+    const metricButtons = Array.from(life?.querySelectorAll('[data-life-metric]') || []);
+    metricButtons[0]?.focus();
+    metricButtons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+    const metricInteraction = {
+      activeMetric: life?.dataset.lifeMetricActive || null,
+      firstPressed: metricButtons[0]?.getAttribute('aria-pressed'),
+      secondPressed: metricButtons[1]?.getAttribute('aria-pressed'),
+      firstTabIndex: metricButtons[0]?.tabIndex,
+      secondTabIndex: metricButtons[1]?.tabIndex,
+      focusedMetric: document.activeElement?.dataset.lifeMetric || null
+    };
+
+    const eventButtons = Array.from(life?.querySelectorAll('[data-life-event-select]') || []);
+    eventButtons[0]?.focus();
+    eventButtons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
+    const eventInteraction = {
+      firstPressed: eventButtons[0]?.getAttribute('aria-pressed'),
+      secondPressed: eventButtons[1]?.getAttribute('aria-pressed'),
+      firstTabIndex: eventButtons[0]?.tabIndex,
+      secondTabIndex: eventButtons[1]?.tabIndex,
+      focusedIndex: document.activeElement?.dataset.lifeEventSelect || null,
+      selectedRows: life?.querySelectorAll('.life-event.is-selected').length || 0,
+      selectedIndex: life?.querySelector('.life-event.is-selected [data-life-event-select]')?.dataset.lifeEventSelect || null
+    };
+
+    const disclosure = Array.from(life?.querySelectorAll('[data-life-phase-disclosure]') || []).find(details => !details.open);
+    const disclosureInitiallyOpen = disclosure?.open;
+    disclosure?.querySelector('summary')?.click();
+    const phaseDisclosure = {
+      initiallyOpen: disclosureInitiallyOpen,
+      openAfterToggle: disclosure?.open,
+      phase: disclosure?.dataset.lifePhaseDisclosure || null
+    };
     life?.querySelectorAll('details').forEach(details => { details.open = true; });
 
     const payload = '<img src=x onerror="window.__longReadingXss=1">';
@@ -1464,6 +1497,18 @@ async function inspectLongReading(page, width) {
 
     const style = element => element ? getComputedStyle(element) : null;
     const bodyCopy = style(deep?.querySelector('.deep-prose p'));
+    const narrativeStyles = Object.fromEntries(Object.entries({
+      lifetimeSummary: life?.querySelector('.life-course__summary p'),
+      keyTurn: life?.querySelector('.life-course__detail p'),
+      phase: life?.querySelector('.life-phase__prose p'),
+      deep: deep?.querySelector('.deep-prose p')
+    }).map(([key, element]) => {
+      const computed = style(element);
+      return [key, {
+        fontSize: Number.parseFloat(computed?.fontSize || '0'),
+        lineHeight: Number.parseFloat(computed?.lineHeight || '0')
+      }];
+    }));
     document.body.classList.remove('dark');
     await new Promise(resolve => setTimeout(resolve, 250));
     const lightSurface = style(deep?.querySelector('.deep-reading__intro'))?.backgroundColor;
@@ -1485,11 +1530,15 @@ async function inspectLongReading(page, width) {
       minTargetHeight: Math.min(...chapterButtons.map(button => button.getBoundingClientRect().height)),
       bodyFontSize: Number.parseFloat(bodyCopy?.fontSize || '0'),
       bodyLineHeight: Number.parseFloat(bodyCopy?.lineHeight || '0'),
+      narrativeStyles,
       navigation: {
         scrollBehavior: scrollOptions?.behavior,
         activeId: document.activeElement?.id,
         targetId: firstTarget?.id
       },
+      metricInteraction,
+      eventInteraction,
+      phaseDisclosure,
       phaseCount: phases.length,
       phaseParagraphCount: phaseParagraphs.length,
       eventCount: events.length,
@@ -1515,11 +1564,24 @@ async function inspectLongReading(page, width) {
         const rect = element.getBoundingClientRect();
         return { selector: `${element.tagName.toLowerCase()}.${element.className || ''}`, left: rect.left, right: rect.right, width: rect.width };
       }).filter(rect => rect.left < -1 || rect.right > document.documentElement.clientWidth + 1).slice(0, 12),
-      ordering: [children.indexOf(overall), children.indexOf(shortCards), children.indexOf(life), children.indexOf(deep), children.indexOf(disclaimer)],
+      ordering: [children.indexOf(overall), children.indexOf(life), children.indexOf(shortCards), children.indexOf(deep), children.indexOf(disclaimer)],
       disclaimer: disclaimer?.textContent.trim() || ''
     };
   });
   await page.emulateMediaFeatures([]);
+  await page.evaluate(() => document.querySelector('.tab[data-tab="result"]').click());
+  await page.waitForFunction(() => document.getElementById('view-result')?.classList.contains('active'));
+  const restoredView = await page.evaluate(() => ({
+    activeTab: document.querySelector('.tab.active')?.dataset.tab || null,
+    resultActive: document.getElementById('view-result')?.classList.contains('active') || false,
+    fortuneHidden: document.getElementById('view-fortune')?.hasAttribute('hidden') || false
+  }));
+
+  assert.deepEqual(restoredView, {
+    activeTab: 'result',
+    resultActive: true,
+    fortuneHidden: true
+  }, `${width}px long-reading inspection must restore the result view`);
 
   assert.equal(state.chapterCount, 10, `${width}px deep-reading chapter count`);
   assert.equal(state.buttonCount, 10, `${width}px chapter-index button count`);
@@ -1527,8 +1589,32 @@ async function inspectLongReading(page, width) {
   assert.ok(state.minTargetHeight >= 43.5, `${width}px chapter target below 44px: ${state.minTargetHeight}`);
   assert.ok(state.bodyFontSize >= 14, `${width}px body copy below 14px: ${state.bodyFontSize}`);
   assert.ok(state.bodyLineHeight / state.bodyFontSize >= 1.5, `${width}px body line-height is cramped`);
+  for (const [name, style] of Object.entries(state.narrativeStyles)) {
+    assert.ok(style.fontSize >= 14, `${width}px ${name} narrative below 14px: ${style.fontSize}`);
+    assert.ok(style.lineHeight / style.fontSize >= 1.5, `${width}px ${name} narrative line-height is cramped: ${style.lineHeight}`);
+  }
   assert.equal(state.navigation.scrollBehavior, 'auto', `${width}px reduced-motion navigation must not smooth-scroll`);
   assert.equal(state.navigation.activeId, state.navigation.targetId, `${width}px chapter navigation must move focus`);
+  assert.deepEqual(state.metricInteraction, {
+    activeMetric: 'money',
+    firstPressed: 'false',
+    secondPressed: 'true',
+    firstTabIndex: -1,
+    secondTabIndex: 0,
+    focusedMetric: 'money'
+  }, `${width}px metric selection must move aria-pressed and roving focus together`);
+  assert.deepEqual(state.eventInteraction, {
+    firstPressed: 'false',
+    secondPressed: 'true',
+    firstTabIndex: -1,
+    secondTabIndex: 0,
+    focusedIndex: '1',
+    selectedRows: 1,
+    selectedIndex: '1'
+  }, `${width}px key-turn selection must move aria-pressed and roving focus together`);
+  assert.equal(state.phaseDisclosure.initiallyOpen, false, `${width}px phase disclosure fixture must begin collapsed`);
+  assert.equal(state.phaseDisclosure.openAfterToggle, true, `${width}px phase summary must open its disclosure`);
+  assert.match(state.phaseDisclosure.phase, /^\d+$/, `${width}px phase disclosure identity missing`);
   assert.equal(state.phaseCount, 9, `${width}px life phase count`);
   assert.equal(state.phaseParagraphCount, 27, `${width}px life phase paragraph count`);
   assert.equal(state.eventCount, 7, `${width}px structural event count`);
