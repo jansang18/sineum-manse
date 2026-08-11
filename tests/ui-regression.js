@@ -888,7 +888,7 @@ function inspectFinalSecuritySourceContracts() {
     'utf8'
   );
   const renderSavedSource = indexHtml.match(
-    /async function renderSaved\(\)\s*\{[\s\S]*?\n\}\n\nasync function updateSavedRecord/
+    /async function renderSaved\(\)\s*\{[\s\S]*?\r?\n\}\r?\n\r?\nasync function updateSavedRecord/
   );
 
   assert.ok(renderSavedSource, 'renderSaved source contract missing');
@@ -898,7 +898,7 @@ function inspectFinalSecuritySourceContracts() {
     'saved records must be rendered with DOM APIs rather than HTML parsing sinks'
   );
   const compatibilityRendererSource = indexHtml.match(
-    /function renderCompatibilityDescription\([^)]*\)\s*\{[\s\S]*?\n\}/
+    /function renderCompatibilityDescription\([^)]*\)\s*\{[\s\S]*?\r?\n\}/
   );
   assert.ok(compatibilityRendererSource, 'compatibility description DOM renderer is required');
   assert.match(compatibilityRendererSource[0], /\.textContent\s*=/);
