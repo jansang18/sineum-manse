@@ -1887,24 +1887,30 @@ async function collectLuckFlowReachability(page) {
 }
 
 async function inspectAppleDesign(page, width) {
-  const expectedAccents = { light: '#007aff', dark: '#0a84ff' };
-  const expectedAccentColors = { light: 'rgb(0, 122, 255)', dark: 'rgb(10, 132, 255)' };
-  const expectedAccentTints = { light: { r: 0, g: 122, b: 255 }, dark: { r: 10, g: 132, b: 255 } };
+  const expectedAccents = { light: '#715234', dark: '#c5a76f' };
+  const expectedAccentColors = {
+    light: 'rgb(113, 82, 52)',
+    dark: 'rgb(197, 167, 111)'
+  };
   const expectedPastels = {
     light: {
-      wood: ['rgb(221, 246, 232)', 'rgb(35, 122, 75)'],
-      fire: ['rgb(255, 227, 223)', 'rgb(184, 68, 56)'],
-      earth: ['rgb(255, 241, 199)', 'rgb(122, 98, 0)'],
-      metal: ['rgb(236, 239, 244)', 'rgb(80, 91, 107)'],
-      water: ['rgb(226, 231, 255)', 'rgb(64, 84, 163)']
+      wood: ['rgb(216, 223, 212)', 'rgb(63, 98, 78)'],
+      fire: ['rgb(228, 201, 191)', 'rgb(140, 69, 54)'],
+      earth: ['rgb(223, 210, 174)', 'rgb(119, 96, 48)'],
+      metal: ['rgb(216, 215, 210)', 'rgb(80, 86, 90)'],
+      water: ['rgb(207, 215, 221)', 'rgb(64, 85, 105)']
     },
     dark: {
-      wood: ['rgb(20, 54, 41)', 'rgb(123, 224, 168)'],
-      fire: ['rgb(65, 32, 29)', 'rgb(255, 154, 143)'],
-      earth: ['rgb(58, 48, 20)', 'rgb(242, 211, 111)'],
-      metal: ['rgb(43, 48, 56)', 'rgb(200, 208, 220)'],
-      water: ['rgb(32, 40, 74)', 'rgb(167, 180, 255)']
+      wood: ['rgb(22, 49, 38)', 'rgb(121, 160, 135)'],
+      fire: ['rgb(68, 37, 31)', 'rgb(201, 120, 100)'],
+      earth: ['rgb(62, 52, 32)', 'rgb(197, 164, 93)'],
+      metal: ['rgb(41, 47, 52)', 'rgb(184, 186, 183)'],
+      water: ['rgb(32, 43, 54)', 'rgb(141, 160, 176)']
     }
+  };
+  const expectedRadii = {
+    light: { input: '7px', segmented: '8px', card: '8px 8px 22px 22px' },
+    dark: { input: '7px', segmented: '8px', card: '18px' }
   };
   const legacyGold = /#(?:d8b56a|f0d69a|a97732)\b|rgba?\(\s*(?:216\s*,\s*181\s*,\s*106|240\s*,\s*214\s*,\s*154|169\s*,\s*119\s*,\s*50)\b/i;
   const inputSelectors = {
@@ -1973,9 +1979,11 @@ async function inspectAppleDesign(page, width) {
     for (const { width: targetWidth, height } of componentInspection.geometry.segmentedButtons) {
       assert.ok(targetWidth >= 44 && height >= 44, `${width}px ${theme} segmented target is below 44px: ${targetWidth}x${height}px`);
     }
-    assert.equal(componentInspection.radii.input, '12px', `${width}px ${theme} input radius`);
-    assert.equal(componentInspection.radii.segmented, '14px', `${width}px ${theme} segmented radius`);
-    assert.equal(componentInspection.radii.card, '18px', `${width}px ${theme} card radius`);
+    assert.deepEqual(
+      componentInspection.radii,
+      expectedRadii[theme],
+      `${width}px ${theme} Priestess component radii`
+    );
     assert.equal(componentInspection.primaryAfter.content, 'none', `${width}px ${theme} primary button must not render decorative pseudo-content`);
     const focusOutline = parseCssColor(componentInspection.focusedInput.outlineColor);
     const expectedFocus = parseCssColor(componentInspection.focusColor);
@@ -2020,19 +2028,20 @@ async function inspectAppleDesign(page, width) {
 
     const activeTab = inspection.styles.activeTab[0];
     const expectedColor = expectedAccentColors[theme];
-    const expectedTint = expectedAccentTints[theme];
-    const activeTabTint = parseCssColor(activeTab.base.values.backgroundColor);
     assert.equal(activeTab.base.values.color, expectedColor, `${width}px ${theme} active tab text color`);
-    assert.ok(activeTabTint.a > 0.08, `${width}px ${theme} active tab capsule background is transparent: ${activeTab.base.values.backgroundColor}`);
-    assert.ok(
-      activeTabTint.b - activeTabTint.r >= 60 && activeTabTint.b - activeTabTint.g >= 60,
-      `${width}px ${theme} active tab capsule is not blue-tinted: ${activeTab.base.values.backgroundColor}`
+    assert.equal(
+      activeTab.base.values.backgroundColor,
+      'rgba(0, 0, 0, 0)',
+      `${width}px ${theme} active tab must use the Priestess transparent surface`
+    );
+    assert.match(
+      activeTab.base.values.boxShadow,
+      /inset/,
+      `${width}px ${theme} active tab must keep its inset underline`
     );
     assert.ok(
-      Math.abs(activeTabTint.r - expectedTint.r) <= 48 &&
-      Math.abs(activeTabTint.g - expectedTint.g) <= 48 &&
-      Math.abs(activeTabTint.b - expectedTint.b) <= 48,
-      `${width}px ${theme} active tab capsule is outside the system-blue family: ${activeTab.base.values.backgroundColor}`
+      activeTab.base.values.boxShadow.includes(expectedColor),
+      `${width}px ${theme} active tab underline must use the theme accent`
     );
 
     for (const [group, blocks] of Object.entries({
@@ -3465,11 +3474,15 @@ async function inspectWidth(browser, width) {
 
   if (runsGroup('apple-design')) {
     const appleCss = fs.readFileSync(path.join(UI_ROOT, 'apple.css'), 'utf8');
+    const priestessCss = fs.readFileSync(path.join(UI_ROOT, 'priestess.css'), 'utf8');
     const indexHtml = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
     const webManifest = JSON.parse(fs.readFileSync(path.join(WEB_ROOT, 'manifest.webmanifest'), 'utf8'));
     assert.match(appleCss, /--apple-accent:\s*#007aff/i);
     assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#0a84ff/i);
     assert.doesNotMatch(appleCss, /#d8b56a|#f0d69a|#a97732/i);
+    assert.match(priestessCss, /--apple-accent:\s*#715234/i);
+    assert.match(priestessCss, /--priestess-gold-bright:\s*#c5a76f/i);
+    assert.match(priestessCss, /body\.dark[\s\S]*--apple-accent:\s*var\(--priestess-gold-bright\)/i);
     assert.match(indexHtml, /<title>잔상 만세력<\/title>/, 'document title must use the current product name');
     assert.match(indexHtml, /<meta name="apple-mobile-web-app-title" content="잔상 만세력">/, 'Apple web app title must use the current product name');
     assert.deepEqual(
