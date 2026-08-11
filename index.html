@@ -13065,6 +13065,7 @@ function renderResult() {
       const idx = +el.dataset.idx;
       selectedDaeun = idx; selectedSeun = null; selectedWoon = null;
       setSelectedLuckItem('#daeunScroll', el);
+      revealLuckItem(document.getElementById('daeunScroll'), el);
       renderSeun();
     });
   });
@@ -13074,6 +13075,7 @@ function renderResult() {
     if (el) {
       selectedDaeun = curDaeunIdx;
       setSelectedLuckItem('#daeunScroll', el);
+      revealLuckItem(document.getElementById('daeunScroll'), el);
       renderSeun();
     }
   }
@@ -13324,6 +13326,19 @@ function setSelectedLuckItem(containerSelector, selectedItem) {
   });
 }
 
+function revealLuckItem(container, item) {
+  if (!container || !item) return;
+  requestAnimationFrame(() => {
+    const containerRect = container.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    const maxLeft = Math.max(0, container.scrollWidth - container.clientWidth);
+    const itemCenter = itemRect.left - containerRect.left +
+      container.scrollLeft + itemRect.width / 2;
+    const centered = itemCenter - container.clientWidth / 2;
+    container.scrollLeft = Math.max(0, Math.min(maxLeft, centered));
+  });
+}
+
 function renderSeun() {
   if (selectedDaeun === null) { $('#seunArea').innerHTML = ''; return; }
   const s = currentSaju;
@@ -13361,6 +13376,7 @@ function renderSeun() {
       const y = +el.dataset.year;
       selectedSeun = y; selectedWoon = null;
       setSelectedLuckItem('#seunScroll', el);
+      revealLuckItem(document.getElementById('seunScroll'), el);
       renderWoon();
     });
   });
@@ -13397,6 +13413,7 @@ function renderWoon() {
       const y = +el.dataset.year, m = +el.dataset.month;
       selectedWoon = { y, m };
       setSelectedLuckItem('#woonScroll', el);
+      revealLuckItem(document.getElementById('woonScroll'), el);
       renderDay();
     });
   });

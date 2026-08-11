@@ -1744,8 +1744,8 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
   width: 100%;
   padding: 0 0 8px !important;
   margin: 0 !important;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
   justify-content: stretch !important;
 }
 
@@ -1774,9 +1774,24 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
   overflow-y: hidden !important;
 }
 
-@media (max-width: 339px) {
+@media (max-width: 560px) {
+  #daeunScroll,
+  #seunScroll {
+    grid-auto-columns: minmax(44px, 56px);
+    justify-content: start !important;
+    scroll-padding-inline: 8px;
+  }
+
   #woonScroll.woon-grid {
-    grid-template-columns: repeat(12, minmax(25px, 1fr)) !important;
+    grid-template-columns: repeat(12, minmax(44px, 1fr)) !important;
+    justify-content: start;
+    scroll-padding-inline: 8px;
+  }
+
+  #daeunScroll .luck-item,
+  #seunScroll .luck-item,
+  #woonScroll .luck-item {
+    min-width: 44px !important;
   }
 }
 
@@ -1888,12 +1903,12 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
 @media (min-width: 768px) {
   #daeunScroll,
   #seunScroll {
-    grid-auto-columns: minmax(44px, 58px);
-    justify-content: center !important;
+    grid-auto-columns: minmax(44px, 1fr);
+    justify-content: stretch !important;
   }
 
   #woonScroll.woon-grid {
-    grid-template-columns: repeat(12, minmax(44px, 54px)) !important;
-    justify-content: center;
+    grid-template-columns: repeat(12, minmax(44px, 1fr)) !important;
+    justify-content: stretch;
   }
 }

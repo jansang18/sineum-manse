@@ -52,6 +52,8 @@ const runsSamePillars60 = () => !TEST_GROUP || TEST_GROUP === 'same-pillars-60';
 const runsLuckFlowOrder = () => !TEST_GROUP || TEST_GROUP === 'luck-flow-order';
 const runsLuckFlowAccessibility = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-accessibility';
+const runsLuckFlowResponsive = () =>
+  !TEST_GROUP || TEST_GROUP === 'luck-flow-responsive';
 
 async function resetLuckFlow(page) {
   await page.evaluate(() => {
@@ -1566,6 +1568,81 @@ async function inspectLuckFlowAccessibility(page, width) {
   await resetLuckFlow(page);
 }
 
+async function inspectLuckFlowResponsive(page, width) {
+  if (!runsLuckFlowResponsive()) return;
+  await resetLuckFlow(page);
+
+  await page.click('#seunScroll .luck-item');
+  await page.waitForSelector('#woonScroll .luck-item');
+  await sleep(40);
+
+  const state = await page.evaluate(() => {
+    const measure = selector => {
+      const container = document.querySelector(selector);
+      const items = [...container.querySelectorAll('.luck-item')];
+      return {
+        clientWidth: container.clientWidth,
+        scrollWidth: container.scrollWidth,
+        itemWidths: items.map(item => item.getBoundingClientRect().width)
+      };
+    };
+    const container = document.getElementById('daeunScroll');
+    const selected = container.querySelector('.luck-item.selected');
+    const containerRect = container.getBoundingClientRect();
+    const selectedRect = selected.getBoundingClientRect();
+    return {
+      documentOverflow: document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
+      daeun: measure('#daeunScroll'),
+      seun: measure('#seunScroll'),
+      woon: measure('#woonScroll'),
+      selectedVisible:
+        selectedRect.left >= containerRect.left - 1 &&
+        selectedRect.right <= containerRect.right + 1
+    };
+  });
+
+  assert.ok(state.documentOverflow <= 1, width + 'px document overflow');
+  assert.equal(state.selectedVisible, true, width + 'px selected Daeyun must be initially visible');
+
+  if (width <= 560) {
+    for (const [layer, metrics] of Object.entries({
+      daeun: state.daeun,
+      seun: state.seun,
+      woon: state.woon
+    })) {
+      assert.ok(
+        metrics.itemWidths.every(itemWidth => itemWidth >= 43.5),
+        width + 'px ' + layer + ' target below 44px'
+      );
+    }
+    if (width === 390) {
+      assert.ok(state.daeun.scrollWidth > state.daeun.clientWidth);
+      assert.ok(state.seun.scrollWidth > state.seun.clientWidth);
+      assert.ok(state.woon.scrollWidth > state.woon.clientWidth);
+    }
+
+    await page.evaluate(() => {
+      document.querySelector('#daeunScroll .luck-item:last-child').click();
+    });
+    await sleep(50);
+    const newlySelectedVisible = await page.evaluate(() => {
+      const container = document.getElementById('daeunScroll');
+      const item = container.querySelector('.luck-item.selected');
+      const containerRect = container.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      return itemRect.left >= containerRect.left - 1 &&
+        itemRect.right <= containerRect.right + 1;
+    });
+    assert.equal(newlySelectedVisible, true, width + 'px newly selected Daeyun must be revealed');
+  } else {
+    assert.ok(state.daeun.scrollWidth - state.daeun.clientWidth <= 1);
+    assert.ok(state.seun.scrollWidth - state.seun.clientWidth <= 1);
+    assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1);
+  }
+  await resetLuckFlow(page);
+}
+
 async function collectAppleInspection(page, selectors) {
   return page.evaluate(({ styleSelectors, geometrySelectors }) => {
     const visualProperties = [
@@ -2036,8 +2113,8 @@ async function inspectAppleDesign(page, width) {
         );
       } else {
         assert.ok(
-          flow.clientWidth / flow.itemCount < 25,
-          `${width}px ${theme} ${group} scrolls although all items can fit readably`
+          flow.minItemWidth >= 43.5,
+          `${width}px ${theme} ${group} scroll item is below the 44px touch width: ${flow.minItemWidth}px`
         );
         assert.ok(flow.reachedEnd, `${width}px ${theme} ${group} cannot reach its maximum scroll position`);
         assert.ok(
@@ -3207,6 +3284,12 @@ async function inspectWidth(browser, width) {
 
   await inspectLuckFlowAccessibility(page, width);
   if (TEST_GROUP === 'luck-flow-accessibility') {
+    await page.close();
+    return;
+  }
+
+  await inspectLuckFlowResponsive(page, width);
+  if (TEST_GROUP === 'luck-flow-responsive') {
     await page.close();
     return;
   }
