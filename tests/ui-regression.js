@@ -1814,7 +1814,6 @@ async function collectAppleComponentInspection(page) {
       enabledPrimary,
       disabledPrimary,
       focusedInput,
-      focusColor: getComputedStyle(document.body).getPropertyValue('--apple-focus').trim(),
       elementColors,
       canvasColor
     };
@@ -2017,6 +2016,11 @@ async function inspectAppleDesign(page, width) {
     assert.notEqual(componentInspection.focusedInput.outlineStyle, 'none', `${width}px ${theme} focused input outline style`);
     assert.ok(parseFloat(componentInspection.focusedInput.outlineWidth) > 0, `${width}px ${theme} focused input outline width`);
     assert.ok(focusOutline.a > 0, `${width}px ${theme} focused input outline must be visible`);
+    assertCssColorClose(
+      componentInspection.focusedInput.outlineColor,
+      expectedAccentColors[theme],
+      `${width}px ${theme} focused input outline must use the Priestess accent`
+    );
     assert.ok(
       componentInspection.disabledPrimary.pointerEvents === 'none' &&
       componentInspection.disabledPrimary.cursor === 'not-allowed',
