@@ -2926,58 +2926,61 @@ async function inspectWidth(browser, width) {
 
     if (runsGroup('transparency-contrast')) {
       const session = await page.createCDPSession();
-      let transparencyStyle = null;
+      let transparencyStyles = null;
       try {
         await session.send('Emulation.setEmulatedMedia', {
           features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }]
         });
-        transparencyStyle = await page.evaluate(() => {
+        transparencyStyles = await page.evaluate(async () => {
+          const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
           document.body.classList.add('dark');
           const toast = document.getElementById('appToast');
-          const style = getComputedStyle(toast);
+          const measure = () => {
+            const style = getComputedStyle(toast);
+            return {
+              foreground: style.color,
+              background: style.backgroundColor,
+              canvas: getComputedStyle(document.body).backgroundColor,
+              backdropFilter: style.backdropFilter || style.webkitBackdropFilter
+            };
+          };
+
+          document.body.classList.remove('dark');
+          await wait(300);
+          const light = measure();
+          document.body.classList.add('dark');
+          await wait(300);
+          const dark = measure();
           return {
-            foreground: style.color,
-            background: style.backgroundColor,
-            canvas: getComputedStyle(document.body).backgroundColor,
-            backdropFilter: style.backdropFilter || style.webkitBackdropFilter
+            mediaMatches: window.matchMedia('(prefers-reduced-transparency: reduce)').matches,
+            light,
+            dark
           };
         });
-      } catch (error) {
-        const css = fs.readFileSync(path.join(UI_ROOT, 'luxury.css'), 'utf8');
-        const start = css.search(/@media\s*\(prefers-reduced-transparency:\s*reduce\)/);
-        const end = css.indexOf('@media', start + 1);
-        const block = css.slice(start, end < 0 ? css.length : end);
-        assert.ok(start >= 0, 'reduced-transparency media query must exist');
-        assert.match(block, /\.app-toast[\s\S]*?color\s*:/, 'reduced-transparency toast must declare a foreground');
-        const foreground = block.match(/color\s*:\s*([^;!]+)/)?.[1].trim();
-        const background = block.match(/background\s*:\s*([^;!]+)/)?.[1].trim();
-        transparencyStyle = await page.evaluate(({ foreground, background }) => {
-          const toast = document.getElementById('appToast');
-          toast.style.color = foreground;
-          toast.style.background = background;
-          const style = getComputedStyle(toast);
-          const result = {
-            foreground: style.color,
-            background: style.backgroundColor,
-            canvas: getComputedStyle(document.body).backgroundColor,
-            backdropFilter: 'none'
-          };
-          toast.style.color = '';
-          toast.style.background = '';
-          return result;
-        }, { foreground, background });
       } finally {
         await session.send('Emulation.setEmulatedMedia', { features: [] }).catch(() => {});
         await session.detach().catch(() => {});
       }
-      const transparencyContrast = contrastRatio(
-        transparencyStyle.foreground,
-        transparencyStyle.background,
-        transparencyStyle.canvas
-      );
-      assert.ok(transparencyContrast >= 4.5, `reduced-transparency toast contrast is ${transparencyContrast.toFixed(2)}:1`);
-      assert.equal(parseCssColor(transparencyStyle.background).a, 1, 'reduced-transparency toast background must be solid');
-      assert.equal(transparencyStyle.backdropFilter, 'none', 'reduced-transparency toast must disable backdrop blur');
+      assert.equal(transparencyStyles.mediaMatches, true, 'reduced-transparency media emulation must match');
+      for (const [theme, expectedBackground] of [
+        ['light', 'rgb(244, 236, 220)'],
+        ['dark', 'rgb(17, 24, 30)']
+      ]) {
+        const transparencyStyle = transparencyStyles[theme];
+        const transparencyContrast = contrastRatio(
+          transparencyStyle.foreground,
+          transparencyStyle.background,
+          transparencyStyle.canvas
+        );
+        assertCssColorClose(
+          transparencyStyle.background,
+          expectedBackground,
+          `reduced-transparency ${theme} toast must use the solid Priestess surface`
+        );
+        assert.equal(parseCssColor(transparencyStyle.background).a, 1, `reduced-transparency ${theme} toast background must be solid`);
+        assert.equal(transparencyStyle.backdropFilter, 'none', `reduced-transparency ${theme} toast must disable backdrop blur`);
+        assert.ok(transparencyContrast >= 4.5, `reduced-transparency ${theme} toast contrast is ${transparencyContrast.toFixed(2)}:1`);
+      }
     }
 
     if (runsGroup('viewport-zoom')) {
