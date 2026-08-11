@@ -1030,6 +1030,7 @@ async function inspectFinalSecurityRuntime(page, width) {
     for (const key of keys) await window.storage.delete(key);
     localStorage.removeItem('saju_list');
     document.body.classList.remove('dark');
+    await wait(300);
     document.querySelector('.tab[data-tab="saved"]').click();
     await renderSaved();
     const savedEmpty = document.querySelector('.saved-empty');
