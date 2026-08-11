@@ -1,7 +1,7 @@
 // 잔상 만세력 서비스워커
 // 전략: HTML/CSS/JS = 네트워크 우선(항상 최신 디자인), 이미지/아이콘 = 캐시 우선(빠름).
 // 오프라인일 때만 캐시로 폴백한다. 배포 시 VERSION만 올리면 옛 캐시는 자동 삭제됨.
-const VERSION = 'v37-20260812-natal-luck-flow-order';
+const VERSION = 'v38-20260812-long-reading';
 const CACHE = 'jansang-manse-' + VERSION;
 
 // 오프라인 첫 진입에도 동작하도록 핵심 자원을 미리 캐시(이후 온라인이면 네트워크본으로 갱신)
@@ -12,6 +12,10 @@ const PRECACHE = [
   './luxury.css',
   './apple.css',
   './priestess.css',
+  './reading.css',
+  './reading.js',
+  './life-model.js',
+  './life-forecast.js',
   './manse-hero-v2.webp',
   './jansang-calligraphy-brush.webp',
   './share.js',

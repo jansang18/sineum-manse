@@ -1,0 +1,1556 @@
+/* Long-form fortune reading, adapted from the user-owned Saju Gangpae components.
+   This layer is intentionally component-scoped and inherits the current Apple/Priestess theme. */
+.deep-reading,
+.life-course,
+.life-phases,
+.reading-disclaimer {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+}
+.deep-reading *,
+.life-course *,
+.life-phases * {
+  box-sizing: border-box;
+}
+
+.deep-reading__index button {
+  min-height: 44px;
+}
+
+.deep-chapter {
+  scroll-margin-top: 112px;
+}
+
+.deep-chapter:focus-visible {
+  outline: 2px solid var(--apple-accent);
+  outline-offset: -2px;
+}
+
+/* =========================================================
+   장문 정밀 판독 — 실제 명식 데이터를 근거로 읽는 편집형 리포트
+   ========================================================= */
+.deep-reading {
+  width: min(100%, 1080px);
+  margin: clamp(42px, 7vw, 84px) auto 0;
+  color: var(--apple-label);
+}
+
+.deep-reading__intro {
+  position: relative;
+  padding: clamp(28px, 5vw, 64px);
+  overflow: hidden;
+  background: var(--apple-surface);
+  border: 1px solid var(--apple-separator);
+  border-top: 3px solid var(--apple-accent);
+}
+
+.deep-reading__intro::after {
+  content: "判讀";
+  position: absolute;
+  right: clamp(20px, 5vw, 64px);
+  bottom: -0.18em;
+  color: color-mix(in srgb, var(--apple-accent) calc(0.065 * 100%), transparent);
+  font-family: "Noto Serif KR", serif;
+  font-size: clamp(96px, 18vw, 220px);
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.deep-reading__eyebrow {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 18px;
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  line-height: 1.5;
+}
+
+.deep-reading__intro h2,
+.deep-closing h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 18ch;
+  margin: 0;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(34px, 5vw, 62px);
+  font-weight: 900;
+  letter-spacing: -0.065em;
+  line-height: 1.12;
+  word-break: keep-all;
+}
+
+.deep-reading__intro > p {
+  position: relative;
+  z-index: 1;
+  max-width: 68ch;
+  margin: 24px 0 0;
+  color: var(--apple-secondary);
+  font-size: clamp(14px, 1.6vw, 17px);
+  font-weight: 500;
+  line-height: 1.9;
+  word-break: keep-all;
+}
+
+.deep-reading__index {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-inline: 1px solid var(--apple-separator);
+  border-bottom: 1px solid var(--apple-separator);
+  background: var(--apple-surface);
+}
+
+.deep-reading__index button {
+  min-height: 58px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--apple-secondary);
+  border-right: 1px solid var(--apple-separator);
+  border-bottom: 1px solid var(--apple-separator);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-decoration: none;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.deep-reading__index button:nth-child(5n) {
+  border-right: 0;
+}
+
+.deep-reading__index button:nth-last-child(-n + 5) {
+  border-bottom: 0;
+}
+
+.deep-reading__index button span {
+  color: var(--apple-accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.deep-reading__index button:hover,
+.deep-reading__index button:focus-visible {
+  color: var(--apple-label);
+  background: var(--apple-surface-2);
+}
+
+.deep-reading__chapters {
+  border-inline: 1px solid var(--apple-separator);
+  background: var(--apple-surface);
+}
+
+.deep-chapter {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.22fr) minmax(0, 1fr);
+  gap: clamp(28px, 5vw, 72px);
+  padding: clamp(34px, 6vw, 76px) clamp(24px, 5vw, 64px);
+  border-bottom: 1px solid var(--apple-separator);
+  scroll-margin-top: 132px;
+}
+
+.deep-chapter__meta {
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.deep-chapter__number {
+  color: color-mix(in srgb, var(--apple-label) calc(0.16 * 100%), transparent);
+  font-size: clamp(42px, 6vw, 72px);
+  font-weight: 900;
+  letter-spacing: -0.08em;
+  line-height: 0.9;
+}
+
+.deep-chapter__category {
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.deep-verdict {
+  display: inline-flex;
+  min-height: 25px;
+  margin-top: 7px;
+  padding: 4px 8px;
+  align-items: center;
+  border: 1px solid var(--apple-separator);
+  border-radius: 2px;
+  color: var(--apple-secondary);
+  background: var(--apple-surface-2);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.deep-verdict--hot,
+.deep-verdict--recheck,
+.deep-verdict--watch {
+  color: var(--apple-accent);
+  border-color: color-mix(in srgb, var(--apple-accent) calc(0.48 * 100%), transparent);
+  background: color-mix(in srgb, var(--apple-accent) calc(0.07 * 100%), transparent);
+}
+
+.deep-verdict--strong,
+.deep-verdict--fit {
+  color: var(--apple-label);
+  border-color: color-mix(in srgb, var(--apple-label) calc(0.28 * 100%), transparent);
+}
+
+.deep-chapter__body {
+  min-width: 0;
+}
+
+.deep-chapter__body h3 {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(27px, 3.8vw, 46px);
+  font-weight: 880;
+  letter-spacing: -0.055em;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+
+.deep-chapter__lead {
+  max-width: 66ch;
+  margin: 24px 0 0;
+  padding-left: 18px;
+  color: var(--apple-label);
+  border-left: 2px solid var(--apple-accent);
+  font-size: clamp(16px, 1.7vw, 19px);
+  font-weight: 650;
+  line-height: 1.85;
+  word-break: keep-all;
+}
+
+.deep-prose {
+  max-width: 72ch;
+  margin-top: 28px;
+}
+
+.deep-prose p {
+  margin: 0;
+  color: var(--apple-secondary);
+  font-size: clamp(14px, 1.45vw, 16px);
+  font-weight: 450;
+  line-height: 2.05;
+  letter-spacing: -0.014em;
+  word-break: keep-all;
+}
+
+.deep-prose p + p {
+  margin-top: 1.25em;
+}
+
+.deep-evidence {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deep-evidence li {
+  padding: 6px 9px;
+  color: var(--apple-tertiary);
+  border: 1px solid color-mix(in srgb, var(--apple-label) calc(0.11 * 100%), transparent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--apple-label) calc(0.015 * 100%), transparent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.deep-evidence li::before {
+  content: "·";
+  margin-right: 5px;
+  color: var(--apple-accent);
+}
+
+.deep-closing {
+  position: relative;
+  padding: clamp(36px, 7vw, 80px) clamp(26px, 6vw, 72px);
+  overflow: hidden;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--apple-accent) calc(0.10 * 100%), transparent), transparent 42%),
+    var(--apple-surface);
+  border: 1px solid color-mix(in srgb, var(--apple-accent) calc(0.45 * 100%), transparent);
+  border-top: 0;
+}
+
+.deep-closing h2 {
+  max-width: 20ch;
+  font-size: clamp(32px, 4.5vw, 54px);
+}
+
+.deep-closing .deep-prose {
+  max-width: 68ch;
+}
+
+.deep-closing ol {
+  position: relative;
+  z-index: 1;
+  max-width: 68ch;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: verdict-rule;
+  border-top: 1px solid var(--apple-separator);
+}
+
+.deep-closing li {
+  counter-increment: verdict-rule;
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 12px;
+  padding: 15px 0;
+  color: var(--apple-label);
+  border-bottom: 1px solid var(--apple-separator);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.65;
+}
+
+.deep-closing li::before {
+  content: counter(verdict-rule, decimal-leading-zero);
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.deep-closing__stamp {
+  position: absolute;
+  right: clamp(24px, 5vw, 64px);
+  bottom: clamp(26px, 5vw, 56px);
+  width: 68px;
+  height: 78px;
+  display: grid;
+  place-items: center;
+  color: var(--apple-accent);
+  border: 2px double var(--apple-accent);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+  transform: rotate(-3deg);
+  opacity: 0.36;
+  pointer-events: none;
+}
+
+.reading-disclaimer {
+  width: min(100%, 1080px);
+  margin: 18px auto 0;
+  padding: 16px 18px;
+  color: var(--apple-secondary);
+  border: 1px solid var(--apple-separator);
+  background: var(--apple-surface);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.75;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .deep-reading {
+    margin-top: 42px;
+  }
+
+  .deep-reading__intro {
+    padding: 28px 20px 30px;
+  }
+
+  .deep-reading__intro h2,
+  .deep-closing h2 {
+    font-size: 31px;
+    line-height: 1.18;
+  }
+
+  .deep-reading__intro > p {
+    margin-top: 18px;
+    font-size: 14px;
+    line-height: 1.85;
+  }
+
+  .deep-reading__index {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .deep-reading__index::-webkit-scrollbar {
+    display: none;
+  }
+
+  .deep-reading__index button {
+    flex: 0 0 auto;
+    min-width: 112px;
+    min-height: 52px;
+    border-bottom: 0;
+  }
+
+  .deep-reading__index button:nth-child(5n) {
+    border-right: 1px solid var(--apple-separator);
+  }
+
+  .deep-chapter {
+    display: block;
+    padding: 38px 20px 44px;
+    scroll-margin-top: 118px;
+  }
+
+  .deep-chapter__meta {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .deep-chapter__number {
+    font-size: 34px;
+  }
+
+  .deep-chapter__category {
+    margin-right: auto;
+  }
+
+  .deep-verdict {
+    margin-top: 0;
+  }
+
+  .deep-chapter__body h3 {
+    max-width: none;
+    font-size: 27px;
+    line-height: 1.25;
+  }
+
+  .deep-chapter__lead {
+    margin-top: 20px;
+    padding-left: 14px;
+    font-size: 15.5px;
+    line-height: 1.85;
+  }
+
+  .deep-prose {
+    margin-top: 24px;
+  }
+
+  .deep-prose p {
+    font-size: 14.5px;
+    line-height: 1.95;
+  }
+
+  .deep-evidence {
+    margin-top: 23px;
+  }
+
+  .deep-closing {
+    padding: 40px 20px 124px;
+  }
+
+  .deep-closing__stamp {
+    right: 20px;
+    bottom: 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .deep-reading__index button {
+    transition: none;
+  }
+}
+
+/* =========================================================
+   LIFE COURSE — 공개판 인생 총운·대운 판독 장부
+   붓글씨는 쓰지 않으며, 빨강은 현재와 선택 상태에만 제한한다.
+   ========================================================= */
+.life-course {
+  width: min(100%, 1080px);
+  margin: clamp(42px, 7vw, 84px) auto 0;
+  overflow: hidden;
+  color: var(--apple-label);
+  border: 1px solid var(--apple-separator);
+  border-radius: 8px;
+  background: var(--apple-surface);
+}
+
+.life-course__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(22px, 4vw, 54px);
+  align-items: end;
+  padding: clamp(28px, 5vw, 56px);
+  border-bottom: 1px solid var(--apple-separator);
+}
+
+.life-course__kicker {
+  display: block;
+  margin-bottom: 13px;
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  line-height: 1.45;
+}
+
+.life-course__header h2 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(30px, 4.4vw, 52px);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1.12;
+  word-break: keep-all;
+}
+
+.life-course__header h2 em {
+  color: var(--apple-label);
+  font: inherit;
+}
+
+.life-course__header p {
+  max-width: 680px;
+  margin: 17px 0 0;
+  color: var(--apple-secondary);
+  font-size: 14px;
+  line-height: 1.78;
+  word-break: keep-all;
+}
+
+.life-course__accuracy {
+  display: inline-block;
+  margin-top: 14px;
+  padding-left: 12px;
+  color: var(--apple-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  border-left: 2px solid color-mix(in srgb, var(--apple-label) 28%, var(--apple-separator));
+}
+
+.life-course__verdict {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  align-items: end;
+  min-width: 138px;
+  padding: 14px 0 2px 22px;
+  border-left: 1px solid color-mix(in srgb, var(--apple-label) 28%, var(--apple-separator));
+}
+
+.life-course__verdict span {
+  grid-column: 1 / -1;
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.life-course__verdict strong {
+  color: var(--apple-label);
+  font-size: clamp(50px, 7vw, 74px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.065em;
+  line-height: 0.94;
+}
+
+.life-course__verdict small {
+  padding: 0 0 7px 8px;
+  color: var(--apple-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.life-course__metric-bar {
+  display: flex;
+  gap: 0;
+  padding: 0 clamp(16px, 4vw, 42px);
+  overflow-x: auto;
+  border-bottom: 1px solid var(--apple-separator);
+  scrollbar-width: none;
+}
+
+.life-course__metric-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.life-course__metric-bar button {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 70px;
+  min-height: 48px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--apple-secondary);
+  font: 700 13px/1 "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.life-course__metric-bar button::after {
+  content: "";
+  position: absolute;
+  right: 17px;
+  bottom: 0;
+  left: 17px;
+  height: 2px;
+  background: transparent;
+}
+
+.life-course__metric-bar button[aria-pressed="true"] {
+  color: var(--apple-label);
+}
+
+.life-course__metric-bar button[aria-pressed="true"]::after {
+  background: var(--apple-accent);
+}
+
+.life-course__metric-bar button:focus-visible,
+.life-event button:focus-visible,
+.life-course__table summary:focus-visible {
+  outline: 2px solid var(--apple-accent);
+  outline-offset: 3px;
+}
+
+.life-course__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(286px, 0.36fr);
+  min-width: 0;
+}
+
+.life-course__figure {
+  min-width: 0;
+  padding: clamp(20px, 3vw, 34px);
+  border-right: 1px solid var(--apple-separator);
+}
+
+.life-course__plot {
+  position: relative;
+  height: clamp(300px, 32vw, 400px);
+  min-height: 270px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--apple-label) 7%, transparent);
+  background:
+    linear-gradient(color-mix(in srgb, var(--apple-label) calc(0.018 * 100%), transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--apple-label) calc(0.018 * 100%), transparent) 1px, transparent 1px),
+    var(--apple-surface);
+  background-size: 24px 24px;
+}
+
+.life-course__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.life-course__grid-line line,
+.life-course__age-tick line {
+  stroke: color-mix(in srgb, var(--apple-label) calc(0.075 * 100%), transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.life-course__age-tick line {
+  stroke: color-mix(in srgb, var(--apple-label) calc(0.04 * 100%), transparent);
+}
+
+.life-course__axis-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  color: var(--apple-secondary);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.life-course__axis-y span,
+.life-course__axis-x span {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.life-course__axis-y span {
+  top: var(--axis-y);
+  left: 12px;
+  transform: translateY(calc(-100% - 6px));
+}
+
+.life-course__axis-x span {
+  bottom: 11px;
+  left: var(--axis-x);
+  transform: translateX(-50%);
+}
+
+.life-course__area {
+  pointer-events: none;
+}
+
+.life-course__trace {
+  fill: none;
+  stroke-width: 2.35;
+  stroke-linecap: square;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.life-course__trace--past {
+  stroke: var(--apple-label);
+  opacity: 0.9;
+}
+
+.life-course__trace--future {
+  stroke: var(--apple-tertiary);
+  stroke-dasharray: 7 7;
+  opacity: 0.82;
+}
+
+.life-course__now line {
+  stroke: var(--apple-accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+
+.life-course__current {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 2px 14px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 13px 15px;
+  border-left: 3px solid var(--apple-accent);
+  background: var(--apple-surface-2);
+}
+
+.life-course__current > span {
+  grid-row: 1 / 3;
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.life-course__current strong {
+  color: var(--apple-label);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.life-course__current b {
+  grid-row: 1 / 3;
+  color: var(--apple-label);
+  font-size: 25px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.life-course__current small {
+  color: var(--apple-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.life-course__summary {
+  display: grid;
+  gap: 7px;
+  margin: 20px 0 0;
+  color: var(--apple-secondary);
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.life-course__summary > strong {
+  color: var(--apple-label);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.life-course__summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 15px 0 0;
+  background: var(--apple-separator);
+  border: 1px solid var(--apple-separator);
+}
+
+.life-course__summary-stats > div {
+  min-width: 0;
+  padding: 11px 12px;
+  background: var(--apple-surface);
+}
+
+.life-course__summary-stats dt {
+  margin-bottom: 4px;
+  color: var(--apple-secondary);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.life-course__summary-stats dd {
+  margin: 0;
+  overflow: hidden;
+  color: var(--apple-label);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.life-course__ledger {
+  min-width: 0;
+  padding: clamp(20px, 3vw, 30px);
+  background: var(--apple-surface);
+}
+
+.life-course__detail {
+  min-height: 238px;
+  padding: 0 0 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--apple-label) 28%, var(--apple-separator));
+}
+
+.life-course__detail-index {
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.life-course__detail-verdict,
+.life-phase__verdict {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border: 1px solid color-mix(in srgb, var(--apple-label) 28%, var(--apple-separator));
+  border-radius: 3px;
+  color: var(--apple-label);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.life-course__detail h3 {
+  margin: 10px 0 0;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(20px, 2.2vw, 28px);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  word-break: keep-all;
+}
+
+.life-course__detail p {
+  margin: 11px 0 0;
+  color: var(--apple-secondary);
+  font-size: 12px;
+  line-height: 1.72;
+}
+
+.life-course__detail .life-course__detail-meta {
+  color: var(--apple-label);
+  font-weight: 700;
+}
+
+.life-course__evidence,
+.life-phase__evidence ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.life-course__evidence li,
+.life-phase__evidence li {
+  padding: 4px 7px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 3px;
+  color: var(--apple-secondary);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.life-course__events {
+  display: grid;
+  gap: 0;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.life-event button {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--apple-separator);
+  border-radius: 0;
+  background: transparent;
+  color: var(--apple-secondary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.life-event__number {
+  color: var(--apple-tertiary);
+  font-size: 10px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.life-event__copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.life-event__copy strong {
+  overflow: hidden;
+  color: var(--apple-label);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.life-event__copy small {
+  color: var(--apple-secondary);
+  font-size: 9px;
+}
+
+.life-event__score {
+  color: var(--apple-secondary);
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.life-event.is-selected button {
+  box-shadow: inset 2px 0 0 var(--apple-accent);
+}
+
+.life-event.is-selected .life-event__number,
+.life-event.is-selected .life-event__score {
+  color: var(--apple-accent);
+}
+
+.life-course__events-empty {
+  padding: 24px 0;
+  color: var(--apple-secondary);
+  font-size: 12px;
+}
+
+.life-course__events-empty strong {
+  color: var(--apple-label);
+}
+
+.life-course__table {
+  border-top: 1px solid var(--apple-separator);
+}
+
+.life-course__table summary {
+  min-height: 48px;
+  padding: 15px clamp(20px, 4vw, 42px);
+  color: var(--apple-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.life-course__table > div {
+  overflow-x: auto;
+  padding: 0 clamp(20px, 4vw, 42px) 24px;
+}
+
+.life-course__table table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.life-course__table th,
+.life-course__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--apple-label) 7%, transparent);
+}
+
+.life-course__table th:first-child,
+.life-course__table td:first-child {
+  text-align: left;
+}
+
+.life-phases {
+  border-top: 1px solid var(--apple-separator);
+  background: var(--apple-surface);
+}
+
+.life-phases__header {
+  padding: clamp(28px, 5vw, 52px);
+  border-bottom: 1px solid var(--apple-separator);
+}
+
+.life-phases__header > span,
+.life-phases--empty > header > span {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--apple-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+}
+
+.life-phases__header h2,
+.life-phases--empty h2 {
+  max-width: 780px;
+  margin: 0;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(27px, 3.8vw, 44px);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 1.15;
+  word-break: keep-all;
+}
+
+.life-phases__header p,
+.life-phases--empty > p {
+  max-width: 700px;
+  margin: 15px 0 0;
+  color: var(--apple-secondary);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.life-phases__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.life-phase {
+  position: relative;
+  border-bottom: 1px solid var(--apple-separator);
+}
+
+.life-phase.is-current {
+  box-shadow: inset 3px 0 0 var(--apple-accent);
+  background: color-mix(in srgb, var(--apple-accent) calc(0.025 * 100%), transparent);
+}
+
+.life-phase__disclosure {
+  margin: 0;
+}
+
+.life-phase__summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 12px clamp(18px, 3vw, 38px);
+  align-items: center;
+  min-height: 104px;
+  padding: 22px clamp(24px, 5vw, 58px);
+  cursor: pointer;
+  list-style: none;
+}
+
+.life-phase__summary::-webkit-details-marker {
+  display: none;
+}
+
+.life-phase__summary::marker {
+  content: "";
+}
+
+.life-phase__summary:hover {
+  background: color-mix(in srgb, var(--apple-label) calc(0.025 * 100%), transparent);
+}
+
+.life-phase__summary:focus-visible {
+  outline: 2px solid var(--apple-label);
+  outline-offset: -4px;
+}
+
+.life-phase__disclosure[open] > .life-phase__summary {
+  border-bottom: 1px solid var(--apple-separator);
+  background: color-mix(in srgb, var(--apple-label) calc(0.018 * 100%), transparent);
+}
+
+.life-phase__summary-index {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.life-phase__summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.life-phase__summary .life-phase__meta {
+  margin: 0;
+}
+
+.life-phase__summary-title {
+  overflow-wrap: anywhere;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.3;
+  word-break: keep-all;
+}
+
+.life-phase__summary .life-phase__verdict {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.life-phase__summary-action {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 56px;
+  color: var(--apple-secondary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.life-phase__summary-action::before {
+  content: "열기";
+}
+
+.life-phase__summary-action::after {
+  width: 7px;
+  height: 7px;
+  border-right: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  content: "";
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.life-phase__disclosure[open] .life-phase__summary-action::before {
+  content: "닫기";
+}
+
+.life-phase__disclosure[open] .life-phase__summary-action::after {
+  transform: translateY(2px) rotate(225deg);
+}
+
+.life-phase__body {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.3fr) minmax(0, 1fr);
+  gap: 20px clamp(28px, 5vw, 70px);
+  padding: clamp(30px, 5.5vw, 64px) clamp(24px, 5vw, 58px);
+}
+
+.life-phase__body-label {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.life-phase__body-label span {
+  color: var(--apple-secondary);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.life-phase__body-label strong {
+  color: var(--apple-label);
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 850;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.life-phase__body-content {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.life-phase__header {
+  grid-row: 1 / span 5;
+}
+
+.life-phase__header > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.life-phase__number {
+  color: var(--apple-secondary);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+}
+
+.life-phase__current {
+  padding: 3px 6px;
+  border: 1px solid color-mix(in srgb, var(--apple-accent) calc(0.5 * 100%), transparent);
+  border-radius: 3px;
+  color: var(--apple-accent);
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.life-phase__meta {
+  margin: 13px 0 0;
+  color: var(--apple-secondary);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.life-phase__label {
+  display: block;
+  margin-top: 24px;
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.life-phase__header h3 {
+  margin: 7px 0 12px;
+  color: var(--apple-label);
+  font-family: "Pretendard Variable", Pretendard, "Noto Sans KR", system-ui, sans-serif;
+  font-size: clamp(22px, 2.7vw, 32px);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.24;
+  word-break: keep-all;
+}
+
+.life-phase__verdict {
+  margin: 0;
+}
+
+.life-phase__lead {
+  margin: 0;
+  color: var(--apple-label);
+  font-size: clamp(15px, 1.6vw, 18px);
+  font-weight: 750;
+  line-height: 1.75;
+  word-break: keep-all;
+}
+
+.life-phase__scores {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--apple-separator);
+  border: 1px solid var(--apple-separator);
+}
+
+.life-phase__scores > div {
+  padding: 10px 8px;
+  background: var(--apple-surface);
+  text-align: center;
+}
+
+.life-phase__scores dt {
+  margin-bottom: 4px;
+  color: var(--apple-secondary);
+  font-size: 9px;
+}
+
+.life-phase__scores dd {
+  margin: 0;
+  color: var(--apple-label);
+  font-size: 16px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.life-phase__prose {
+  display: grid;
+  gap: 16px;
+}
+
+.life-phase__prose p,
+.life-phase__missing {
+  margin: 0;
+  color: var(--apple-secondary);
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 1.95;
+  word-break: keep-all;
+}
+
+.life-phase__evidence h4 {
+  margin: 0;
+  color: var(--apple-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.life-phase__evidence ul {
+  margin-top: 8px;
+}
+
+.life-phases__note,
+.life-course__note {
+  margin: 0;
+  padding: 15px clamp(20px, 4vw, 42px);
+  color: var(--apple-secondary);
+  font-size: 10px;
+  line-height: 1.65;
+}
+
+.life-phases__note {
+  border-bottom: 1px solid var(--apple-separator);
+}
+
+.life-course__note {
+  border-top: 1px solid var(--apple-separator);
+}
+
+.life-course--empty,
+.life-phases--empty {
+  padding: 28px;
+  color: var(--apple-secondary);
+  font-size: 13px;
+}
+
+@media (max-width: 1023px) {
+  .life-course__body {
+    grid-template-columns: 1fr;
+  }
+
+  .life-course__figure {
+    border-right: 0;
+    border-bottom: 1px solid var(--apple-separator);
+  }
+
+  .life-course__detail {
+    min-height: 0;
+  }
+
+  .life-course__events {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 18px;
+  }
+
+  .life-phase__scores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .life-course {
+    margin-block: 34px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .life-course__header {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 27px 20px;
+  }
+
+  .life-course__header h2 {
+    font-size: clamp(28px, 8.5vw, 38px);
+  }
+
+  .life-course__verdict {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto;
+    align-items: center;
+    min-width: 0;
+    padding: 13px 0 0;
+    border-top: 1px solid color-mix(in srgb, var(--apple-label) 28%, var(--apple-separator));
+    border-left: 0;
+  }
+
+  .life-course__verdict span {
+    grid-column: auto;
+  }
+
+  .life-course__verdict strong {
+    padding-left: 13px;
+    font-size: 44px;
+  }
+
+  .life-course__verdict small {
+    padding: 5px 0 0 7px;
+  }
+
+  .life-course__metric-bar {
+    padding-inline: 8px;
+  }
+
+  .life-course__metric-bar button {
+    min-width: 54px;
+    padding-inline: 10px;
+  }
+
+  .life-course__figure,
+  .life-course__ledger {
+    padding: 20px;
+  }
+
+  .life-course__plot {
+    height: 270px;
+    min-height: 270px;
+  }
+
+  .life-course__axis-x span:nth-child(even) {
+    display: none;
+  }
+
+  .life-course__summary-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .life-course__events {
+    grid-template-columns: 1fr;
+  }
+
+  .life-course__current {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .life-course__current > span {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    margin-bottom: 3px;
+  }
+
+  .life-course__current b {
+    grid-column: 2;
+    grid-row: 2 / 4;
+  }
+
+  .life-phase__summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px 14px;
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .life-phase__summary-index {
+    grid-column: 1 / -1;
+  }
+
+  .life-phase__summary-action {
+    min-width: 0;
+  }
+
+  .life-phase__body {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 32px 20px 38px;
+  }
+
+  .life-phase__header {
+    grid-row: auto;
+  }
+
+  .life-phase__scores {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 389px) {
+  .life-course__axis-overlay {
+    font-size: 10px;
+  }
+
+  .life-phase__scores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-contrast: more) {
+  .life-course,
+  .life-course__plot,
+  .life-event button,
+  .life-phase {
+    border-color: color-mix(in srgb, var(--apple-label) calc(0.36 * 100%), transparent);
+  }
+
+  .life-course__trace {
+    stroke-width: 3;
+  }
+}
+
+
+@media (max-width: 767px) {
+  .deep-reading__index {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .deep-prose p,
+  .life-phase__prose p,
+  .life-phase__missing {
+    min-width: 0;
+    font-size: max(14px, 0.875rem);
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .deep-reading__intro,
+  .deep-chapter,
+  .deep-closing,
+  .life-course,
+  .life-phase__scores > div {
+    background: var(--apple-surface);
+    backdrop-filter: none;
+  }
+}

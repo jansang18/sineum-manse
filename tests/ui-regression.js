@@ -54,6 +54,7 @@ const runsLuckFlowAccessibility = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-accessibility';
 const runsLuckFlowResponsive = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-responsive';
+const runsLongReading = () => !TEST_GROUP || TEST_GROUP === 'long-reading';
 
 async function resetLuckFlow(page) {
   await page.evaluate(() => {
@@ -1408,6 +1409,144 @@ async function fillAndCalculate(page) {
     document.getElementById('calcBtn').click();
   });
   await sleep(600);
+}
+
+async function inspectLongReading(page, width) {
+  if (!runsLongReading() || (!TEST_GROUP && width !== 390)) return;
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  const state = await page.evaluate(async () => {
+    window.__longReadingXss = 0;
+    document.querySelector('.tab[data-tab="fortune"]').click();
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    const fortune = document.getElementById('fortuneContent');
+    const deep = fortune.querySelector('.deep-reading');
+    const life = fortune.querySelector('.life-course');
+    const chapters = Array.from(deep?.querySelectorAll('.deep-chapter') || []);
+    const chapterButtons = Array.from(deep?.querySelectorAll('.deep-reading__index button') || []);
+    const phases = Array.from(life?.querySelectorAll('[data-life-phase]') || []);
+    const phaseParagraphs = Array.from(life?.querySelectorAll('.life-phase__prose p') || []);
+    const events = Array.from(life?.querySelectorAll('[data-life-event]') || []);
+    life?.querySelectorAll('details').forEach(details => { details.open = true; });
+
+    const payload = '<img src=x onerror="window.__longReadingXss=1">';
+    const injectionProbe = document.createElement('div');
+    injectionProbe.innerHTML = renderDeepReading({
+      eyebrow: payload,
+      title: payload,
+      deck: payload,
+      evidence: [payload],
+      sections: [{
+        id: payload,
+        number: payload,
+        category: payload,
+        verdict: { label: payload, tone: payload },
+        title: payload,
+        lead: payload,
+        paragraphs: [payload],
+        evidence: [payload]
+      }],
+      closing: { eyebrow: payload, title: payload, paragraphs: [payload], rules: [payload] }
+    });
+    document.body.append(injectionProbe);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    const escaped = window.__longReadingXss === 0 && !injectionProbe.querySelector('img') &&
+      injectionProbe.querySelector('.deep-verdict')?.classList.contains('deep-verdict--normal');
+    injectionProbe.remove();
+
+    const firstButton = chapterButtons[0];
+    const firstTarget = firstButton && document.getElementById(firstButton.getAttribute('aria-controls'));
+    let scrollOptions = null;
+    if (firstTarget) firstTarget.scrollIntoView = options => { scrollOptions = options; };
+    firstButton?.focus();
+    firstButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    firstButton?.click();
+
+    const style = element => element ? getComputedStyle(element) : null;
+    const bodyCopy = style(deep?.querySelector('.deep-prose p'));
+    document.body.classList.remove('dark');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const lightSurface = style(deep?.querySelector('.deep-reading__intro'))?.backgroundColor;
+    document.body.classList.add('dark');
+    await new Promise(resolve => setTimeout(resolve, 250));
+    const darkSurface = style(deep?.querySelector('.deep-reading__intro'))?.backgroundColor;
+
+    const children = Array.from(fortune.children);
+    const overall = fortune.querySelector('.overall-card');
+    const shortCards = fortune.querySelector('.fortune-cards');
+    const disclaimer = fortune.querySelector('.reading-disclaimer');
+    return {
+      chapterCount: chapters.length,
+      buttonCount: chapterButtons.length,
+      ariaTargetsValid: chapterButtons.every(button => {
+        const id = button.getAttribute('aria-controls');
+        return button.tagName === 'BUTTON' && id && document.getElementById(id);
+      }),
+      minTargetHeight: Math.min(...chapterButtons.map(button => button.getBoundingClientRect().height)),
+      bodyFontSize: Number.parseFloat(bodyCopy?.fontSize || '0'),
+      bodyLineHeight: Number.parseFloat(bodyCopy?.lineHeight || '0'),
+      navigation: {
+        scrollBehavior: scrollOptions?.behavior,
+        activeId: document.activeElement?.id,
+        targetId: firstTarget?.id
+      },
+      phaseCount: phases.length,
+      phaseParagraphCount: phaseParagraphs.length,
+      eventCount: events.length,
+      overallCardCount: fortune.querySelectorAll(':scope > .overall-card').length,
+      shortCardCount: fortune.querySelectorAll(':scope > .fortune-cards > .f-card').length,
+      lifeTextLength: life?.innerText.replace(/\s+/g, ' ').trim().length || 0,
+      combinedTextLength: [deep, life].map(node => node?.innerText || '').join(' ').replace(/\s+/g, ' ').trim().length,
+      personalized: fortune.innerText.includes('홍길동') && fortune.innerText.includes(String(new Date().getFullYear())),
+      escaped,
+      themeSurfaces: { light: lightSurface, dark: darkSurface },
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      overflowGeometry: Object.fromEntries(Object.entries({
+        fortune,
+        deep,
+        life,
+        index: deep?.querySelector('.deep-reading__index'),
+        table: life?.querySelector('.life-course__table > div')
+      }).map(([key, element]) => {
+        const rect = element?.getBoundingClientRect();
+        return [key, rect ? { left: rect.left, right: rect.right, width: rect.width, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, overflowX: getComputedStyle(element).overflowX } : null];
+      })),
+      overflowers: Array.from(fortune.querySelectorAll('*')).map(element => {
+        const rect = element.getBoundingClientRect();
+        return { selector: `${element.tagName.toLowerCase()}.${element.className || ''}`, left: rect.left, right: rect.right, width: rect.width };
+      }).filter(rect => rect.left < -1 || rect.right > document.documentElement.clientWidth + 1).slice(0, 12),
+      ordering: [children.indexOf(overall), children.indexOf(shortCards), children.indexOf(life), children.indexOf(deep), children.indexOf(disclaimer)],
+      disclaimer: disclaimer?.textContent.trim() || ''
+    };
+  });
+  await page.emulateMediaFeatures([]);
+
+  assert.equal(state.chapterCount, 10, `${width}px deep-reading chapter count`);
+  assert.equal(state.buttonCount, 10, `${width}px chapter-index button count`);
+  assert.equal(state.ariaTargetsValid, true, `${width}px chapter controls must resolve`);
+  assert.ok(state.minTargetHeight >= 43.5, `${width}px chapter target below 44px: ${state.minTargetHeight}`);
+  assert.ok(state.bodyFontSize >= 14, `${width}px body copy below 14px: ${state.bodyFontSize}`);
+  assert.ok(state.bodyLineHeight / state.bodyFontSize >= 1.5, `${width}px body line-height is cramped`);
+  assert.equal(state.navigation.scrollBehavior, 'auto', `${width}px reduced-motion navigation must not smooth-scroll`);
+  assert.equal(state.navigation.activeId, state.navigation.targetId, `${width}px chapter navigation must move focus`);
+  assert.equal(state.phaseCount, 9, `${width}px life phase count`);
+  assert.equal(state.phaseParagraphCount, 27, `${width}px life phase paragraph count`);
+  assert.equal(state.eventCount, 7, `${width}px structural event count`);
+  assert.equal(state.overallCardCount, 1, `${width}px existing overall card must remain`);
+  assert.equal(state.shortCardCount, 5, `${width}px five existing annual cards must remain`);
+  assert.ok(state.lifeTextLength >= 9000, `${width}px expanded life reading was ${state.lifeTextLength} chars`);
+  assert.ok(state.combinedTextLength >= 14500, `${width}px combined long content was ${state.combinedTextLength} chars`);
+  assert.equal(state.personalized, true, `${width}px current-year personalized evidence missing`);
+  assert.equal(state.escaped, true, `${width}px generated/user content reached an executable HTML sink`);
+  assert.notEqual(state.themeSurfaces.light, 'rgba(0, 0, 0, 0)', `${width}px light theme surface is transparent`);
+  assert.notEqual(state.themeSurfaces.dark, 'rgba(0, 0, 0, 0)', `${width}px dark theme surface is transparent`);
+  assert.notEqual(state.themeSurfaces.light, state.themeSurfaces.dark, `${width}px long reading ignores theme surfaces`);
+  assert.ok(state.overflow <= 1, `${width}px document horizontal overflow: ${state.overflow}px; ${JSON.stringify(state.overflowGeometry)}; ${JSON.stringify(state.overflowers)}`);
+  assert.ok(state.ordering.every((value, index, values) => index === 0 || values[index - 1] < value), `${width}px fortune sections are out of order: ${state.ordering}`);
+  assert.match(state.disclaimer, /참고|확정|예언/, `${width}px reference-only disclaimer missing`);
+  if (TEST_GROUP === 'long-reading') {
+    console.log(`[long-reading] expanded life=${state.lifeTextLength}, combined=${state.combinedTextLength}`);
+  }
 }
 
 async function inspectLuckFlowOrder(page, width) {
@@ -3338,6 +3477,12 @@ async function inspectWidth(browser, width) {
     return;
   }
 
+  await inspectLongReading(page, width);
+  if (TEST_GROUP === 'long-reading') {
+    await page.close();
+    return;
+  }
+
   await inspectSamePillars60(page, width);
   if (TEST_GROUP === 'same-pillars-60') {
     await page.close();
@@ -3535,17 +3680,27 @@ async function inspectWidth(browser, width) {
   assert.match(luxuryCss, /prefers-contrast:\s*more/);
 
   const serviceWorker = fs.readFileSync(path.join(WEB_ROOT, 'sw.js'), 'utf8');
-  assert.match(
-    serviceWorker,
-    /const VERSION = 'v37-20260812-natal-luck-flow-order'/,
-    'service worker cache version must ship the natal luck flow update'
-  );
-  assert.match(serviceWorker, /'\.\/apple\.css'/, 'web service worker must precache apple.css');
-  assert.match(serviceWorker, /'\.\/priestess\.css'/, 'web service worker must precache priestess.css');
-  assert.match(serviceWorker, /'\.\/luxury\.css'/, 'web service worker must precache luxury.css');
-  assert.match(serviceWorker, /'\.\/manse-hero-v2\.webp'/, 'web service worker must precache manse-hero-v2.webp');
-  assert.match(serviceWorker, /'\.\/jansang-calligraphy-brush\.webp'/, 'web service worker must precache the brush wordmark');
   if (runsGroup('service-worker')) {
+    const runtimeIndex = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
+    assert.match(
+      serviceWorker,
+      /const VERSION = 'v38-20260812-long-reading'/,
+      'service worker cache version must ship the combined long reading update'
+    );
+    assert.match(serviceWorker, /'\.\/apple\.css'/, 'web service worker must precache apple.css');
+    assert.match(serviceWorker, /'\.\/priestess\.css'/, 'web service worker must precache priestess.css');
+    assert.match(serviceWorker, /'\.\/reading\.css'/, 'web service worker must precache reading.css');
+    assert.match(serviceWorker, /'\.\/reading\.js'/, 'web service worker must precache reading.js');
+    assert.match(serviceWorker, /'\.\/life-model\.js'/, 'web service worker must precache life-model.js');
+    assert.match(serviceWorker, /'\.\/life-forecast\.js'/, 'web service worker must precache life-forecast.js');
+    assert.match(runtimeIndex, /<link rel="stylesheet" href="reading\.css">/, 'runtime must load the bare precached reading.css URL');
+    assert.match(runtimeIndex, /<script src="reading\.js"><\/script>/, 'runtime must load the bare precached reading.js URL');
+    assert.match(runtimeIndex, /<script src="life-model\.js"><\/script>/, 'runtime must load the bare precached life-model.js URL');
+    assert.match(runtimeIndex, /<script src="life-forecast\.js"><\/script>/, 'runtime must load the bare precached life-forecast.js URL');
+    assert.doesNotMatch(runtimeIndex, /(?:reading\.css|reading\.js|life-model\.js|life-forecast\.js)\?v=/, 'runtime and precache URLs must not diverge offline');
+    assert.match(serviceWorker, /'\.\/luxury\.css'/, 'web service worker must precache luxury.css');
+    assert.match(serviceWorker, /'\.\/manse-hero-v2\.webp'/, 'web service worker must precache manse-hero-v2.webp');
+    assert.match(serviceWorker, /'\.\/jansang-calligraphy-brush\.webp'/, 'web service worker must precache the brush wordmark');
     await inspectServiceWorkerInstall(serviceWorker);
     assert.doesNotMatch(serviceWorker, /addAll\(PRECACHE\)\.catch/, 'core addAll rejection must not be swallowed');
   }

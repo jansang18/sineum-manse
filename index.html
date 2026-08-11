@@ -1960,6 +1960,7 @@
   <link rel="stylesheet" href="luxury.css">
   <link rel="stylesheet" href="apple.css">
   <link rel="stylesheet" href="priestess.css">
+  <link rel="stylesheet" href="reading.css">
 </head>
 <body>
 
@@ -12219,6 +12220,9 @@ Sigrid Niehaus|19641229|F|
   </div>
 </div>
 
+<script src="reading.js"></script>
+<script src="life-model.js"></script>
+<script src="life-forecast.js"></script>
 <script>
 /* 전역 에러 핸들러 — 콘솔에만 기록 (화면 오버레이는 iOS에서 인터랙션을 막을 수 있어 제거) */
 window.addEventListener('error', function(e) {
@@ -14624,9 +14628,9 @@ function barColorByScore(score) {
   return 'linear-gradient(90deg, #9ca3af, #6b7280)';
 }
 
-// 올해 운 계산
-function calcYearFortune(saju) {
-  const thisYear = new Date().getFullYear();
+// 기존 운세 공식을 특정 연도에 적용하는 seam. 점수·십신·합충 산식은 그대로 둔다.
+function calcFortuneAtYear(saju, targetYear) {
+  const thisYear = targetYear;
   const seun = yearGanji(thisYear);
   const ilgan = saju.dStem;
 
@@ -14716,6 +14720,74 @@ function calcYearFortune(saju) {
   };
 }
 
+// 기존 호출 계약 보존
+function calcYearFortune(saju) {
+  return calcFortuneAtYear(saju, new Date().getFullYear());
+}
+
+// 기존 연도별 계산 결과를 0~80세로 펼쳐 판독 모델에 전달한다.
+// 날짜·절기·대운·점수 공식을 이 계층에서 다시 만들지 않는다.
+function buildLifeTimeline(saju) {
+  const endAge = Math.max(0, Math.min(80, 2099 - saju.year));
+  const referenceAge = new Date().getFullYear() - saju.year;
+  const currentAge = Math.max(0, Math.min(endAge, referenceAge));
+  const points = [];
+
+  for (let age = 0; age <= endAge; age += 1) {
+    const year = saju.year + age;
+    const fortune = calcFortuneAtYear(saju, year);
+    let daeunIndex = 0;
+    for (let index = 0; index < saju.daeun.list.length; index += 1) {
+      const nextAge = index < saju.daeun.list.length - 1
+        ? saju.daeun.list[index + 1].age
+        : 999;
+      if (age >= saju.daeun.list[index].age && age < nextAge) {
+        daeunIndex = index;
+        break;
+      }
+    }
+    points.push({
+      age,
+      year,
+      scores: { ...fortune.scores },
+      harmony: fortune.inter.harmony,
+      conflict: fortune.inter.conflict,
+      daeunIndex,
+      daeunChange: daeunIndex > 0 && saju.daeun.list[daeunIndex].age === age,
+      seunGanji: `${STEM[fortune.seun.stem]}${BRANCH[fortune.seun.branch]}`,
+      seunGanjiKor: `${STEM_KOR[fortune.seun.stem]}${BRANCH_KOR[fortune.seun.branch]}`,
+      seunStemGod: SIPSIN_KOR[fortune.seunStemSipsin],
+      seunBranchGod: SIPSIN_KOR[fortune.seunBranchSipsin]
+    });
+  }
+
+  const phases = saju.daeun.list.map((daeun, index) => {
+    const nextAge = index < saju.daeun.list.length - 1
+      ? saju.daeun.list[index + 1].age
+      : endAge + 1;
+    return {
+      index,
+      startAge: daeun.age,
+      endAge: Math.min(endAge, nextAge - 1),
+      stem: daeun.stem,
+      branch: daeun.branch,
+      isInitial: Boolean(daeun.isInitial),
+      ganji: `${STEM[daeun.stem]}${BRANCH[daeun.branch]}`,
+      ganjiKor: `${STEM_KOR[daeun.stem]}${BRANCH_KOR[daeun.branch]}`,
+      stemGod: SIPSIN_KOR[getSipsin(saju.dStem, daeun.stem)],
+      branchGod: SIPSIN_KOR[getSipsin(saju.dStem, JIJANGAN[daeun.branch][0])]
+    };
+  }).filter(phase => phase.startAge <= endAge && phase.endAge >= 0);
+
+  return window.SajuGangpaeLifeModel?.build({
+    methodVersion: 'fortune-v1-public-daeun',
+    currentAge,
+    unknownTime: Boolean(saju.unknown),
+    points,
+    phases
+  }) || null;
+}
+
 // 운세 텍스트 생성
 function genFortuneText(area, fortune, saju) {
   const s = fortune.scores[area];
@@ -14799,6 +14871,55 @@ function genOverallText(fortune, saju) {
   return main;
 }
 
+function renderDeepReading(report) {
+  if (!report || !Array.isArray(report.sections)) return '';
+  const allowedTones = new Set(['normal', 'watch', 'hot', 'recheck', 'strong', 'fit']);
+  const safeTone = tone => allowedTones.has(tone) ? tone : 'normal';
+  const evidence = items => Array.isArray(items) && items.length
+    ? `<ul class="deep-evidence" aria-label="판독 근거">${items.map(item => `<li>${escapeHtml(String(item))}</li>`).join('')}</ul>`
+    : '';
+  const sectionNav = report.sections.map(section => `
+    <button type="button" data-deep-target="deep-${escapeHtml(section.id)}" aria-controls="deep-${escapeHtml(section.id)}">
+      <span>${escapeHtml(section.number)}</span>${escapeHtml(section.category)}
+    </button>`).join('');
+  const sections = report.sections.map(section => `
+    <article class="deep-chapter" id="deep-${escapeHtml(section.id)}" tabindex="-1" aria-labelledby="deep-${escapeHtml(section.id)}-title">
+      <div class="deep-chapter__meta">
+        <span class="deep-chapter__number" aria-hidden="true">${escapeHtml(section.number)}</span>
+        <span class="deep-chapter__category">${escapeHtml(section.category)}</span>
+        <span class="deep-verdict deep-verdict--${safeTone(section.verdict?.tone)}">${escapeHtml(section.verdict?.label || '판독')}</span>
+      </div>
+      <div class="deep-chapter__body">
+        <h3 id="deep-${escapeHtml(section.id)}-title">${escapeHtml(section.title)}</h3>
+        <p class="deep-chapter__lead">${escapeHtml(section.lead)}</p>
+        <div class="deep-prose">
+          ${(section.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('')}
+        </div>
+        ${evidence(section.evidence)}
+      </div>
+    </article>`).join('');
+  const closing = report.closing || {};
+
+  return `
+    <section class="deep-reading" aria-labelledby="deepReadingTitle">
+      <header class="deep-reading__intro">
+        <span class="deep-reading__eyebrow">${escapeHtml(report.eyebrow)}</span>
+        <h2 id="deepReadingTitle">${escapeHtml(report.title)}</h2>
+        <p>${escapeHtml(report.deck)}</p>
+        ${evidence(report.evidence)}
+      </header>
+      <nav class="deep-reading__index" aria-label="정밀 판독 목차">${sectionNav}</nav>
+      <div class="deep-reading__chapters">${sections}</div>
+      <footer class="deep-closing">
+        <span class="deep-reading__eyebrow">${escapeHtml(closing.eyebrow || 'FINAL VERDICT')}</span>
+        <h2>${escapeHtml(closing.title || '최종 판결')}</h2>
+        <div class="deep-prose">${(closing.paragraphs || []).map(paragraph => `<p>${escapeHtml(paragraph)}</p>`).join('')}</div>
+        <ol>${(closing.rules || []).map(rule => `<li>${escapeHtml(rule)}</li>`).join('')}</ol>
+        <span class="deep-closing__stamp" aria-hidden="true">판독<br>완료</span>
+      </footer>
+    </section>`;
+}
+
 function renderFortune() {
   try {
     _renderFortuneInner();
@@ -14857,6 +14978,37 @@ function _renderFortuneInner() {
     </div>`;
   }).join('');
 
+  const deepReport = window.SajuGangpaeReading?.build({
+    name: s.name,
+    gender: s.gender,
+    dayStem: s.dStem,
+    monthGod: s.sipsin.month,
+    elements: s.ohaeng,
+    tenGods: [
+      s.sipsin.year, s.sipsin.month, s.sipsin.hour,
+      s.sipsinJi.year, s.sipsinJi.month, s.sipsinJi.day, s.sipsinJi.hour
+    ],
+    strong: fortune.yongsinInfo.strong,
+    support: fortune.yongsinInfo.support,
+    drain: fortune.yongsinInfo.drain,
+    yongsin: EL_KOR[fortune.yongsinInfo.yongsin],
+    yongsinIndex: fortune.yongsinInfo.yongsin,
+    interactions: s.interactions,
+    harmony: fortune.inter.harmony,
+    conflict: fortune.inter.conflict,
+    scores: fortune.scores,
+    year: fortune.year,
+    seunGanji: `${STEM_KOR[fortune.seun.stem]}${BRANCH_KOR[fortune.seun.branch]}`,
+    seunStemGod: SIPSIN_KOR[fortune.seunStemSipsin],
+    seunBranchGod: SIPSIN_KOR[fortune.seunBranchSipsin],
+    daeunGod: SIPSIN_KOR[fortune.daeunStemSipsin]
+  });
+  const deepReadingHtml = renderDeepReading(deepReport);
+  const lifeTimeline = buildLifeTimeline(s);
+  const lifeCourseHtml = lifeTimeline && window.SajuGangpaeLife
+    ? window.SajuGangpaeLife.render(lifeTimeline)
+    : '';
+
   $('#fortuneContent').innerHTML = `
     <div class="fortune-head">
       <div class="nm">${escapeHtml(s.name)}님의 올해운</div>
@@ -14882,10 +15034,29 @@ function _renderFortuneInner() {
       ${cardsHtml}
     </div>
 
-    <div style="margin-top:16px; padding:14px; background:var(--bg-soft); border-radius:12px; font-size:11.5px; font-weight:500; color:var(--text-sub); line-height:1.7; text-align:center;">
-      ⚠︎ 본 풀이는 세운·대운·용신·십신·합충을 종합한 참고용 해석입니다. 실제 삶의 흐름은 당신의 선택과 노력에 따라 달라집니다.
+    ${lifeCourseHtml}
+
+    ${deepReadingHtml}
+
+    <div class="reading-disclaimer">
+      본 판독은 원국·오행·십신·합충·대운·세운을 구조적으로 번역한 참고용 해석입니다. 사람을 낙인찍거나 사건을 확정적으로 예언하지 않으며, 실제 삶의 선택과 결과는 달라질 수 있습니다.
     </div>
   `;
+
+  if (lifeTimeline && window.SajuGangpaeLife) {
+    const lifeRoot = $('#fortuneContent').querySelector('[data-lifetime-graph]');
+    if (lifeRoot) window.SajuGangpaeLife.bind(lifeRoot, lifeTimeline);
+  }
+
+  $('#fortuneContent').querySelectorAll('[data-deep-target]').forEach(button => {
+    button.addEventListener('click', () => {
+      const target = document.getElementById(button.dataset.deepTarget);
+      if (!target) return;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      target.focus({ preventScroll: true });
+    });
+  });
 }
 
 
