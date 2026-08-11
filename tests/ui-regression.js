@@ -3497,6 +3497,13 @@ async function inspectWidth(browser, width) {
   assert.match(luxuryCss, /prefers-contrast:\s*more/);
 
   const serviceWorker = fs.readFileSync(path.join(WEB_ROOT, 'sw.js'), 'utf8');
+  assert.match(
+    serviceWorker,
+    /const VERSION = 'v37-20260812-natal-luck-flow-order'/,
+    'service worker cache version must ship the natal luck flow update'
+  );
+  assert.match(serviceWorker, /'\.\/apple\.css'/, 'web service worker must precache apple.css');
+  assert.match(serviceWorker, /'\.\/priestess\.css'/, 'web service worker must precache priestess.css');
   assert.match(serviceWorker, /'\.\/luxury\.css'/, 'web service worker must precache luxury.css');
   assert.match(serviceWorker, /'\.\/manse-hero-v2\.webp'/, 'web service worker must precache manse-hero-v2.webp');
   assert.match(serviceWorker, /'\.\/jansang-calligraphy-brush\.webp'/, 'web service worker must precache the brush wordmark');
