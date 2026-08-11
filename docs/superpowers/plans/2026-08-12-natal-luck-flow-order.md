@@ -995,7 +995,42 @@ Expected: the complete runtime diff is limited to <code>index.html</code>, <code
 
 ---
 
-### Task 6: Deploy to GitHub Pages and Verify the Public Site
+### Task 6: Add the Saju Gangpae Long-form Fortune Reading
+
+**Scope addendum (approved during execution):** Reuse the user-owned long-form engine from `jansang18/saju-gangpae-manse` at commit `579b1512b91bf9ab2768b917cfcd7b56230910d8`. The canonical source is `reading.js` (git blob `858fc5542157622a6b6beb136abd5c8240c8f5bf`). Keep the existing fortune calculations authoritative; the imported engine only translates their output into prose. Design verification is intentionally moderate: preserve the current Priestess/Apple theme, check readable responsive layout, internal navigation, focus, and 44px touch targets without a broader redesign.
+
+**Files:**
+- Create: `reading.js`
+- Create: `reading.css`
+- Modify: `index.html`
+- Modify: `sw.js`
+- Modify: `tests/ui-regression.js`
+- Create: `tests/long-reading.test.mjs`
+
+**Interfaces:**
+- Consumes: the existing `currentSaju`, `calcYearFortune()`, `sipsin`, `ohaeng`, `interactions`, yongsin, daeyun, and seun results
+- Produces: ten structured long-form chapters, a final verdict, five practical rules, and keyboard/touch-accessible chapter navigation inside the existing fortune tab
+- Must not add an API, payment dependency, duplicated fortune calculator, or deterministic event prediction
+
+- [ ] **Step 1: Write failing engine and browser contracts**
+
+Verify the canonical engine shape (10 chapters, 30 chapter paragraphs, 2 closing paragraphs, 5 rules), representative visible text of at least 5,500 characters, personalized/year-specific content, safe HTML rendering, and a real fortune-tab render with no page-level horizontal overflow.
+
+- [ ] **Step 2: Import the engine and integrate it into the fortune view**
+
+Load `reading.js` before the main inline application script, pass only existing calculation results to `SajuGangpaeReading.build()`, render every generated string through `escapeHtml()`, and place the report after the existing five annual fortune cards and before the disclaimer. Preserve the short annual cards.
+
+- [ ] **Step 3: Add restrained theme-aware presentation**
+
+Use existing Apple/Priestess variables in both themes. Keep prose at a readable line length and line height; make the chapter index horizontally scrollable only on narrow screens; keep every chapter control at least 44px; and honor reduced motion. Do not import the Saju Gangpae noir rebrand layer.
+
+- [ ] **Step 4: Refresh the PWA shell and verify**
+
+Precache the two new assets, advance the cache version to `v38-20260812-long-reading`, run the focused long-reading tests, existing luck-flow groups, syntax checks, `git diff --check`, and then the full four-width regression suite.
+
+---
+
+### Task 7: Deploy to GitHub Pages and Verify the Public Site
 
 **Files:**
 - No source changes
@@ -1064,12 +1099,12 @@ $base = 'https://jansang18.github.io/sineum-manse/'
 $page = Invoke-WebRequest ($base + '?verify=' + $expected)
 $worker = Invoke-WebRequest ($base + 'sw.js?verify=' + $expected)
 if ($page.StatusCode -ne 200) { throw 'public page did not return HTTP 200' }
-if ($worker.Content -notmatch 'v37-20260812-natal-luck-flow-order') {
+if ($worker.Content -notmatch 'v38-20260812-long-reading') {
   throw 'public service worker version is stale'
 }
 ~~~
 
-Expected: page is HTTP 200 and public <code>sw.js</code> contains v37.
+Expected: page is HTTP 200 and public <code>sw.js</code> contains v38.
 
 - [ ] **Step 5: Run focused browser contracts against the public URL**
 
