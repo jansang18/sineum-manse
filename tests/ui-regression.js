@@ -1517,6 +1517,7 @@ async function inspectLuckFlowAccessibility(page, width) {
 
   for (const dark of [false, true]) {
     await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), dark);
+    await page.keyboard.press('Tab');
     await page.$eval('#daeunScroll .luck-item.selected', item => item.focus());
     const focus = await page.$eval('#daeunScroll .luck-item.selected', item => {
       const style = getComputedStyle(item);
