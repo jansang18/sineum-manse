@@ -13038,7 +13038,16 @@ function renderResult() {
           <div class="luck-scroll" id="daeunScroll">
             ${s.daeun.list.slice().reverse().map((d, rIdx) => {
               const orig = s.daeun.list.length - 1 - rIdx;
-              return renderLuckItem({ idx: orig, label: d.isInitial ? '태생' : `${d.age}세`, stem: d.stem, branch: d.branch, ilgan });
+              return renderLuckItem({
+                idx: orig,
+                layer: '대운',
+                labelHtml: d.isInitial ? '태생' : d.age + '세',
+                labelText: d.isInitial ? '태생' : d.age + '세',
+                stem: d.stem,
+                branch: d.branch,
+                ilgan,
+                isCurrent: orig === curDaeunIdx
+              });
             }).join('')}
           </div>
           <div id="seunArea"></div>
@@ -13055,8 +13064,7 @@ function renderResult() {
     el.addEventListener('click', () => {
       const idx = +el.dataset.idx;
       selectedDaeun = idx; selectedSeun = null; selectedWoon = null;
-      $$('#daeunScroll .luck-item').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
+      setSelectedLuckItem('#daeunScroll', el);
       renderSeun();
     });
   });
@@ -13065,7 +13073,7 @@ function renderResult() {
     const el = document.querySelector(`#daeunScroll .luck-item[data-idx="${curDaeunIdx}"]`);
     if (el) {
       selectedDaeun = curDaeunIdx;
-      el.classList.add('selected');
+      setSelectedLuckItem('#daeunScroll', el);
       renderSeun();
     }
   }
@@ -13267,17 +13275,53 @@ function analyzeHap(branches) {
   return result;
 }
 
-function renderLuckItem({ idx, label, stem, branch, ilgan, dataAttrs = '' }) {
+function renderLuckItem({
+  idx = null,
+  layer,
+  labelHtml,
+  labelText,
+  stem,
+  branch,
+  ilgan,
+  isCurrent = false,
+  dataAttrs = ''
+}) {
   const sE = STEM_EL[stem], bE = BRANCH_EL[branch];
   const sT = SIPSIN_KOR[getSipsin(ilgan, stem)];
   const sB = SIPSIN_KOR[getSipsin(ilgan, JIJANGAN[branch][0])];
-  return `<div class="luck-item" data-idx="${idx}" ${dataAttrs}>
-    <div class="label">${label}</div>
-    <div class="sipsin-t">${sT}</div>
-    <div class="luck-block ${EL_CLASS[sE]}"><div class="han">${STEM[stem]}</div></div>
-    <div class="luck-block ${EL_CLASS[bE]}"><div class="han">${BRANCH[branch]}</div></div>
-    <div class="sipsin-b">${sB}</div>
-  </div>`;
+  const idxAttr = Number.isInteger(idx) ? ' data-idx="' + idx + '"' : '';
+  const currentAttr = isCurrent ? ' data-current="true"' : '';
+  const currentText = isCurrent ? ', 현재' : '';
+  const aria = layer + ' ' + labelText + currentText +
+    ', 천간 십성 ' + sT +
+    ', 천간 ' + STEM_KOR[stem] + ' ' + STEM[stem] +
+    ', 지지 ' + BRANCH_KOR[branch] + ' ' + BRANCH[branch] +
+    ', 지지 십성 ' + sB;
+
+  return [
+    '<button type="button" class="luck-item"',
+    idxAttr,
+    currentAttr,
+    ' ',
+    dataAttrs,
+    ' aria-pressed="false" aria-label="',
+    escapeHtml(aria),
+    '">',
+    '<span class="label">', labelHtml, '</span>',
+    '<span class="sipsin-t">', sT, '</span>',
+    '<span class="luck-block ', EL_CLASS[sE], '"><span class="han">', STEM[stem], '</span></span>',
+    '<span class="luck-block ', EL_CLASS[bE], '"><span class="han">', BRANCH[branch], '</span></span>',
+    '<span class="sipsin-b">', sB, '</span>',
+    '</button>'
+  ].join('');
+}
+
+function setSelectedLuckItem(containerSelector, selectedItem) {
+  $$(containerSelector + ' .luck-item').forEach(item => {
+    const selected = item === selectedItem;
+    item.classList.toggle('selected', selected);
+    item.setAttribute('aria-pressed', String(selected));
+  });
 }
 
 function renderSeun() {
@@ -13297,14 +13341,15 @@ function renderSeun() {
         ${years.slice().reverse().map(y => {
           const g = yearGanji(y);
           const ag = y - s.year;
-          const sE = STEM_EL[g.stem], bE = BRANCH_EL[g.branch];
-          return `<div class="luck-item" data-year="${y}">
-            <div class="label">${y}년<br><span class="meta">${ag}세</span></div>
-            <div class="sipsin-t">${SIPSIN_KOR[getSipsin(s.dStem, g.stem)]}</div>
-            <div class="luck-block ${EL_CLASS[sE]}"><div class="han">${STEM[g.stem]}</div></div>
-            <div class="luck-block ${EL_CLASS[bE]}"><div class="han">${BRANCH[g.branch]}</div></div>
-            <div class="sipsin-b">${SIPSIN_KOR[getSipsin(s.dStem, JIJANGAN[g.branch][0])]}</div>
-          </div>`;
+          return renderLuckItem({
+            layer: '세운',
+            labelHtml: y + '년<br><span class="meta">' + ag + '세</span>',
+            labelText: y + '년 ' + ag + '세',
+            stem: g.stem,
+            branch: g.branch,
+            ilgan: s.dStem,
+            dataAttrs: 'data-year="' + y + '"'
+          });
         }).join('')}
       </div>
       <div id="woonArea"></div>
@@ -13315,8 +13360,7 @@ function renderSeun() {
     el.addEventListener('click', () => {
       const y = +el.dataset.year;
       selectedSeun = y; selectedWoon = null;
-      $$('#seunScroll .luck-item').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
+      setSelectedLuckItem('#seunScroll', el);
       renderWoon();
     });
   });
@@ -13333,14 +13377,15 @@ function renderWoon() {
         ${Array.from({length: 12}, (_, i) => {
           const m = 12 - i;
           const g = getWoonMonth(y, m);
-          const sE = STEM_EL[g.stem], bE = BRANCH_EL[g.branch];
-          return `<div class="luck-item" data-year="${y}" data-month="${m}">
-            <div class="label">${m}월</div>
-            <div class="sipsin-t">${SIPSIN_KOR[getSipsin(s.dStem, g.stem)]}</div>
-            <div class="luck-block ${EL_CLASS[sE]}"><div class="han">${STEM[g.stem]}</div></div>
-            <div class="luck-block ${EL_CLASS[bE]}"><div class="han">${BRANCH[g.branch]}</div></div>
-            <div class="sipsin-b">${SIPSIN_KOR[getSipsin(s.dStem, JIJANGAN[g.branch][0])]}</div>
-          </div>`;
+          return renderLuckItem({
+            layer: '월운',
+            labelHtml: m + '월',
+            labelText: y + '년 ' + m + '월',
+            stem: g.stem,
+            branch: g.branch,
+            ilgan: s.dStem,
+            dataAttrs: 'data-year="' + y + '" data-month="' + m + '"'
+          });
         }).join('')}
       </div>
       <div id="dayArea"></div>
@@ -13351,8 +13396,7 @@ function renderWoon() {
     el.addEventListener('click', () => {
       const y = +el.dataset.year, m = +el.dataset.month;
       selectedWoon = { y, m };
-      $$('#woonScroll .luck-item').forEach(x => x.classList.remove('selected'));
-      el.classList.add('selected');
+      setSelectedLuckItem('#woonScroll', el);
       renderDay();
     });
   });

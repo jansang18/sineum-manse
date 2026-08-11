@@ -50,6 +50,8 @@ const runsResultHeaderCompact = () => !TEST_GROUP || TEST_GROUP === 'result-head
 const runsAndroidSafeArea = () => !TEST_GROUP || TEST_GROUP === 'android-safe-area';
 const runsSamePillars60 = () => !TEST_GROUP || TEST_GROUP === 'same-pillars-60';
 const runsLuckFlowOrder = () => !TEST_GROUP || TEST_GROUP === 'luck-flow-order';
+const runsLuckFlowAccessibility = () =>
+  !TEST_GROUP || TEST_GROUP === 'luck-flow-accessibility';
 
 async function resetLuckFlow(page) {
   await page.evaluate(() => {
@@ -1481,6 +1483,86 @@ async function inspectLuckFlowOrder(page, width) {
   await sleep(30);
   assert.equal(await page.$('#woonScroll'), null, 'changing Daeyun must clear Woon');
   assert.equal(await page.$('#dayArea'), null, 'changing Daeyun must clear day flow');
+  await resetLuckFlow(page);
+}
+
+async function inspectLuckFlowAccessibility(page, width) {
+  if (!runsLuckFlowAccessibility()) return;
+  await resetLuckFlow(page);
+
+  const initial = await page.evaluate(() => {
+    const daeun = [...document.querySelectorAll('#daeunScroll .luck-item')];
+    const seun = [...document.querySelectorAll('#seunScroll .luck-item')];
+    return {
+      tags: [...daeun, ...seun].map(item => item.tagName),
+      tabIndexes: [...daeun, ...seun].map(item => item.tabIndex),
+      daeunPressed: daeun.map(item => item.getAttribute('aria-pressed')),
+      daeunLabels: daeun.map(item => item.getAttribute('aria-label') || ''),
+      seunLabels: seun.map(item => item.getAttribute('aria-label') || ''),
+      currentDaeun: daeun
+        .filter(item => item.dataset.current === 'true')
+        .map(item => item.getAttribute('aria-label') || '')
+    };
+  });
+  assert.ok(initial.tags.every(tag => tag === 'BUTTON'), width + 'px luck items must be buttons');
+  assert.ok(initial.tabIndexes.every(tabIndex => tabIndex === 0), width + 'px luck buttons must stay in Tab order');
+  assert.equal(initial.daeunPressed.filter(value => value === 'true').length, 1);
+  assert.ok(initial.daeunLabels.every(label => /대운 .*천간 십성 .*지지 십성/.test(label)));
+  assert.ok(initial.seunLabels.every(label => /세운 .*천간 십성 .*지지 십성/.test(label)));
+  assert.equal(initial.currentDaeun.length, 1);
+  assert.match(initial.currentDaeun[0], /현재/);
+
+  for (const dark of [false, true]) {
+    await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), dark);
+    await page.$eval('#daeunScroll .luck-item.selected', item => item.focus());
+    const focus = await page.$eval('#daeunScroll .luck-item.selected', item => {
+      const style = getComputedStyle(item);
+      return {
+        active: document.activeElement === item,
+        visible: item.matches(':focus-visible'),
+        outlineStyle: style.outlineStyle,
+        outlineWidth: parseFloat(style.outlineWidth),
+        outlineOffset: style.outlineOffset,
+        outlineColor: style.outlineColor
+      };
+    });
+    assert.equal(focus.active, true, width + 'px selected luck button must receive focus');
+    assert.equal(focus.visible, true, width + 'px selected luck focus must be visible');
+    assert.notEqual(focus.outlineStyle, 'none');
+    assert.ok(focus.outlineWidth >= 2);
+    assert.equal(focus.outlineOffset, '2px');
+    assert.notEqual(focus.outlineColor, 'rgba(0, 0, 0, 0)');
+  }
+  await page.evaluate(() => document.body.classList.add('dark'));
+
+  await page.evaluate(() => {
+    const selected = document.querySelector('#daeunScroll .luck-item.selected');
+    [...document.querySelectorAll('#daeunScroll .luck-item')]
+      .find(item => item !== selected)
+      .focus();
+  });
+  await page.keyboard.press('Enter');
+  await sleep(30);
+  assert.equal(
+    await page.$$eval('#daeunScroll .luck-item[aria-pressed="true"]', items => items.length),
+    1
+  );
+
+  await page.$eval('#seunScroll .luck-item', item => item.focus());
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#woonScroll .luck-item');
+  assert.equal(
+    await page.$$eval('#seunScroll .luck-item[aria-pressed="true"]', items => items.length),
+    1
+  );
+
+  await page.$eval('#woonScroll .luck-item', item => item.focus());
+  await page.keyboard.press('Space');
+  await page.waitForSelector('#dayArea .day-item:not(.empty)');
+  assert.equal(
+    await page.$$eval('#woonScroll .luck-item[aria-pressed="true"]', items => items.length),
+    1
+  );
   await resetLuckFlow(page);
 }
 
@@ -3119,6 +3201,12 @@ async function inspectWidth(browser, width) {
 
   await inspectLuckFlowOrder(page, width);
   if (TEST_GROUP === 'luck-flow-order') {
+    await page.close();
+    return;
+  }
+
+  await inspectLuckFlowAccessibility(page, width);
+  if (TEST_GROUP === 'luck-flow-accessibility') {
     await page.close();
     return;
   }
