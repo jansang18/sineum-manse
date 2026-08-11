@@ -20,21 +20,23 @@ const CHROME = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Ap
 const UI_ROOT = process.env.UI_ROOT
   ? path.resolve(APP_ROOT, process.env.UI_ROOT)
   : path.join(APP_ROOT, 'www');
-const URL = pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
+const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
-const widths = TEST_GROUP === 'result-width-brand' || TEST_GROUP === 'shell-width'
-  ? [390, 1220]
-  : TEST_GROUP === 'same-pillars-60'
-    ? [390, 768]
-  : TEST_GROUP === 'fold-layout'
-    ? [720, 884]
-  : TEST_GROUP === 'calendar-shell-width'
-    ? [390, 520, 600, 700, 768, 900, 1220]
-  : TEST_GROUP === 'all-tab-shell-width'
-    ? [390, 520, 600, 700, 768, 1220]
-  : TEST_GROUP === 'frontend-quality'
-    ? [320, 768, 1440]
-  : TEST_GROUP ? [390] : [360, 390, 412, 768];
+const widths = TEST_GROUP === 'luck-flow-responsive'
+  ? [390, 560, 561, 768, 1220]
+  : TEST_GROUP === 'result-width-brand' || TEST_GROUP === 'shell-width'
+    ? [390, 1220]
+    : TEST_GROUP === 'same-pillars-60'
+      ? [390, 768]
+      : TEST_GROUP === 'fold-layout'
+        ? [720, 884]
+        : TEST_GROUP === 'calendar-shell-width'
+          ? [390, 520, 600, 700, 768, 900, 1220]
+          : TEST_GROUP === 'all-tab-shell-width'
+            ? [390, 520, 600, 700, 768, 1220]
+            : TEST_GROUP === 'frontend-quality'
+              ? [320, 768, 1440]
+              : TEST_GROUP ? [390] : [360, 390, 412, 768];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const runsGroup = name => !TEST_GROUP || TEST_GROUP === name;
 const runsSecondaryApple = () => !TEST_GROUP || TEST_GROUP === 'task-5' || TEST_GROUP === 'secondary-apple';
@@ -47,6 +49,17 @@ const runsFoldLayout = () => TEST_GROUP === 'fold-layout';
 const runsResultHeaderCompact = () => !TEST_GROUP || TEST_GROUP === 'result-header-compact';
 const runsAndroidSafeArea = () => !TEST_GROUP || TEST_GROUP === 'android-safe-area';
 const runsSamePillars60 = () => !TEST_GROUP || TEST_GROUP === 'same-pillars-60';
+const runsLuckFlowOrder = () => !TEST_GROUP || TEST_GROUP === 'luck-flow-order';
+
+async function resetLuckFlow(page) {
+  await page.evaluate(() => {
+    selectedDaeun = null;
+    selectedSeun = null;
+    selectedWoon = null;
+    renderResult();
+  });
+  await sleep(50);
+}
 
 async function inspectSamePillars60(page, width) {
   if (!runsSamePillars60() || (!TEST_GROUP && width !== 390)) return;
@@ -1364,6 +1377,111 @@ async function fillAndCalculate(page) {
     document.getElementById('calcBtn').click();
   });
   await sleep(600);
+}
+
+async function inspectLuckFlowOrder(page, width) {
+  if (!runsLuckFlowOrder()) return;
+  await resetLuckFlow(page);
+
+  const initial = await page.evaluate(() => {
+    const result = document.getElementById('view-result');
+    const children = [...result.children];
+    const oguk = result.querySelector(':scope > .oguk-card');
+    const flow = result.querySelector(':scope > .result-right');
+    const same = result.querySelector(':scope > .same-pillars-card');
+    return {
+      indexes: [children.indexOf(oguk), children.indexOf(flow), children.indexOf(same)],
+      seunCount: document.querySelectorAll('#seunScroll .luck-item').length,
+      hasWoon: Boolean(document.getElementById('woonScroll')),
+      hasDay: Boolean(document.getElementById('dayArea')),
+      uniqueCounts: [
+        document.querySelectorAll('#daeunScroll').length,
+        document.querySelectorAll('#seunArea').length,
+        document.querySelectorAll('.luck-section').length
+      ],
+      pillars: [
+        STEM[currentSaju.yStem] + BRANCH[currentSaju.yBranch],
+        STEM[currentSaju.mStem] + BRANCH[currentSaju.mBranch],
+        STEM[currentSaju.dStem] + BRANCH[currentSaju.dBranch],
+        STEM[currentSaju.hStem] + BRANCH[currentSaju.hBranch]
+      ],
+      daeun: currentSaju.daeun.list.map(item =>
+        item.age + ':' + STEM[item.stem] + BRANCH[item.branch]
+      ),
+      seun: [...document.querySelectorAll('#seunScroll .luck-item')].map(item =>
+        item.dataset.year + ':' +
+        [...item.querySelectorAll('.luck-block .han')].map(node => node.textContent).join('')
+      ),
+      flowBeforeSame: Boolean(
+        flow.compareDocumentPosition(same) & Node.DOCUMENT_POSITION_FOLLOWING
+      )
+    };
+  });
+
+  assert.deepEqual(initial.indexes, [0, 1, 2], width + 'px natal/luck/millennium order');
+  assert.ok(initial.seunCount >= 10, width + 'px current Daeyun must render Seun');
+  assert.equal(initial.hasWoon, false, width + 'px Woon must stay collapsed before Seun selection');
+  assert.equal(initial.hasDay, false, width + 'px day flow must stay collapsed before month selection');
+  assert.deepEqual(initial.uniqueCounts, [1, 1, 1], width + 'px luck IDs and section must stay unique');
+  assert.deepEqual(initial.pillars, ['己巳', '丁卯', '戊寅', '己未']);
+  assert.deepEqual(initial.daeun, [
+    '0:丁卯', '4:丙寅', '14:乙丑', '24:甲子', '34:癸亥', '44:壬戌',
+    '54:辛酉', '64:庚申', '74:己未', '84:戊午', '94:丁巳'
+  ]);
+  assert.deepEqual(initial.seun, [
+    '2032:壬子', '2031:辛亥', '2030:庚戌', '2029:己酉', '2028:戊申',
+    '2027:丁未', '2026:丙午', '2025:乙巳', '2024:甲辰', '2023:癸卯'
+  ]);
+  assert.equal(initial.flowBeforeSame, true, width + 'px luck flow must precede millennium card');
+
+  await page.click('#seunScroll .luck-item[data-year="2023"]');
+  await page.waitForSelector('#woonScroll .luck-item');
+  assert.equal(
+    await page.$$eval('#woonScroll .luck-item', items => items.length),
+    12,
+    width + 'px selected Seun must render twelve months'
+  );
+  assert.deepEqual(
+    await page.$$eval('#woonScroll .luck-item', items => items.map(item =>
+      item.dataset.month + ':' +
+      [...item.querySelectorAll('.luck-block .han')].map(node => node.textContent).join('')
+    )),
+    [
+      '12:甲子', '11:癸亥', '10:壬戌', '9:辛酉', '8:庚申', '7:己未',
+      '6:戊午', '5:丁巳', '4:丙辰', '3:乙卯', '2:甲寅', '1:癸丑'
+    ]
+  );
+
+  await page.click('#woonScroll .luck-item');
+  await page.waitForSelector('#dayArea .day-item:not(.empty)');
+  const expanded = await page.evaluate(() => ({
+    dayCount: document.querySelectorAll('#dayArea .day-item:not(.empty)').length,
+    documentOverflow: document.documentElement.scrollWidth -
+      document.documentElement.clientWidth,
+    luckContainsWoon: document.querySelector('.luck-section').contains(document.getElementById('woonScroll')),
+    luckContainsDay: document.querySelector('.luck-section').contains(document.getElementById('dayArea')),
+    flowBeforeSame: Boolean(
+      document.querySelector('.result-right').compareDocumentPosition(
+        document.querySelector('.same-pillars-card')
+      ) & Node.DOCUMENT_POSITION_FOLLOWING
+    )
+  }));
+  assert.ok(expanded.dayCount >= 28 && expanded.dayCount <= 31);
+  assert.ok(expanded.documentOverflow <= 1, width + 'px expanded day flow must not overflow the document');
+  assert.equal(expanded.luckContainsWoon, true);
+  assert.equal(expanded.luckContainsDay, true);
+  assert.equal(expanded.flowBeforeSame, true);
+
+  await page.evaluate(() => {
+    const selected = document.querySelector('#daeunScroll .luck-item.selected');
+    const next = [...document.querySelectorAll('#daeunScroll .luck-item')]
+      .find(item => item !== selected);
+    next.click();
+  });
+  await sleep(30);
+  assert.equal(await page.$('#woonScroll'), null, 'changing Daeyun must clear Woon');
+  assert.equal(await page.$('#dayArea'), null, 'changing Daeyun must clear day flow');
+  await resetLuckFlow(page);
 }
 
 async function collectAppleInspection(page, selectors) {
@@ -2998,6 +3116,12 @@ async function inspectWidth(browser, width) {
   }
 
   await fillAndCalculate(page);
+
+  await inspectLuckFlowOrder(page, width);
+  if (TEST_GROUP === 'luck-flow-order') {
+    await page.close();
+    return;
+  }
 
   await inspectSamePillars60(page, width);
   if (TEST_GROUP === 'same-pillars-60') {

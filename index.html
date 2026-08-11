@@ -13032,8 +13032,6 @@ function renderResult() {
     </div>
     </div>
 
-    ${renderSamePillars60(s, samePillarsReport)}
-
     <div class="result-right">
         <div class="luck-section">
           <div class="luck-title">대운 흐름 <span class="meta">(대운수 ${s.daeun.num}, ${s.daeun.forward ? '순행' : '역행'})</span></div>
@@ -13046,6 +13044,8 @@ function renderResult() {
           <div id="seunArea"></div>
         </div>
       </div>
+
+    ${renderSamePillars60(s, samePillarsReport)}
   `;
   $('#view-result').innerHTML = html;
   loadSamePillarPeople(samePillarsReport);
