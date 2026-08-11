@@ -1569,6 +1569,64 @@ async function inspectLongReading(page, width) {
     };
   });
   await page.emulateMediaFeatures([]);
+  const transparencySession = await page.createCDPSession();
+  let reducedTransparency = null;
+  try {
+    await transparencySession.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }]
+    });
+    reducedTransparency = await page.evaluate(async () => {
+      const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const measure = () => Object.fromEntries(Object.entries({
+        deep: document.querySelector('#fortuneContent .deep-reading__intro'),
+        lifetime: document.querySelector('#fortuneContent .life-course')
+      }).map(([name, element]) => {
+        const style = getComputedStyle(element);
+        return [name, {
+          background: style.backgroundColor,
+          backdropFilter: style.backdropFilter || style.webkitBackdropFilter
+        }];
+      }));
+
+      document.body.classList.remove('dark');
+      await wait(300);
+      const light = measure();
+      document.body.classList.add('dark');
+      await wait(300);
+      const dark = measure();
+      return {
+        mediaMatches: window.matchMedia('(prefers-reduced-transparency: reduce)').matches,
+        light,
+        dark
+      };
+    });
+  } finally {
+    await transparencySession.send('Emulation.setEmulatedMedia', { features: [] }).catch(() => {});
+    await transparencySession.detach().catch(() => {});
+  }
+  assert.equal(reducedTransparency.mediaMatches, true, `${width}px reduced-transparency media emulation must match`);
+  for (const [theme, expectedBackground] of [
+    ['light', 'rgb(244, 236, 220)'],
+    ['dark', 'rgb(17, 24, 30)']
+  ]) {
+    for (const [surfaceName, surface] of Object.entries(reducedTransparency[theme])) {
+      assert.equal(
+        parseCssColor(surface.background).a,
+        1,
+        `${width}px reduced-transparency ${theme} ${surfaceName} surface must be solid`
+      );
+      assertCssColorClose(
+        surface.background,
+        expectedBackground,
+        `${width}px reduced-transparency ${theme} ${surfaceName} must preserve the Priestess surface color`
+      );
+      assert.equal(
+        surface.backdropFilter,
+        'none',
+        `${width}px reduced-transparency ${theme} ${surfaceName} must disable backdrop blur`
+      );
+    }
+  }
   await page.evaluate(() => document.querySelector('.tab[data-tab="result"]').click());
   await page.waitForFunction(() => document.getElementById('view-result')?.classList.contains('active'));
   const restoredView = await page.evaluate(() => ({

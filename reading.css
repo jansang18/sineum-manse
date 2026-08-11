@@ -1545,12 +1545,22 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
+  .deep-reading,
+  .life-course {
+    --reading-solid-surface: rgb(244, 236, 220);
+  }
+
+  body.dark .deep-reading,
+  body.dark .life-course {
+    --reading-solid-surface: rgb(17, 24, 30);
+  }
+
   .deep-reading__intro,
   .deep-chapter,
   .deep-closing,
   .life-course,
   .life-phase__scores > div {
-    background: var(--apple-surface);
+    background: var(--reading-solid-surface);
     backdrop-filter: none;
   }
 }
