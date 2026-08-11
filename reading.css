@@ -1546,21 +1546,33 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .deep-reading,
-  .life-course {
-    --reading-solid-surface: rgb(244, 236, 220);
+  .life-course,
+  .reading-disclaimer {
+    --apple-surface: rgb(244, 236, 220);
   }
 
   body.dark .deep-reading,
-  body.dark .life-course {
-    --reading-solid-surface: rgb(17, 24, 30);
+  body.dark .life-course,
+  body.dark .reading-disclaimer {
+    --apple-surface: rgb(17, 24, 30);
+  }
+
+  .deep-chapter {
+    background: var(--apple-surface);
   }
 
   .deep-reading__intro,
+  .deep-reading__index,
+  .deep-reading__chapters,
   .deep-chapter,
   .deep-closing,
+  .reading-disclaimer,
   .life-course,
+  .life-course__plot,
+  .life-course__summary-stats > div,
+  .life-course__ledger,
+  .life-phases,
   .life-phase__scores > div {
-    background: var(--reading-solid-surface);
     backdrop-filter: none;
   }
 }

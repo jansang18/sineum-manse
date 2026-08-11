@@ -1727,12 +1727,23 @@ async function inspectLongReading(page, width) {
     reducedTransparency = await page.evaluate(async () => {
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
       const measure = () => Object.fromEntries(Object.entries({
-        deep: document.querySelector('#fortuneContent .deep-reading__intro'),
-        lifetime: document.querySelector('#fortuneContent .life-course')
+        deepIntro: document.querySelector('#fortuneContent .deep-reading__intro'),
+        deepIndex: document.querySelector('#fortuneContent .deep-reading__index'),
+        deepChapters: document.querySelector('#fortuneContent .deep-reading__chapters'),
+        deepChapter: document.querySelector('#fortuneContent .deep-chapter'),
+        deepClosing: document.querySelector('#fortuneContent .deep-closing'),
+        disclaimer: document.querySelector('#fortuneContent .reading-disclaimer'),
+        lifeCourse: document.querySelector('#fortuneContent .life-course'),
+        lifePlot: document.querySelector('#fortuneContent .life-course__plot'),
+        lifeSummaryStat: document.querySelector('#fortuneContent .life-course__summary-stats > div'),
+        lifeLedger: document.querySelector('#fortuneContent .life-course__ledger'),
+        lifePhases: document.querySelector('#fortuneContent .life-phases'),
+        lifePhaseScore: document.querySelector('#fortuneContent .life-phase__scores > div')
       }).map(([name, element]) => {
         const style = getComputedStyle(element);
         return [name, {
           background: style.backgroundColor,
+          backgroundImage: style.backgroundImage,
           backdropFilter: style.backdropFilter || style.webkitBackdropFilter
         }];
       }));
@@ -1775,6 +1786,16 @@ async function inspectLongReading(page, width) {
         `${width}px reduced-transparency ${theme} ${surfaceName} must disable backdrop blur`
       );
     }
+    assert.match(
+      reducedTransparency[theme].deepClosing.backgroundImage,
+      /linear-gradient/,
+      `${width}px reduced-transparency ${theme} deep closing must preserve its gradient layer`
+    );
+    assert.match(
+      reducedTransparency[theme].lifePlot.backgroundImage,
+      /linear-gradient/,
+      `${width}px reduced-transparency ${theme} lifetime plot must preserve its grid layers`
+    );
   }
   await page.evaluate(() => document.querySelector('.tab[data-tab="result"]').click());
   await page.waitForFunction(() => document.getElementById('view-result')?.classList.contains('active'));
