@@ -995,12 +995,14 @@ Expected: the complete runtime diff is limited to <code>index.html</code>, <code
 
 ---
 
-### Task 6: Add the Saju Gangpae Long-form Fortune Reading
+### Task 6: Add the Saju Gangpae Long-form and Lifetime Fortune Reading
 
-**Scope addendum (approved during execution):** Reuse the user-owned long-form engine from `jansang18/saju-gangpae-manse` at commit `579b1512b91bf9ab2768b917cfcd7b56230910d8`. The canonical source is `reading.js` (git blob `858fc5542157622a6b6beb136abd5c8240c8f5bf`). Keep the existing fortune calculations authoritative; the imported engine only translates their output into prose. Design verification is intentionally moderate: preserve the current Priestess/Apple theme, check readable responsive layout, internal navigation, focus, and 44px touch targets without a broader redesign.
+**Scope addendum (approved during execution):** Reuse the user-owned fortune systems from `jansang18/saju-gangpae-manse` at commit `579b1512b91bf9ab2768b917cfcd7b56230910d8`. The canonical sources are `reading.js` (git blob `858fc5542157622a6b6beb136abd5c8240c8f5bf`), `life-model.js` (blob `cf995b8a1fcf7ea52d106c70ac6dd50f3333d1bf`), and `life-forecast.js` (blob `22cf04c76fd9160ac21629bd64debbd7cc5b71c5`). The remembered roughly 9,000-character feature is the all-expanded lifetime/daeyun report (measured about 9,494 DOM text characters), while the separate ten-chapter reading contributes about 6,100 more. Include both, as the source fortune page does. Keep the existing fortune calculations authoritative; the imported systems only organize and translate their output. Design verification is intentionally moderate: preserve the current Priestess/Apple theme, check readable responsive layout, internal navigation, focus, and 44px touch targets without a broader redesign.
 
 **Files:**
 - Create: `reading.js`
+- Create: `life-model.js`
+- Create: `life-forecast.js`
 - Create: `reading.css`
 - Modify: `index.html`
 - Modify: `sw.js`
@@ -1009,16 +1011,16 @@ Expected: the complete runtime diff is limited to <code>index.html</code>, <code
 
 **Interfaces:**
 - Consumes: the existing `currentSaju`, `calcYearFortune()`, `sipsin`, `ohaeng`, `interactions`, yongsin, daeyun, and seun results
-- Produces: ten structured long-form chapters, a final verdict, five practical rules, and keyboard/touch-accessible chapter navigation inside the existing fortune tab
+- Produces: ten structured long-form chapters, a final verdict, five practical rules, a lifetime score graph, seven key turns, nine all-daeyun phase readings, and keyboard/touch-accessible navigation inside the existing fortune tab
 - Must not add an API, payment dependency, duplicated fortune calculator, or deterministic event prediction
 
 - [ ] **Step 1: Write failing engine and browser contracts**
 
-Verify the canonical engine shape (10 chapters, 30 chapter paragraphs, 2 closing paragraphs, 5 rules), representative visible text of at least 5,500 characters, personalized/year-specific content, safe HTML rendering, and a real fortune-tab render with no page-level horizontal overflow.
+Verify the canonical deep-reading shape (10 chapters, 30 chapter paragraphs, 2 closing paragraphs, 5 rules), the lifetime shape (nine phase readings with 27 paragraphs and seven key turns for a normal fixture), deep-reading text of at least 5,500 characters, all-expanded lifetime text of at least 9,000 characters, personalized/year-specific content, safe HTML rendering, and a real fortune-tab render with no page-level horizontal overflow.
 
 - [ ] **Step 2: Import the engine and integrate it into the fortune view**
 
-Load `reading.js` before the main inline application script, pass only existing calculation results to `SajuGangpaeReading.build()`, render every generated string through `escapeHtml()`, and place the report after the existing five annual fortune cards and before the disclaimer. Preserve the short annual cards.
+Load all three canonical engines before the main inline application script. Port the source `buildLifeTimeline()` adapter so it derives its points from the existing `calcFortuneAtYear()` and daeyun results rather than recalculating saju. Pass only existing calculation results to `SajuGangpaeReading.build()` and `SajuGangpaeLifeModel.build()`, preserve the renderer/binder safety rules, and place the lifetime report plus ten-chapter reading alongside the existing five annual fortune cards before the disclaimer. Preserve the short annual cards.
 
 - [ ] **Step 3: Add restrained theme-aware presentation**
 
@@ -1026,7 +1028,7 @@ Use existing Apple/Priestess variables in both themes. Keep prose at a readable 
 
 - [ ] **Step 4: Refresh the PWA shell and verify**
 
-Precache the two new assets, advance the cache version to `v38-20260812-long-reading`, run the focused long-reading tests, existing luck-flow groups, syntax checks, `git diff --check`, and then the full four-width regression suite.
+Precache the four new assets, advance the cache version to `v38-20260812-long-reading`, run the focused long-reading tests, existing luck-flow groups, syntax checks, `git diff --check`, and then the full four-width regression suite.
 
 ---
 
