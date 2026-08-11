@@ -919,34 +919,32 @@ function contrastRatio(foregroundValue, backgroundValue, canvasValue) {
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
 }
 
-function createServiceWorkerHarness(source, addAllFailure = null) {
+function createServiceWorkerHarness(source) {
   const handlers = new Map();
   const events = [];
   const deletedCaches = [];
-  let openedCache = '';
   const caches = {
-    open(name) {
-      openedCache = name;
-      return Promise.resolve({
-        addAll(entries) {
-          events.push({ type: 'addAll', entries: [...entries] });
-          return addAllFailure ? Promise.reject(addAllFailure) : Promise.resolve();
-        },
-        put() { return Promise.resolve(); }
-      });
-    },
     keys() {
-      return Promise.resolve(['sineum-manse-previous', openedCache].filter(Boolean));
+      return Promise.resolve([
+        'jansang-manse-v38-20260812-long-reading',
+        'jansang-manse-previous',
+        'another-site-cache'
+      ]);
     },
     delete(name) {
       deletedCaches.push(name);
       events.push({ type: 'delete', name });
       return Promise.resolve(true);
-    },
-    match() { return Promise.resolve(undefined); }
+    }
   };
   const self = {
     location: { origin: 'https://example.test' },
+    registration: {
+      unregister() {
+        events.push({ type: 'unregister' });
+        return Promise.resolve(true);
+      }
+    },
     clients: {
       claim() {
         events.push({ type: 'claim' });
@@ -969,6 +967,7 @@ function createServiceWorkerHarness(source, addAllFailure = null) {
   return {
     events,
     deletedCaches,
+    hasHandler(type) { return handlers.has(type); },
     dispatch(type) {
       const handler = handlers.get(type);
       assert.equal(typeof handler, 'function', `service worker ${type} handler missing`);
@@ -984,27 +983,26 @@ function createServiceWorkerHarness(source, addAllFailure = null) {
   };
 }
 
-async function inspectServiceWorkerInstall(source) {
-  const failure = new Error('precache failed');
-  const failedInstall = createServiceWorkerHarness(source, failure);
-  await assert.rejects(failedInstall.dispatch('install'), /precache failed/, 'failed core precache must reject service-worker installation');
+async function inspectServiceWorkerDisable(source) {
+  const harness = createServiceWorkerHarness(source);
+  await harness.dispatch('install');
   assert.deepEqual(
-    failedInstall.events.map(event => event.type),
-    ['addAll'],
-    'failed core precache must not call skipWaiting or activate cache cleanup'
+    harness.events.map(event => event.type),
+    ['skipWaiting'],
+    'the cache-removal worker must activate immediately without precaching'
   );
-  assert.deepEqual(failedInstall.deletedCaches, [], 'the previous cache must survive a failed install');
-
-  const successfulInstall = createServiceWorkerHarness(source);
-  await successfulInstall.dispatch('install');
+  await harness.dispatch('activate');
   assert.deepEqual(
-    successfulInstall.events.map(event => event.type),
-    ['addAll', 'skipWaiting'],
-    'skipWaiting must follow successful addAll'
+    harness.deletedCaches,
+    ['jansang-manse-v38-20260812-long-reading', 'jansang-manse-previous'],
+    'only this app cache namespace may be deleted'
   );
-  await successfulInstall.dispatch('activate');
-  assert.deepEqual(successfulInstall.deletedCaches, ['sineum-manse-previous']);
-  assert.equal(successfulInstall.events.at(-1).type, 'claim');
+  assert.deepEqual(
+    harness.events.slice(-2).map(event => event.type),
+    ['claim', 'unregister'],
+    'the tombstone worker must take control before unregistering itself'
+  );
+  assert.equal(harness.hasHandler('fetch'), false, 'the tombstone worker must never intercept network requests');
 }
 
 function inspectAndroidBackupPolicy() {
@@ -4002,27 +4000,17 @@ async function inspectWidth(browser, width) {
   const serviceWorker = fs.readFileSync(path.join(WEB_ROOT, 'sw.js'), 'utf8');
   if (runsGroup('service-worker')) {
     const runtimeIndex = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
-    assert.match(
-      serviceWorker,
-      /const VERSION = 'v38-20260812-long-reading'/,
-      'service worker cache version must ship the combined long reading update'
-    );
-    assert.match(serviceWorker, /'\.\/apple\.css'/, 'web service worker must precache apple.css');
-    assert.match(serviceWorker, /'\.\/priestess\.css'/, 'web service worker must precache priestess.css');
-    assert.match(serviceWorker, /'\.\/reading\.css'/, 'web service worker must precache reading.css');
-    assert.match(serviceWorker, /'\.\/reading\.js'/, 'web service worker must precache reading.js');
-    assert.match(serviceWorker, /'\.\/life-model\.js'/, 'web service worker must precache life-model.js');
-    assert.match(serviceWorker, /'\.\/life-forecast\.js'/, 'web service worker must precache life-forecast.js');
-    assert.match(runtimeIndex, /<link rel="stylesheet" href="reading\.css">/, 'runtime must load the bare precached reading.css URL');
-    assert.match(runtimeIndex, /<script src="reading\.js"><\/script>/, 'runtime must load the bare precached reading.js URL');
-    assert.match(runtimeIndex, /<script src="life-model\.js"><\/script>/, 'runtime must load the bare precached life-model.js URL');
-    assert.match(runtimeIndex, /<script src="life-forecast\.js"><\/script>/, 'runtime must load the bare precached life-forecast.js URL');
-    assert.doesNotMatch(runtimeIndex, /(?:reading\.css|reading\.js|life-model\.js|life-forecast\.js)\?v=/, 'runtime and precache URLs must not diverge offline');
-    assert.match(serviceWorker, /'\.\/luxury\.css'/, 'web service worker must precache luxury.css');
-    assert.match(serviceWorker, /'\.\/manse-hero-v2\.webp'/, 'web service worker must precache manse-hero-v2.webp');
-    assert.match(serviceWorker, /'\.\/jansang-calligraphy-brush\.webp'/, 'web service worker must precache the brush wordmark');
-    await inspectServiceWorkerInstall(serviceWorker);
-    assert.doesNotMatch(serviceWorker, /addAll\(PRECACHE\)\.catch/, 'core addAll rejection must not be swallowed');
+    assert.match(serviceWorker, /const APP_CACHE_PREFIX = 'jansang-manse-'/, 'the tombstone worker must target the historical app cache namespace');
+    assert.doesNotMatch(serviceWorker, /\bPRECACHE\b|caches\.open|caches\.match|\.put\(/, 'the tombstone worker must not create or read runtime caches');
+    assert.doesNotMatch(serviceWorker, /addEventListener\(['"]fetch['"]/, 'the tombstone worker must not intercept requests');
+    assert.match(runtimeIndex, /const APP_CACHE_PREFIX = 'jansang-manse-'/, 'the page must retain the permanent cache cleanup policy');
+    assert.match(runtimeIndex, /navigator\.serviceWorker\.getRegistrations\(\)/, 'the page must enumerate legacy worker registrations');
+    assert.match(runtimeIndex, /registration\.unregister\(\)/, 'the page must unregister its legacy service worker');
+    assert.match(runtimeIndex, /caches\.keys\(\)/, 'the page must enumerate legacy Cache Storage entries');
+    assert.doesNotMatch(runtimeIndex, /navigator\.serviceWorker\.register\(/, 'the page must never register a new service worker');
+    assert.match(runtimeIndex, /http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/, 'the document must request no browser cache');
+    assert.match(runtimeIndex, /http-equiv="Pragma" content="no-cache"/, 'the document must retain the legacy no-cache directive');
+    await inspectServiceWorkerDisable(serviceWorker);
   }
   if (TEST_GROUP === 'service-worker') {
     console.log('Service-worker regression PASS');

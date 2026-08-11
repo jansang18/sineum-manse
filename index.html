@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>잔상 만세력</title>
 <meta name="description" content="잔상 만세력 · 자평명리학 1000년 만세력 · 운세풀이 · 궁합">
 <meta name="theme-color" content="#E9DFCC" media="(prefers-color-scheme: light)">
@@ -16544,40 +16547,50 @@ $('#personSearchModal').addEventListener('click', e => {
 });
 
 /* ============================================
-   PWA Service Worker 등록 (오프라인 + 항상 최신본)
-   - 원격 https(깃허브 페이지)에서만 등록. file://·앱(localhost)에서는 미등록.
-   - sw.js 는 HTML/CSS/JS를 '네트워크 우선'으로 받아 항상 최신 디자인을 보장.
+   영구 캐시 비활성화
+   - 새 서비스워커는 등록하지 않는다.
+   - 이 앱 범위의 과거 등록과 jansang-manse-* 캐시만 제거한다.
    ============================================ */
-if ('serviceWorker' in navigator) {
-  const usesSW = location.protocol === 'https:'
-    && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1';
-  if (usesSW) {
-    // 1) 과거에 등록된 인라인(blob) 서비스워커가 남아 있으면 제거
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(r => {
-        const u = ((r.active || r.waiting || r.installing) || {}).scriptURL || '';
-        if (u.startsWith('blob:')) r.unregister();
-      });
-    }).catch(() => {});
+const APP_CACHE_PREFIX = 'jansang-manse-';
 
-    // 2) 새 SW가 제어권을 넘겨받으면(업데이트 적용) 한 번만 새로고침 → 최신본 즉시 반영
-    let swReloaded = false;
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (swReloaded) return;
-        swReloaded = true;
-        location.reload();
-      });
-    }
+async function clearLegacyAppCaching() {
+  const appScopePath = new URL('./', location.href).pathname;
+  const cleanupTasks = [];
 
-    // 3) 실제 파일(sw.js) 등록 + 업데이트 확인
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(reg => reg.update())
-        .catch(err => console.warn('SW 등록 실패:', err));
-    });
+  if ('serviceWorker' in navigator) {
+    cleanupTasks.push(
+      navigator.serviceWorker.getRegistrations()
+        .then((registrations) => Promise.all(
+          registrations
+            .filter((registration) => {
+              try {
+                return new URL(registration.scope).pathname === appScopePath;
+              } catch (_) {
+                return false;
+              }
+            })
+            .map((registration) => registration.unregister())
+        ))
+    );
   }
+
+  if ('caches' in window) {
+    cleanupTasks.push(
+      caches.keys()
+        .then((keys) => Promise.all(
+          keys
+            .filter((key) => key.startsWith(APP_CACHE_PREFIX))
+            .map((key) => caches.delete(key))
+        ))
+    );
+  }
+
+  await Promise.all(cleanupTasks);
 }
+
+clearLegacyAppCaching().catch((error) => {
+  console.warn('기존 앱 캐시 정리 실패:', error);
+});
 
 /* ============================================
    홈화면 추가 안내 — 제거됨
