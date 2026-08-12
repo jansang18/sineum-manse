@@ -3531,6 +3531,11 @@ async function inspectWidth(browser, width) {
       }
     }
 
+    if (TEST_GROUP === 'theme-contrast' || TEST_GROUP === 'transparency-contrast') {
+      await page.close();
+      return;
+    }
+
     if (runsGroup('viewport-zoom')) {
       const viewport = await page.$eval('meta[name="viewport"]', element => element.content);
       assert.match(viewport, /(?:^|,)\s*width=device-width(?:,|$)/);
