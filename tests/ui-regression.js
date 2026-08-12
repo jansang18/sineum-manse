@@ -3889,7 +3889,7 @@ async function inspectWidth(browser, width) {
   }
 
   await inspectLongReading(page, width);
-  if (TEST_GROUP === 'long-reading') {
+  if (TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability') {
     await page.close();
     return;
   }
