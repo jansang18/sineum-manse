@@ -22,8 +22,10 @@ const UI_ROOT = process.env.UI_ROOT
   : path.join(APP_ROOT, 'www');
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
-const widths = TEST_GROUP === 'luck-flow-responsive'
-  ? [390, 560, 561, 600, 601, 710, 768, 1220]
+const widths = TEST_GROUP === 'reading-readability'
+  ? [390, 768, 1280]
+  : TEST_GROUP === 'luck-flow-responsive'
+    ? [390, 560, 561, 600, 601, 710, 768, 1220]
   : TEST_GROUP === 'desktop-action-rail'
     ? [390, 1024, 1025, 1280]
     : TEST_GROUP === 'result-width-brand'
@@ -58,7 +60,8 @@ const runsLuckFlowAccessibility = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-accessibility';
 const runsLuckFlowResponsive = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-responsive';
-const runsLongReading = () => !TEST_GROUP || TEST_GROUP === 'long-reading';
+const runsLongReading = () =>
+  !TEST_GROUP || TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability';
 const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
 
 async function resetLuckFlow(page) {
@@ -1649,6 +1652,13 @@ async function inspectLongReading(page, width) {
 
     const style = element => element ? getComputedStyle(element) : null;
     const bodyCopy = style(deep?.querySelector('.deep-prose p'));
+    const phaseBody = life?.querySelector('.life-phase__body');
+    const phaseLabel = phaseBody?.querySelector('.life-phase__body-label');
+    const phaseContent = phaseBody?.querySelector('.life-phase__body-content');
+    const rect = element => element?.getBoundingClientRect();
+    const px = value => Number.parseFloat(value || '0');
+    const phaseBodyStyle = style(phaseBody);
+    const phaseCopyStyle = style(life?.querySelector('.life-phase__prose p'));
     const narrativeStyles = Object.fromEntries(Object.entries({
       lifetimeSummary: life?.querySelector('.life-course__summary p'),
       keyTurn: life?.querySelector('.life-course__detail p'),
@@ -1693,6 +1703,21 @@ async function inspectLongReading(page, width) {
       phaseCount: phases.length,
       phaseParagraphCount: phaseParagraphs.length,
       eventCount: events.length,
+      readingDensity: {
+        phaseBodyColumns: phaseBodyStyle?.gridTemplateColumns.split(' ').length || 0,
+        phaseLabelWidth: rect(phaseLabel)?.width || 0,
+        phaseContentWidth: rect(phaseContent)?.width || 0,
+        phaseBodyPaddingTop: px(phaseBodyStyle?.paddingTop),
+        phaseBodyColumnGap: px(phaseBodyStyle?.columnGap),
+        phaseBodyFontSize: px(phaseCopyStyle?.fontSize),
+        phaseBodyLineHeight: px(phaseCopyStyle?.lineHeight),
+        headingSizes: {
+          life: px(style(life?.querySelector('.life-phases__header h2'))?.fontSize),
+          phase: px(style(life?.querySelector('.life-phase__header h3'))?.fontSize),
+          deepIntro: px(style(deep?.querySelector('.deep-reading__intro h2'))?.fontSize),
+          deepChapter: px(style(deep?.querySelector('.deep-chapter__body h3'))?.fontSize)
+        }
+      },
       overallCardCount: fortune.querySelectorAll(':scope > .overall-card').length,
       shortCardContainerCount: fortune.querySelectorAll(':scope > .fortune-cards').length,
       legacyAnnualTitlesVisible: ['연애운', '직장운', '금전운', '건강운', '이사운']
@@ -1850,6 +1875,36 @@ async function inspectLongReading(page, width) {
   assert.equal(state.phaseCount, 9, `${width}px life phase count`);
   assert.equal(state.phaseParagraphCount, 27, `${width}px life phase paragraph count`);
   assert.equal(state.eventCount, 7, `${width}px structural event count`);
+  if (width >= 768) {
+    assert.equal(state.readingDensity.phaseBodyColumns, 2, `${width}px life phase must retain two columns`);
+    assert.ok(
+      state.readingDensity.phaseLabelWidth >= 159 && state.readingDensity.phaseLabelWidth <= 181,
+      `${width}px phase label rail must be 160-180px: ${state.readingDensity.phaseLabelWidth}`
+    );
+    assert.ok(
+      state.readingDensity.phaseContentWidth > state.readingDensity.phaseLabelWidth,
+      `${width}px reading column must be wider than summary rail`
+    );
+    assert.ok(
+      state.readingDensity.phaseBodyFontSize >= 15 && state.readingDensity.phaseBodyFontSize <= 16,
+      `${width}px desktop phase copy must be 15-16px: ${state.readingDensity.phaseBodyFontSize}`
+    );
+  } else {
+    assert.equal(state.readingDensity.phaseBodyColumns, 1, `${width}px life phase must use one column`);
+    assert.ok(state.readingDensity.phaseBodyFontSize >= 14, `${width}px mobile phase copy below 14px`);
+  }
+  assert.ok(
+    state.readingDensity.phaseBodyLineHeight / state.readingDensity.phaseBodyFontSize >= 1.5,
+    `${width}px phase copy line-height is cramped`
+  );
+  assert.ok(state.readingDensity.phaseBodyPaddingTop <= 32, `${width}px phase body padding is too tall`);
+  assert.ok(
+    width < 768 || state.readingDensity.phaseBodyColumnGap <= 24,
+    `${width}px phase column gap is too wide: ${state.readingDensity.phaseBodyColumnGap}`
+  );
+  for (const [name, size] of Object.entries(state.readingDensity.headingSizes)) {
+    assert.ok(size <= 24, `${width}px ${name} heading exceeds 24px: ${size}`);
+  }
   assert.equal(state.overallCardCount, 1, `${width}px existing overall card must remain`);
   assert.equal(state.shortCardContainerCount, 0, `${width}px legacy annual-card container must be removed`);
   assert.deepEqual(state.legacyAnnualTitlesVisible, [], `${width}px legacy annual-card titles must not be visible`);
