@@ -14954,33 +14954,6 @@ function _renderFortuneInner() {
   const seunClsS = EL_CLASS[STEM_EL[fortune.seun.stem]].replace('el-', 'gj-s-');
   const seunClsB = EL_CLASS[BRANCH_EL[fortune.seun.branch]].replace('el-', 'gj-b-');
 
-  const areas = [
-    { key: 'love', ico: '💕', title: '연애운' },
-    { key: 'job', ico: '💼', title: '직장운' },
-    { key: 'money', ico: '💰', title: '금전운' },
-    { key: 'health', ico: '🌿', title: '건강운' },
-    { key: 'move', ico: '🚚', title: '이사운' }
-  ];
-
-  const cardsHtml = areas.map(a => {
-    const sc = fortune.scores[a.key];
-    const grade = gradeFromScore(sc);
-    const text = genFortuneText(a.key, fortune, s);
-    const tips = genFortuneTips(a.key, fortune, s);
-    return `<div class="f-card">
-      <div class="f-card-head">
-        <div class="f-card-title"><span class="f-ico">${a.ico}</span>${a.title}</div>
-        <div class="f-score-box">
-          <div class="f-score-num">${sc}<span class="pt">점</span></div>
-          <div class="f-grade ${grade.cls}">${grade.g}</div>
-        </div>
-      </div>
-      <div class="f-bar"><div class="f-bar-fill" style="width:${sc}%; background:${barColorByScore(sc)};"></div></div>
-      <div class="f-text">${text}</div>
-      ${tips.length ? `<div class="f-tips">${tips.map(t => `<span class="tag">${t}</span>`).join('')}</div>` : ''}
-    </div>`;
-  }).join('');
-
   const deepReport = window.SajuGangpaeReading?.build({
     name: s.name,
     gender: s.gender,
@@ -15034,10 +15007,6 @@ function _renderFortuneInner() {
     </div>
 
     ${lifeCourseHtml}
-
-    <div class="fortune-cards">
-      ${cardsHtml}
-    </div>
 
     ${deepReadingHtml}
 

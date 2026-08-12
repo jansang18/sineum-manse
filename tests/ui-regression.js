@@ -1670,7 +1670,6 @@ async function inspectLongReading(page, width) {
 
     const children = Array.from(fortune.children);
     const overall = fortune.querySelector('.overall-card');
-    const shortCards = fortune.querySelector('.fortune-cards');
     const disclaimer = fortune.querySelector('.reading-disclaimer');
     return {
       chapterCount: chapters.length,
@@ -1695,7 +1694,9 @@ async function inspectLongReading(page, width) {
       phaseParagraphCount: phaseParagraphs.length,
       eventCount: events.length,
       overallCardCount: fortune.querySelectorAll(':scope > .overall-card').length,
-      shortCardCount: fortune.querySelectorAll(':scope > .fortune-cards > .f-card').length,
+      shortCardContainerCount: fortune.querySelectorAll(':scope > .fortune-cards').length,
+      legacyAnnualTitlesVisible: ['연애운', '직장운', '금전운', '건강운', '이사운']
+        .filter(title => fortune.innerText.includes(title)),
       lifeTextLength: life?.innerText.replace(/\s+/g, ' ').trim().length || 0,
       combinedTextLength: [deep, life].map(node => node?.innerText || '').join(' ').replace(/\s+/g, ' ').trim().length,
       personalized: fortune.innerText.includes('홍길동') && fortune.innerText.includes(String(new Date().getFullYear())),
@@ -1716,7 +1717,7 @@ async function inspectLongReading(page, width) {
         const rect = element.getBoundingClientRect();
         return { selector: `${element.tagName.toLowerCase()}.${element.className || ''}`, left: rect.left, right: rect.right, width: rect.width };
       }).filter(rect => rect.left < -1 || rect.right > document.documentElement.clientWidth + 1).slice(0, 12),
-      ordering: [children.indexOf(overall), children.indexOf(life), children.indexOf(shortCards), children.indexOf(deep), children.indexOf(disclaimer)],
+      ordering: [children.indexOf(overall), children.indexOf(life), children.indexOf(deep), children.indexOf(disclaimer)],
       disclaimer: disclaimer?.textContent.trim() || ''
     };
   });
@@ -1850,7 +1851,8 @@ async function inspectLongReading(page, width) {
   assert.equal(state.phaseParagraphCount, 27, `${width}px life phase paragraph count`);
   assert.equal(state.eventCount, 7, `${width}px structural event count`);
   assert.equal(state.overallCardCount, 1, `${width}px existing overall card must remain`);
-  assert.equal(state.shortCardCount, 5, `${width}px five existing annual cards must remain`);
+  assert.equal(state.shortCardContainerCount, 0, `${width}px legacy annual-card container must be removed`);
+  assert.deepEqual(state.legacyAnnualTitlesVisible, [], `${width}px legacy annual-card titles must not be visible`);
   assert.ok(state.lifeTextLength >= 9000, `${width}px expanded life reading was ${state.lifeTextLength} chars`);
   assert.ok(state.combinedTextLength >= 14500, `${width}px combined long content was ${state.combinedTextLength} chars`);
   assert.equal(state.personalized, true, `${width}px current-year personalized evidence missing`);
