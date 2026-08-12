@@ -1773,7 +1773,7 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
   margin: 0 !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
-  justify-content: stretch !important;
+  justify-content: safe center !important;
 }
 
 #daeunScroll .luck-item,
@@ -1805,7 +1805,7 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
   #daeunScroll,
   #seunScroll {
     grid-auto-columns: 44px;
-    justify-content: start !important;
+    justify-content: safe center !important;
     scroll-padding-inline: 8px;
   }
 
@@ -1930,7 +1930,7 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
 @media (min-width: 768px) {
   #daeunScroll,
   #seunScroll {
-    justify-content: stretch !important;
+    justify-content: safe center !important;
   }
 
   #woonScroll.woon-grid {

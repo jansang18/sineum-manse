@@ -2059,11 +2059,18 @@ async function inspectLuckFlowResponsive(page, width) {
     const measure = selector => {
       const container = document.querySelector(selector);
       const items = [...container.querySelectorAll('.luck-item')];
+      const containerRect = container.getBoundingClientRect();
+      const firstRect = items[0].getBoundingClientRect();
+      const lastRect = items.at(-1).getBoundingClientRect();
       return {
         clientWidth: container.clientWidth,
         scrollWidth: container.scrollWidth,
         itemWidths: items.map(item => item.getBoundingClientRect().width),
-        blockWidths: items.map(item => item.querySelector('.luck-block').getBoundingClientRect().width)
+        blockWidths: items.map(item => item.querySelector('.luck-block').getBoundingClientRect().width),
+        contentCenterDelta: Math.abs(
+          ((firstRect.left + lastRect.right) / 2) -
+          ((containerRect.left + containerRect.right) / 2)
+        )
       };
     };
     const container = document.getElementById('daeunScroll');
@@ -2134,6 +2141,14 @@ async function inspectLuckFlowResponsive(page, width) {
     assert.ok(state.daeun.scrollWidth - state.daeun.clientWidth <= 1);
     assert.ok(state.seun.scrollWidth - state.seun.clientWidth <= 1);
     assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1);
+  }
+  for (const [layer, metrics] of Object.entries({ daeun: state.daeun, seun: state.seun })) {
+    if (metrics.scrollWidth - metrics.clientWidth <= 1) {
+      assert.ok(
+        metrics.contentCenterDelta <= 0.5,
+        width + 'px ' + layer + ' squares must be centered, delta ' + metrics.contentCenterDelta + 'px'
+      );
+    }
   }
   await resetLuckFlow(page);
 }
