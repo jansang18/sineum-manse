@@ -741,11 +741,6 @@ body.dark .bottom-bar .bb.primary {
 }
 
 @media (min-width: 768px) {
-  body:has(.tab[data-tab="result"].active) .top-bar,
-  body:has(.tab[data-tab="result"].active) .tabs {
-    width: 616px !important;
-  }
-
   .input-intro {
     height: 360px !important;
   }
@@ -764,13 +759,6 @@ body.dark .bottom-bar .bb.primary {
     left: 38px;
     right: 32px;
     bottom: 28px;
-  }
-}
-
-@media (min-width: 700px) and (max-width: 767px) {
-  body:has(.tab:not([data-tab="input"]).active) .top-bar,
-  body:has(.tab:not([data-tab="input"]).active) .tabs {
-    width: calc(100vw - 56px) !important;
   }
 }
 
@@ -830,4 +818,12 @@ body.dark .bottom-bar .bb.primary {
   body.dark .app-toast {
     background: rgb(17, 24, 30) !important;
   }
+}
+
+/* Keep the global chrome at the input-screen measure on every tab. */
+.top-bar,
+.tabs {
+  width: var(--apple-content-measure) !important;
+  max-width: none !important;
+  margin-inline: auto !important;
 }

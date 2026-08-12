@@ -434,6 +434,13 @@ async function inspectSamePillars60(page, width) {
 }
 
 async function inspectCalendarShellWidth(page, width) {
+  const inputShell = await page.evaluate(() => {
+    const box = selector => {
+      const rect = document.querySelector(selector).getBoundingClientRect();
+      return { left: rect.left, width: rect.width };
+    };
+    return { header: box('.top-bar'), tabs: box('.tabs') };
+  });
   await page.click('.tab[data-tab="calendar"]');
   await sleep(100);
   const geometry = await page.evaluate(() => {
@@ -462,12 +469,12 @@ async function inspectCalendarShellWidth(page, width) {
   });
   for (const name of ['header', 'tabs']) {
     assert.ok(
-      Math.abs(geometry[name].width - geometry.calendar.width) <= 1,
-      `${width}px calendar ${name} width ${geometry[name].width}px must match calendar card ${geometry.calendar.width}px`
+      Math.abs(geometry[name].width - inputShell[name].width) <= 1,
+      `${width}px calendar ${name} width must stay at input width`
     );
     assert.ok(
-      Math.abs(geometry[name].left - geometry.calendar.left) <= 1,
-      `${width}px calendar ${name} left edge must match calendar card`
+      Math.abs(geometry[name].left - inputShell[name].left) <= 1,
+      `${width}px calendar ${name} left edge must stay at input position`
     );
   }
   assert.ok(Math.abs(geometry.previous.centerY - geometry.title.centerY) <= .5, `${width}px previous button and calendar title must share a vertical center`);
@@ -478,49 +485,34 @@ async function inspectCalendarShellWidth(page, width) {
 }
 
 async function inspectAllTabShellWidths(page, width) {
-  const targets = {
-    input: '.input-card',
-    result: '.oguk-card',
-    fortune: '.overall-card',
-    match: '.match-intro',
-    calendar: '.cal-grid'
-  };
-  for (const [tab, selector] of Object.entries(targets)) {
+  await page.click('.tab[data-tab="input"]');
+  await sleep(60);
+  const inputShell = await page.evaluate(() => {
+    const rect = element => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: box.width };
+    };
+    return { header: rect(document.querySelector('.top-bar')), tabs: rect(document.querySelector('.tabs')) };
+  });
+  assert.ok(Math.abs(inputShell.header.width - inputShell.tabs.width) <= 1, `${width}px input shell bars must match`);
+
+  for (const tab of ['result', 'fortune', 'match', 'calendar', 'saved']) {
     await page.click(`.tab[data-tab="${tab}"]`);
     await sleep(60);
-    const geometry = await page.evaluate(selector => {
+    const geometry = await page.evaluate(() => {
       const rect = element => {
         const box = element.getBoundingClientRect();
         return { left: box.left, right: box.right, width: box.width };
       };
       return {
         header: rect(document.querySelector('.top-bar')),
-        tabs: rect(document.querySelector('.tabs')),
-        target: rect(document.querySelector(selector))
+        tabs: rect(document.querySelector('.tabs'))
       };
-    }, selector);
+    });
     for (const name of ['header', 'tabs']) {
-      assert.ok(Math.abs(geometry[name].width - geometry.target.width) <= 1, `${width}px ${tab} ${name} width must match content`);
-      assert.ok(Math.abs(geometry[name].left - geometry.target.left) <= 1, `${width}px ${tab} ${name} left edge must match content`);
+      assert.ok(Math.abs(geometry[name].width - inputShell[name].width) <= 1, `${width}px ${tab} ${name} width must stay at input width`);
+      assert.ok(Math.abs(geometry[name].left - inputShell[name].left) <= 1, `${width}px ${tab} ${name} left edge must stay at input position`);
     }
-  }
-
-  await page.click('.tab[data-tab="saved"]');
-  await sleep(60);
-  const savedGeometry = await page.evaluate(() => {
-    const shell = element => {
-      const box = element.getBoundingClientRect();
-      return { left: box.left, width: box.width };
-    };
-    const view = document.getElementById('view-saved');
-    const style = getComputedStyle(view);
-    const left = view.getBoundingClientRect().left + parseFloat(style.paddingLeft);
-    const width = view.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-    return { header: shell(document.querySelector('.top-bar')), tabs: shell(document.querySelector('.tabs')), target: { left, width } };
-  });
-  for (const name of ['header', 'tabs']) {
-    assert.ok(Math.abs(savedGeometry[name].width - savedGeometry.target.width) <= 1, `${width}px saved ${name} width must match content`);
-    assert.ok(Math.abs(savedGeometry[name].left - savedGeometry.target.left) <= 1, `${width}px saved ${name} left edge must match content`);
   }
 }
 
@@ -649,6 +641,14 @@ async function inspectFoldLayout(page, width) {
 }
 
 async function inspectResultWidthAndBrand(page, width) {
+  await page.click('.tab[data-tab="input"]');
+  await sleep(60);
+  const inputTabs = await page.$eval('.tabs', element => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, width: rect.width };
+  });
+  await page.click('.tab[data-tab="result"]');
+  await sleep(60);
   const state = await page.evaluate(() => {
     const bottomBar = document.getElementById('bottomBar').getBoundingClientRect();
     const card = document.querySelector('.oguk-card').getBoundingClientRect();
@@ -750,12 +750,12 @@ async function inspectResultWidthAndBrand(page, width) {
     `${width}px bottom action target below 44px: ${JSON.stringify(state.buttonRects)}`
   );
   assert.ok(
-    Math.abs(state.tabs.width - state.card.width) <= 1,
-    `${width}px tabs width ${state.tabs.width}px must match natal card ${state.card.width}px`
+    Math.abs(state.tabs.width - inputTabs.width) <= 1,
+    `${width}px result tabs width must stay at input width`
   );
   assert.ok(
-    Math.abs(state.tabs.left - state.card.left) <= 1,
-    `${width}px tabs and natal card must share the same left edge`
+    Math.abs(state.tabs.left - inputTabs.left) <= 1,
+    `${width}px result tabs left edge must stay at input position`
   );
   assert.deepEqual(state.brand, state.suffix, `${width}px 잔상 and 만세력 typography must match`);
   assert.equal(state.pillars.length, 8, `${width}px natal Hanja block count`);
