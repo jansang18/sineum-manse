@@ -23,7 +23,7 @@ const UI_ROOT = process.env.UI_ROOT
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'luck-flow-responsive'
-  ? [390, 560, 561, 768, 1220]
+  ? [390, 560, 561, 600, 601, 710, 768, 1220]
   : TEST_GROUP === 'desktop-action-rail'
     ? [390, 1024, 1025, 1280]
     : TEST_GROUP === 'result-width-brand'
@@ -2062,7 +2062,8 @@ async function inspectLuckFlowResponsive(page, width) {
       return {
         clientWidth: container.clientWidth,
         scrollWidth: container.scrollWidth,
-        itemWidths: items.map(item => item.getBoundingClientRect().width)
+        itemWidths: items.map(item => item.getBoundingClientRect().width),
+        blockWidths: items.map(item => item.querySelector('.luck-block').getBoundingClientRect().width)
       };
     };
     const container = document.getElementById('daeunScroll');
@@ -2083,8 +2084,18 @@ async function inspectLuckFlowResponsive(page, width) {
 
   assert.ok(state.documentOverflow <= 1, width + 'px document overflow');
   assert.equal(state.selectedVisible, true, width + 'px selected Daeyun must be initially visible');
+  const flowBlockWidths = [...state.daeun.blockWidths, ...state.seun.blockWidths];
+  assert.ok(
+    Math.max(...flowBlockWidths) - Math.min(...flowBlockWidths) <= 0.5,
+    width + 'px Daeyun and Seun squares must share one fixed width: ' +
+      JSON.stringify({ daeun: state.daeun.blockWidths, seun: state.seun.blockWidths })
+  );
+  assert.ok(
+    flowBlockWidths.every(blockWidth => blockWidth >= 43.5),
+    width + 'px Daeyun and Seun squares must preserve the 44px touch target'
+  );
 
-  if (width <= 560) {
+  if (width <= 600) {
     for (const [layer, metrics] of Object.entries({
       daeun: state.daeun,
       seun: state.seun,
@@ -2099,8 +2110,12 @@ async function inspectLuckFlowResponsive(page, width) {
       assert.ok(state.daeun.scrollWidth > state.daeun.clientWidth);
       assert.ok(state.seun.scrollWidth > state.seun.clientWidth);
       assert.ok(state.woon.scrollWidth > state.woon.clientWidth);
+    } else if (width === 600) {
+      assert.ok(state.daeun.scrollWidth > state.daeun.clientWidth);
     }
 
+  }
+  if (state.daeun.scrollWidth - state.daeun.clientWidth > 1) {
     await page.evaluate(() => {
       document.querySelector('#daeunScroll .luck-item:last-child').click();
     });
@@ -2114,7 +2129,8 @@ async function inspectLuckFlowResponsive(page, width) {
         itemRect.right <= containerRect.right + 1;
     });
     assert.equal(newlySelectedVisible, true, width + 'px newly selected Daeyun must be revealed');
-  } else {
+  }
+  if (width >= 768) {
     assert.ok(state.daeun.scrollWidth - state.daeun.clientWidth <= 1);
     assert.ok(state.seun.scrollWidth - state.seun.clientWidth <= 1);
     assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1);

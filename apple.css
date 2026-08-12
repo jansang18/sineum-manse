@@ -1765,7 +1765,8 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
 #seunScroll {
   display: grid !important;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
+  /* Keep Daeyun and Seun squares identical even when their item counts differ. */
+  grid-auto-columns: clamp(44px, calc(9.0909% - 2.7273px), 56px);
   gap: 3px !important;
   width: 100%;
   padding: 0 0 8px !important;
@@ -1800,10 +1801,10 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
   overflow-y: hidden !important;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   #daeunScroll,
   #seunScroll {
-    grid-auto-columns: minmax(44px, 56px);
+    grid-auto-columns: 44px;
     justify-content: start !important;
     scroll-padding-inline: 8px;
   }
@@ -1929,7 +1930,6 @@ body:has(.tab:is([data-tab="fortune"], [data-tab="match"], [data-tab="saved"]).a
 @media (min-width: 768px) {
   #daeunScroll,
   #seunScroll {
-    grid-auto-columns: minmax(44px, 1fr);
     justify-content: stretch !important;
   }
 
