@@ -1532,6 +1532,11 @@ body.dark .f-tips .f-tip {
   transform: translateX(-50%);
 }
 
+/* Reserve the classic scrollbar lane so short and long tabs share one center. */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Desktop result actions use the empty right gutter instead of covering the chart. */
 @media (min-width: 1025px) {
   .bottom-bar {

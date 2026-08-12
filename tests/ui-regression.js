@@ -492,9 +492,14 @@ async function inspectAllTabShellWidths(page, width) {
       const box = element.getBoundingClientRect();
       return { left: box.left, right: box.right, width: box.width };
     };
-    return { header: rect(document.querySelector('.top-bar')), tabs: rect(document.querySelector('.tabs')) };
+    return {
+      header: rect(document.querySelector('.top-bar')),
+      tabs: rect(document.querySelector('.tabs')),
+      scrollbarGutter: getComputedStyle(document.documentElement).scrollbarGutter
+    };
   });
   assert.ok(Math.abs(inputShell.header.width - inputShell.tabs.width) <= 1, `${width}px input shell bars must match`);
+  assert.match(inputShell.scrollbarGutter, /\bstable\b/, `${width}px root must reserve a stable scrollbar gutter`);
 
   for (const tab of ['result', 'fortune', 'match', 'calendar', 'saved']) {
     await page.click(`.tab[data-tab="${tab}"]`);
@@ -4051,7 +4056,7 @@ async function inspectWidth(browser, width) {
   const browser = await puppeteer.launch({
     executablePath: CHROME,
     headless: 'new',
-    args: ['--hide-scrollbars']
+    args: TEST_GROUP === 'all-tab-shell-width' ? [] : ['--hide-scrollbars']
   });
   console.log('[ui] Chrome launched');
   try {
