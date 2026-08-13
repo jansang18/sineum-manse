@@ -1023,6 +1023,34 @@ function inspectAndroidBackupPolicy() {
   assert.doesNotMatch(manifest, /android:allowBackup="true"/);
 }
 
+function inspectAndroidCachePolicy() {
+  const activityPath = path.join(
+    APP_ROOT,
+    'android', 'app', 'src', 'main', 'java', 'com', 'jansang', 'manse', 'MainActivity.java'
+  );
+  const activity = fs.readFileSync(activityPath, 'utf8');
+
+  assert.match(activity, /@Override\s+protected void load\(\)/, 'Android cache policy must run before Capacitor loads its first page');
+  assert.match(activity, /findViewById\(com\.getcapacitor\.android\.R\.id\.webview\)/, 'cache cleanup must target the Capacitor WebView');
+  assert.match(activity, /webView\.clearCache\(true\)/, 'Android must clear memory and disk WebView cache at startup');
+  assert.match(
+    activity,
+    /webView\.getSettings\(\)\.setCacheMode\(WebSettings\.LOAD_NO_CACHE\)/,
+    'Android WebView must bypass its resource cache'
+  );
+  assert.match(
+    activity,
+    /setCacheMode\(WebSettings\.LOAD_NO_CACHE\)[\s\S]*?clearCache\(true\)[\s\S]*?super\.load\(\)/,
+    'cache bypass and cleanup must finish before Capacitor performs its first load'
+  );
+  assert.doesNotMatch(activity, /getBridge\(\)\.reload\(\)|stopLoading\(\)/, 'cache cleanup must not cause a second navigation');
+  assert.doesNotMatch(
+    activity,
+    /WebStorage|deleteAllData\(|localStorage\.clear\(|clearHistory\(|clearFormData\(/,
+    'cache cleanup must preserve saved charts, theme, history, and form state'
+  );
+}
+
 function inspectAndroidSafeAreaContract() {
   const appleCss = fs.readFileSync(path.join(UI_ROOT, 'apple.css'), 'utf8');
   const capacitorConfig = JSON.parse(fs.readFileSync(path.join(APP_ROOT, 'capacitor.config.json'), 'utf8'));
@@ -4301,11 +4329,12 @@ async function inspectWidth(browser, width) {
 
 (async () => {
   if (runsGroup('android-backup')) inspectAndroidBackupPolicy();
+  if (runsGroup('android-cache-policy')) inspectAndroidCachePolicy();
   if (runsAndroidSafeArea()) inspectAndroidSafeAreaContract();
   if (runsResultHeaderCompact()) inspectResultHeaderCompactContract();
   if (runsGroup('release-contract')) inspectReleaseContract();
   if (process.env.SKIP_SOURCE_CONTRACTS !== '1' && runsGroup('final-security')) inspectFinalSecuritySourceContracts();
-  if (TEST_GROUP === 'android-backup' || TEST_GROUP === 'android-safe-area' || TEST_GROUP === 'result-header-compact' || TEST_GROUP === 'release-contract') {
+  if (TEST_GROUP === 'android-backup' || TEST_GROUP === 'android-cache-policy' || TEST_GROUP === 'android-safe-area' || TEST_GROUP === 'result-header-compact' || TEST_GROUP === 'release-contract') {
     console.log(`${TEST_GROUP} regression PASS`);
     return;
   }
