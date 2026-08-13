@@ -66,6 +66,7 @@ const runsLongReading = () =>
   !TEST_GROUP || TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability';
 const runsAnnualYearReading = () => TEST_GROUP === 'annual-year-reading';
 const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
+const runsLunarInput = () => !TEST_GROUP || TEST_GROUP === 'lunar-input';
 
 async function resetLuckFlow(page) {
   await page.evaluate(() => {
@@ -1505,6 +1506,10 @@ function inspectReleaseContract() {
     assert.match(obfuscator, new RegExp(`['"]${moduleName.replace('.', '\\.')}['"]`), `${moduleName} must be included in Android asset protection`);
   }
 
+  const lunarVendor = fs.readFileSync(path.join(WEB_ROOT, 'korean-lunar-calendar.min.js'), 'utf8');
+  assert.match(lunarVendor, /korean-lunar-calendar 0\.4\.0/, 'the pinned Korean lunar conversion version must be recorded');
+  assert.match(lunarVendor, /MIT License[\s\S]*Copyright \(c\) 2022 Jinil Lee/, 'the vendored lunar converter must retain its license notice');
+
   const script = fs.readFileSync(buildScript, 'utf8');
   const releaseFilesBlock = script.match(/\$ReleaseWebFiles\s*=\s*@\(([\s\S]*?)\)/);
   assert.ok(releaseFilesBlock, 'release source inventory must be declared');
@@ -1526,7 +1531,7 @@ function inspectReleaseContract() {
     assert.ok(fs.existsSync(path.join(WEB_ROOT, relativePath)), `web-only release asset is missing: ${relativePath}`);
   }
   for (const requiredRuntime of [
-    'annual-reading.js', 'reading.js', 'reading.css', 'life-model.js', 'life-forecast.js',
+    'korean-lunar-calendar.min.js', 'annual-reading.js', 'reading.js', 'reading.css', 'life-model.js', 'life-forecast.js',
     'priestess.css', 'jansang-calligraphy-brush.webp', 'manse-hero-v2.webp'
   ]) {
     assert.ok(releaseFiles.includes(requiredRuntime), `release source inventory is missing runtime asset: ${requiredRuntime}`);
@@ -1813,6 +1818,69 @@ async function inspectAnnualYearReading(page, width) {
 
   assert.ok(annualLayout.overflow <= 1, `${width}px expanded annual layout overflowed by ${annualLayout.overflow}px`);
   assert.equal(escaped, true, `${width}px annual report renderer allowed executable markup`);
+}
+
+async function inspectLunarInput(page, width) {
+  if (!runsLunarInput() || width !== 390) return;
+
+  const state = await page.evaluate(() => {
+    document.querySelector('.tab[data-tab="input"]').click();
+    document.getElementById('inputName').value = '음력 검증';
+    document.getElementById('inBirth').value = '18721105';
+    document.getElementById('inTime').value = '';
+    document.querySelector('#segGender [data-val="M"]').click();
+
+    const lunarButton = document.querySelector('#segCal [data-val="lunar"]');
+    lunarButton.click();
+    const direct = calcSaju({
+      year: 1872, month: 11, day: 5,
+      hour: 0, minute: 0,
+      calendar: 'lunar', gender: 'M', unknown: true
+    });
+
+    document.getElementById('calcBtn').click();
+    return {
+      selected: {
+        active: lunarButton.classList.contains('active'),
+        checked: lunarButton.getAttribute('aria-checked')
+      },
+      direct: {
+        year: direct.year,
+        month: direct.month,
+        day: direct.day,
+        inputCalendar: direct.inputCalendar,
+        inputDate: direct.inputDate,
+        lunar: direct.lunar
+      },
+      current: currentSaju && {
+        year: currentSaju.year,
+        month: currentSaju.month,
+        day: currentSaju.day,
+        inputCalendar: currentSaju.inputCalendar,
+        inputDate: currentSaju.inputDate,
+        lunar: currentSaju.lunar
+      },
+      invalidModernDate: lunarToSolar(1872, 11, 30, false),
+      rejectedLegacyDay30Months: Array.from({ length: 12 }, (_, index) => index + 1)
+        .filter(month => lunarToSolar(2099, month, 30, false) === null),
+      resultText: document.querySelector('#view-result .result-head .info')?.textContent.replace(/\s+/g, ' ').trim() || ''
+    };
+  });
+
+  const expected = {
+    year: 1872,
+    month: 12,
+    day: 5,
+    inputCalendar: 'lunar',
+    inputDate: { year: 1872, month: 11, day: 5 },
+    lunar: { y: 1872, m: 11, d: 5 }
+  };
+  assert.deepEqual(state.selected, { active: true, checked: 'true' }, '음력 버튼은 선택 상태를 즉시 표시해야 한다');
+  assert.deepEqual(state.direct, expected, '1872년 음력 입력은 같은 숫자의 양력 날짜로 조용히 대체되면 안 된다');
+  assert.deepEqual(state.current, expected, '음력 변환 결과가 실제 계산 상태에도 반영되어야 한다');
+  assert.equal(state.invalidModernDate, null, '존재하지 않는 과거 음력 날짜는 거부해야 한다');
+  assert.ok(state.rejectedLegacyDay30Months.length > 0, '2051년 이후에도 작은달의 30일을 거부해야 한다');
+  assert.match(state.resultText, /양력 1872\.12\.05 \/ 음력 1872\.11\.05/, '결과 화면에 변환 전후 날짜를 함께 표시해야 한다');
 }
 
 async function inspectLongReading(page, width) {
@@ -4124,6 +4192,12 @@ async function inspectWidth(browser, width) {
 
   if (runsFoldLayout()) {
     await inspectFoldLayout(page, width);
+    await page.close();
+    return;
+  }
+
+  await inspectLunarInput(page, width);
+  if (TEST_GROUP === 'lunar-input') {
     await page.close();
     return;
   }

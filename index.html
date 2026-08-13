@@ -12223,6 +12223,7 @@ Sigrid Niehaus|19641229|F|
   </div>
 </div>
 
+<script src="korean-lunar-calendar.min.js"></script>
 <script src="reading.js"></script>
 <script src="annual-reading.js"></script>
 <script src="life-model.js"></script>
@@ -12432,11 +12433,15 @@ function leapMonth(y) { return LUN[y - LUN_MIN] & 0xf; }
 function leapDays(y) { return leapMonth(y) ? ((LUN[y - LUN_MIN] & 0x10000) ? 30 : 29) : 0; }
 function mDays(y, m) { return (LUN[y - LUN_MIN] & (0x10000 >> m)) ? 30 : 29; }
 
-function lunarToSolar(ly, lm, ld, isLeap) {
+function legacyLunarToSolar(ly, lm, ld, isLeap) {
   if (ly < LUN_MIN || ly >= LUN_MIN + LUN.length) return null;
+  if (![ly, lm, ld].every(Number.isInteger) || lm < 1 || lm > 12) return null;
+  const leap = leapMonth(ly);
+  if (isLeap && leap !== lm) return null;
+  const maxDay = isLeap ? leapDays(ly) : mDays(ly, lm);
+  if (ld < 1 || ld > maxDay) return null;
   let off = 0;
   for (let i = LUN_MIN; i < ly; i++) off += lunMonths(i);
-  const leap = leapMonth(ly);
   for (let i = 1; i < lm; i++) {
     off += mDays(ly, i);
     if (i === leap) off += leapDays(ly);
@@ -12446,7 +12451,7 @@ function lunarToSolar(ly, lm, ld, isLeap) {
   return fromJD(toJD(1900, 1, 31) + off);
 }
 
-function solarToLunar(y, m, d) {
+function legacySolarToLunar(y, m, d) {
   if (y < LUN_MIN || y >= LUN_MIN + LUN.length) return null;
   let off = toJD(y, m, d) - toJD(1900, 1, 31);
   let ly = LUN_MIN, dY = lunMonths(ly);
@@ -12463,6 +12468,26 @@ function solarToLunar(y, m, d) {
   return { y: ly, m: lm, d: off + 1, isLeap: isL };
 }
 
+function lunarToSolar(ly, lm, ld, isLeap) {
+  if (ly >= 1000 && ly <= 2050 && typeof window.KoreanLunarCalendar === 'function') {
+    const calendar = new window.KoreanLunarCalendar();
+    if (!calendar.setLunarDate(ly, lm, ld, Boolean(isLeap))) return null;
+    return calendar.getSolarCalendar();
+  }
+  const legacy = legacyLunarToSolar(ly, lm, ld, isLeap);
+  return legacy ? { year: legacy.y, month: legacy.m, day: legacy.d } : null;
+}
+
+function solarToLunar(y, m, d) {
+  if (y >= 1000 && y <= 2050 && typeof window.KoreanLunarCalendar === 'function') {
+    const calendar = new window.KoreanLunarCalendar();
+    if (!calendar.setSolarDate(y, m, d)) return null;
+    const lunar = calendar.getLunarCalendar();
+    return { y: lunar.year, m: lunar.month, d: lunar.day, isLeap: Boolean(lunar.intercalation) };
+  }
+  return legacySolarToLunar(y, m, d);
+}
+
 function calcSaju(opts) {
   let { year, month, day, hour, minute, calendar, gender, unknown } = opts;
   const inputCalendar = calendar === 'lunar' ? 'lunar' : 'solar';
@@ -12470,7 +12495,11 @@ function calcSaju(opts) {
   let lunar = null;
   if (calendar === 'lunar') {
     const sol = lunarToSolar(year, month, day, false);
-    if (sol) { lunar = { y: year, m: month, d: day }; year = sol.y; month = sol.m; day = sol.d; }
+    if (!sol) throw new RangeError(`유효하지 않거나 지원 범위를 벗어난 음력 날짜입니다: ${year}-${month}-${day}`);
+    lunar = { y: year, m: month, d: day };
+    year = sol.year;
+    month = sol.month;
+    day = sol.day;
   } else lunar = solarToLunar(year, month, day);
 
   const jd = toJD(year, month, day) + (hour + minute/60) / 24;
@@ -12976,6 +13005,9 @@ onTap($('#calcBtn'), () => {
   const lastDay = calendar === 'solar' ? new Date(y, m, 0).getDate() : 30;
   if (d < 1 || d > lastDay) {
     return showInErr(`${y}년 ${m}월은 ${lastDay}일까지 있습니다 (입력: ${d}일)`, '#inBirth');
+  }
+  if (calendar === 'lunar' && !lunarToSolar(y, m, d, false)) {
+    return showInErr('유효한 음력 날짜인지 확인해 주세요. 음력 입력은 1026년부터 2099년까지 지원합니다.', '#inBirth');
   }
   clearInErr();
   try {

@@ -16,6 +16,7 @@ $ExpectedSignerSha256 = 'da1950eab27b62b7c0ac92a21b34a2fab32ff582f0e68be0d6e72d5
 $ArtifactBaseName = 'jansang-manse-annual-year-reading-release'
 $ReleaseWebFiles = @(
     'index.html',
+    'korean-lunar-calendar.min.js',
     'annual-reading.js',
     'reading.js',
     'reading.css',
