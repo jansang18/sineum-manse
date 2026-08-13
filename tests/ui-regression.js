@@ -1724,7 +1724,7 @@ async function inspectAnnualYearReading(page, width) {
   assert.equal(restored.activeControl, 'current', `${width}px focus must survive the current-year rerender`);
   assert.ok(restored.bodyFontSize >= 14, `${width}px annual body copy below 14px`);
   assert.ok(restored.bodyLineHeight / restored.bodyFontSize >= 1.5, `${width}px annual body copy is cramped`);
-  assert.equal(restored.sectionColumns, width >= 768 ? 2 : 1, `${width}px annual detail column count`);
+  assert.equal(restored.sectionColumns, 1, `${width}px annual detail must use one full-width column`);
   assert.ok(restored.overflow <= 1, `${width}px annual reading overflowed by ${restored.overflow}px`);
   assert.equal(escaped, true, `${width}px annual report renderer allowed executable markup`);
 }
