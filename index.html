@@ -12224,6 +12224,7 @@ Sigrid Niehaus|19641229|F|
 </div>
 
 <script src="reading.js"></script>
+<script src="annual-reading.js"></script>
 <script src="life-model.js"></script>
 <script src="life-forecast.js"></script>
 <script>
@@ -12834,6 +12835,7 @@ const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 let currentSaju = null;
 let selectedDaeun = null, selectedSeun = null, selectedWoon = null;
+let selectedFortuneYear = null;
 
 function syncTabA11y(activeTab) {
   $$('.tab').forEach(tab => {
@@ -12980,7 +12982,7 @@ onTap($('#calcBtn'), () => {
     const saju = calcSaju({ year: y, month: m, day: d, hour: h, minute: mi, calendar, gender, unknown });
     saju.name = name || '이름 없음';
     currentSaju = saju;
-    selectedDaeun = null; selectedSeun = null; selectedWoon = null;
+    selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
     renderResult();
     $$('.tab').forEach(x => x.classList.remove('active'));
     $$('.tab')[1].classList.add('active');
@@ -13949,7 +13951,7 @@ async function renderSaved() {
       }
       if (rec) {
         currentSaju = rec;
-        selectedDaeun = null; selectedSeun = null; selectedWoon = null;
+        selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
         renderResult();
         $$('.tab').forEach(x => x.classList.remove('active'));
         $$('.tab')[1].classList.add('active');
@@ -14099,6 +14101,7 @@ async function findSimilarSaju() {
       const item = scored.find(x => x.rec.id === id);
       if (item) {
         currentSaju = item.rec;
+        selectedFortuneYear = null;
         renderResult(item.rec);
         window.closeAppModal($('#similarModal'));
         // 원국 탭으로
@@ -14874,6 +14877,127 @@ function genOverallText(fortune, saju) {
   return main;
 }
 
+function fortuneYearBounds(saju) {
+  return {
+    min: Math.max(1026, Number(saju?.year) || 1026),
+    max: 2099,
+    current: new Date().getFullYear()
+  };
+}
+
+function resolveFortuneYear(saju) {
+  const bounds = fortuneYearBounds(saju);
+  const fallback = Math.max(bounds.min, Math.min(bounds.max, bounds.current));
+  const hasSelection = selectedFortuneYear !== null && selectedFortuneYear !== '' && Number.isFinite(Number(selectedFortuneYear));
+  const requested = hasSelection ? Number(selectedFortuneYear) : fallback;
+  return Math.max(bounds.min, Math.min(bounds.max, Math.round(requested)));
+}
+
+function buildAnnualMonthGuide(saju, year) {
+  return Array.from({ length: 12 }, (_, index) => {
+    const month = index + 1;
+    const ganji = getWoonMonth(year, month);
+    const relation = interactionBonus(saju, ganji);
+    return {
+      month,
+      ganji: `${STEM_KOR[ganji.stem]}${BRANCH_KOR[ganji.branch]}`,
+      stemGod: SIPSIN_KOR[getSipsin(saju.dStem, ganji.stem)],
+      branchGod: SIPSIN_KOR[getSipsin(saju.dStem, JIJANGAN[ganji.branch][0])],
+      harmony: relation.harmony,
+      conflict: relation.conflict
+    };
+  });
+}
+
+function buildAnnualReading(fortune, saju) {
+  if (!window.SajuAnnualReading?.build) return null;
+  return window.SajuAnnualReading.build({
+    name: saju.name,
+    gender: saju.gender,
+    birthYear: saju.year,
+    year: fortune.year,
+    age: fortune.year - saju.year,
+    dayStem: STEM_KOR[saju.dStem],
+    dayElement: EL_KOR[STEM_EL[saju.dStem]],
+    strong: fortune.yongsinInfo.strong,
+    yongsin: EL_KOR[fortune.yongsinInfo.yongsin],
+    seunGanji: `${STEM_KOR[fortune.seun.stem]}${BRANCH_KOR[fortune.seun.branch]}`,
+    seunStemGod: SIPSIN_KOR[fortune.seunStemSipsin],
+    seunBranchGod: SIPSIN_KOR[fortune.seunBranchSipsin],
+    annualStemElement: EL_KOR[STEM_EL[fortune.seun.stem]],
+    annualBranchElement: EL_KOR[BRANCH_EL[fortune.seun.branch]],
+    daeunGanji: `${STEM_KOR[fortune.curDaeun.stem]}${BRANCH_KOR[fortune.curDaeun.branch]}`,
+    daeunStemGod: SIPSIN_KOR[fortune.daeunStemSipsin],
+    daeunBranchGod: SIPSIN_KOR[fortune.daeunBranchSipsin],
+    harmony: fortune.inter.harmony,
+    conflict: fortune.inter.conflict,
+    scores: fortune.scores,
+    interactions: saju.interactions,
+    months: buildAnnualMonthGuide(saju, fortune.year)
+  });
+}
+
+function renderAnnualReading(report, currentYear, birthYear) {
+  if (!report || !Array.isArray(report.sections)) return '';
+  const allowedTones = new Set(['normal', 'watch', 'strong']);
+  const safeTone = tone => allowedTones.has(tone) ? tone : 'normal';
+  const evidence = Array.isArray(report.evidence)
+    ? `<ul class="annual-reading__evidence" aria-label="선택 연도 판독 근거">${report.evidence.map(item => `<li>${escapeHtml(String(item))}</li>`).join('')}</ul>`
+    : '';
+  const sections = report.sections.map((section, index) => `
+    <details class="annual-reading__section" ${index === 0 ? 'open' : ''}>
+      <summary>
+        <span class="annual-reading__section-index" aria-hidden="true">${String(index + 1).padStart(2, '0')}</span>
+        <span class="annual-reading__section-heading">
+          <strong>${escapeHtml(section.title || '')}</strong>
+          <small>${escapeHtml(section.summary || '')}</small>
+        </span>
+        <span class="annual-reading__section-tone annual-reading__section-tone--${safeTone(section.tone)}">${section.tone === 'strong' ? '활용' : section.tone === 'watch' ? '점검' : '균형'}</span>
+      </summary>
+      <div class="annual-reading__prose">${(section.paragraphs || []).map(paragraph => `<p>${escapeHtml(String(paragraph))}</p>`).join('')}</div>
+    </details>`).join('');
+  const months = Array.isArray(report.months) ? report.months.map(month => `
+    <li class="annual-reading__month">
+      <div><strong>${escapeHtml(month.label || `${month.month}월`)}</strong><span>${escapeHtml(month.ganji || '')}</span></div>
+      <p>${escapeHtml(month.guidance || '')}</p>
+    </li>`).join('') : '';
+  const rules = Array.isArray(report.rules)
+    ? `<ol class="annual-reading__rules">${report.rules.map(rule => `<li>${escapeHtml(String(rule))}</li>`).join('')}</ol>`
+    : '';
+
+  return `<section class="annual-reading" data-annual-year="${Number(report.year) || currentYear}" data-annual-ganji="${escapeHtml(report.ganji || '')}" aria-labelledby="annualReadingTitle">
+    <header class="annual-reading__header" data-annual-mark="${escapeHtml(report.ganji || '')}">
+      <span class="annual-reading__eyebrow">${escapeHtml(report.eyebrow || 'ANNUAL COURSE')}</span>
+      <h2 id="annualReadingTitle">${escapeHtml(report.title || '')}</h2>
+      <p>${escapeHtml(report.deck || '')}</p>
+      ${evidence}
+    </header>
+    <div class="annual-reading__sections">${sections}</div>
+    <details class="annual-reading__calendar">
+      <summary><span>12개월 세부 지도</span><small>월간지·십신·원국 합충으로 보는 행동 기준</small></summary>
+      <ol>${months}</ol>
+      <p class="annual-reading__calendar-note">월 표기는 각 달 15일을 대표값으로 삼아 절입 기준 월간지를 계산한 구조적 안내입니다. 실제 중요한 날짜는 원국 탭의 월운·일운을 함께 확인하세요.</p>
+    </details>
+    <footer class="annual-reading__closing">
+      <span>YEAR RULES / ${Number(report.year) || currentYear}</span>
+      <h3>${Number(report.year) === currentYear ? '올해' : `${Number(report.year)}년`}를 쓰는 다섯 가지 기준</h3>
+      ${rules}
+    </footer>
+  </section>`;
+}
+
+function renderFortuneYearNav(selectedYear, saju) {
+  const bounds = fortuneYearBounds(saju);
+  const previous = Math.max(bounds.min, selectedYear - 1);
+  const next = Math.min(bounds.max, selectedYear + 1);
+  const atCurrent = selectedYear === bounds.current;
+  return `<nav class="fortune-year-nav" aria-label="연도별 운세 이동">
+    <button type="button" data-fortune-year-prev data-fortune-year-control="prev" data-fortune-year="${previous}" ${selectedYear <= bounds.min ? 'disabled' : ''} aria-label="${previous}년 운세 보기"><span aria-hidden="true">←</span><span>이전 해</span><small>${previous}년</small></button>
+    <button type="button" data-fortune-year-current data-fortune-year-control="current" data-fortune-year="${bounds.current}" aria-current="${atCurrent ? 'date' : 'false'}" aria-disabled="${atCurrent ? 'true' : 'false'}"><span>올해</span><small>${bounds.current}년</small></button>
+    <button type="button" data-fortune-year-next data-fortune-year-control="next" data-fortune-year="${next}" ${selectedYear >= bounds.max ? 'disabled' : ''} aria-label="${next}년 운세 보기"><span>다음 해</span><span aria-hidden="true">→</span><small>${next}년</small></button>
+  </nav>`;
+}
+
 function renderDeepReading(report) {
   if (!report || !Array.isArray(report.sections)) return '';
   const allowedTones = new Set(['normal', 'watch', 'hot', 'recheck', 'strong', 'fit']);
@@ -14923,9 +15047,42 @@ function renderDeepReading(report) {
     </section>`;
 }
 
-function renderFortune() {
+function captureFortuneViewState() {
+  const root = $('#fortuneContent');
+  const life = root?.querySelector('[data-lifetime-graph]');
+  if (!root) return null;
+  return {
+    annualSections: [...root.querySelectorAll('.annual-reading__section')].map(details => details.open),
+    annualCalendar: root.querySelector('.annual-reading__calendar')?.open || false,
+    lifeMetric: life?.dataset.lifeMetricActive || '',
+    lifePhases: [...(life?.querySelectorAll('[data-life-phase-disclosure]') || [])].map(details => details.open),
+    lifeEvent: life?.querySelector('.life-event.is-selected [data-life-event-select]')?.dataset.lifeEventSelect || ''
+  };
+}
+
+function restoreFortuneViewState(state) {
+  if (!state) return;
+  const root = $('#fortuneContent');
+  const life = root?.querySelector('[data-lifetime-graph]');
+  root?.querySelectorAll('.annual-reading__section').forEach((details, index) => {
+    if (index < state.annualSections.length) details.open = Boolean(state.annualSections[index]);
+  });
+  const calendar = root?.querySelector('.annual-reading__calendar');
+  if (calendar) calendar.open = Boolean(state.annualCalendar);
+  if (life && state.lifeMetric) {
+    life.querySelector(`[data-life-metric="${state.lifeMetric}"]`)?.click();
+  }
+  life?.querySelectorAll('[data-life-phase-disclosure]').forEach((details, index) => {
+    if (index < state.lifePhases.length) details.open = Boolean(state.lifePhases[index]);
+  });
+  if (life && state.lifeEvent !== '') {
+    life.querySelector(`[data-life-event-select="${state.lifeEvent}"]`)?.click();
+  }
+}
+
+function renderFortune(focusYearControl = '', restoreState = null) {
   try {
-    _renderFortuneInner();
+    _renderFortuneInner(focusYearControl, restoreState);
   } catch (e) {
     console.error('풀이 렌더링 에러:', e);
     const box = document.getElementById('fortuneContent');
@@ -14938,7 +15095,7 @@ function renderFortune() {
   }
 }
 
-function _renderFortuneInner() {
+function _renderFortuneInner(focusYearControl = '', restoreState = null) {
   if (!currentSaju) {
     $('#fortuneContent').innerHTML = `<div class="fortune-empty">
       <div class="ico">🔮</div>
@@ -14948,7 +15105,11 @@ function _renderFortuneInner() {
   }
 
   const s = currentSaju;
-  const fortune = calcYearFortune(s);
+  const currentYear = new Date().getFullYear();
+  const fortuneYear = resolveFortuneYear(s);
+  selectedFortuneYear = fortuneYear;
+  const fortune = calcFortuneAtYear(s, fortuneYear);
+  const isCurrentYear = fortuneYear === currentYear;
   const overallGrade = gradeFromScore(fortune.scores.overall);
   const ga = STEM_KOR[fortune.seun.stem] + BRANCH_KOR[fortune.seun.branch];
   const seunClsS = EL_CLASS[STEM_EL[fortune.seun.stem]].replace('el-', 'gj-s-');
@@ -14980,6 +15141,7 @@ function _renderFortuneInner() {
     daeunGod: SIPSIN_KOR[fortune.daeunStemSipsin]
   });
   const deepReadingHtml = renderDeepReading(deepReport);
+  const annualReadingHtml = renderAnnualReading(buildAnnualReading(fortune, s), currentYear, s.year);
   const lifeTimeline = buildLifeTimeline(s);
   const lifeCourseHtml = lifeTimeline && window.SajuGangpaeLife
     ? window.SajuGangpaeLife.render(lifeTimeline)
@@ -14987,7 +15149,7 @@ function _renderFortuneInner() {
 
   $('#fortuneContent').innerHTML = `
     <div class="fortune-head">
-      <div class="nm">${escapeHtml(s.name)}님의 올해운</div>
+      <div class="nm">${escapeHtml(s.name)}님의 ${isCurrentYear ? '올해운' : `${fortuneYear}년 운세`}</div>
       <div class="year-tag">${fortune.year}년 · ${STEM[fortune.seun.stem]}${BRANCH[fortune.seun.branch]}年</div>
       <div class="ganji-big">
         <span class="${seunClsS}">${STEM[fortune.seun.stem]}</span><span class="${seunClsB}">${BRANCH[fortune.seun.branch]}</span>
@@ -14995,16 +15157,20 @@ function _renderFortuneInner() {
       </div>
       <div class="ganji-sub">
         세운천간 ${SIPSIN_KOR[fortune.seunStemSipsin]} · 지지 ${SIPSIN_KOR[fortune.seunBranchSipsin]} ·
-        현재 대운 ${STEM[fortune.curDaeun.stem]}${BRANCH[fortune.curDaeun.branch]}(${SIPSIN_KOR[fortune.daeunStemSipsin]})
+        ${fortune.year}년 대운 ${STEM[fortune.curDaeun.stem]}${BRANCH[fortune.curDaeun.branch]}(${SIPSIN_KOR[fortune.daeunStemSipsin]})
       </div>
+      ${renderFortuneYearNav(fortuneYear, s)}
+      <output class="fortune-year-status sr-only" aria-live="polite" aria-atomic="true">${fortuneYear}년 ${ga}년 상세운으로 변경됨</output>
     </div>
 
     <div class="overall-card">
-      <div class="ov-label">종합 올해운</div>
+      <div class="ov-label">${isCurrentYear ? '종합 올해운' : `종합 ${fortuneYear}년 운`}</div>
       <div class="ov-score">${fortune.scores.overall}<span class="pt">점</span></div>
       <div class="ov-grade">${overallGrade.g}</div>
       <div class="ov-text">${genOverallText(fortune, s)}</div>
     </div>
+
+    ${annualReadingHtml}
 
     ${lifeCourseHtml}
 
@@ -15018,6 +15184,25 @@ function _renderFortuneInner() {
   if (lifeTimeline && window.SajuGangpaeLife) {
     const lifeRoot = $('#fortuneContent').querySelector('[data-lifetime-graph]');
     if (lifeRoot) window.SajuGangpaeLife.bind(lifeRoot, lifeTimeline);
+  }
+  restoreFortuneViewState(restoreState);
+
+  $('#fortuneContent').querySelectorAll('[data-fortune-year]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.disabled || button.getAttribute('aria-disabled') === 'true') return;
+      const year = Number(button.dataset.fortuneYear);
+      if (!Number.isFinite(year)) return;
+      const viewState = captureFortuneViewState();
+      selectedFortuneYear = year;
+      renderFortune(button.dataset.fortuneYearControl || '', viewState);
+    });
+  });
+
+  if (focusYearControl) {
+    requestAnimationFrame(() => {
+      const control = $('#fortuneContent').querySelector(`[data-fortune-year-control="${focusYearControl}"]`);
+      if (control) control.focus({ preventScroll: true });
+    });
   }
 
   $('#fortuneContent').querySelectorAll('[data-deep-target]').forEach(button => {

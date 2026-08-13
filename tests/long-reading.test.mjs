@@ -128,6 +128,7 @@ test('장문 판독은 입력에 민감하고 원석과 칼의 올바른 주격 
   assert.doesNotMatch(metal.sections[0].title, /원석과 칼가/);
   assert.match(visibleStrings(wood), /김하늘/);
   assert.match(visibleStrings(wood), /2027/);
+  assert.doesNotMatch(visibleStrings(wood), /올해/);
 });
 
 test('인생 총운은 9개 대운의 27개 단락과 실제 경계 사건 7개를 보존한다', () => {

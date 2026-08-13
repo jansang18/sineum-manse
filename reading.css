@@ -1,6 +1,7 @@
 /* Long-form fortune reading, adapted from the user-owned Saju Gangpae components.
    This layer is intentionally component-scoped and inherits the current Apple/Priestess theme. */
 .deep-reading,
+.annual-reading,
 .life-course,
 .life-phases,
 .reading-disclaimer {
@@ -10,9 +11,536 @@
   font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
 }
 .deep-reading *,
+.annual-reading *,
 .life-course *,
 .life-phases * {
   box-sizing: border-box;
+}
+
+/* =========================================================
+   ANNUAL COURSE — 선택한 연도의 상세 판독
+   종합 점수와 인생 총운 사이에서 연도의 맥락을 깊게 읽는다.
+   ========================================================= */
+.fortune-year-nav {
+  width: min(100%, 430px);
+  margin: 22px auto 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--apple-separator);
+  border-radius: 14px;
+  background: var(--apple-surface);
+  box-shadow: 0 12px 34px color-mix(in srgb, var(--apple-label) 6%, transparent);
+}
+
+.fortune-year-nav button {
+  min-width: 0;
+  min-height: 52px;
+  padding: 8px 12px;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-content: center;
+  justify-content: center;
+  gap: 1px 7px;
+  color: var(--apple-label);
+  border: 0;
+  border-right: 1px solid var(--apple-separator);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease, transform 100ms ease-out;
+}
+
+.fortune-year-nav button:last-child {
+  border-right: 0;
+}
+
+.fortune-year-nav button small {
+  grid-column: 1 / -1;
+  color: var(--apple-tertiary, var(--apple-secondary));
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.fortune-year-nav button:hover,
+.fortune-year-nav button:focus-visible {
+  background: var(--apple-surface-2);
+}
+
+.fortune-year-nav button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--apple-accent);
+  outline-offset: -3px;
+}
+
+.fortune-year-nav button:active {
+  transform: scale(0.97);
+}
+
+.fortune-year-nav button[aria-current="date"] {
+  color: var(--apple-accent);
+  background: color-mix(in srgb, var(--apple-accent) 11%, var(--apple-surface));
+  cursor: default;
+}
+
+.fortune-year-nav button:disabled {
+  color: var(--apple-tertiary, var(--apple-secondary));
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fortune-year-status.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.annual-reading {
+  width: min(100%, 1080px);
+  margin: clamp(34px, 5vw, 58px) auto 0;
+  overflow: hidden;
+  color: var(--apple-label);
+  border: 1px solid var(--apple-separator);
+  border-radius: 12px;
+  background: var(--apple-surface);
+  box-shadow: 0 24px 70px color-mix(in srgb, var(--apple-label) 7%, transparent);
+}
+
+.annual-reading__header {
+  position: relative;
+  padding: 34px clamp(22px, 4vw, 44px) 30px;
+  overflow: hidden;
+  border-top: 3px solid var(--apple-accent);
+  border-bottom: 1px solid var(--apple-separator);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--apple-accent) 9%, transparent), transparent 44%),
+    var(--apple-surface);
+}
+
+.annual-reading__header::after {
+  content: attr(data-annual-mark);
+  position: absolute;
+  right: 28px;
+  bottom: -28px;
+  color: color-mix(in srgb, var(--apple-accent) 7%, transparent);
+  font-family: "Noto Serif KR", serif;
+  font-size: 126px;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.annual-reading__eyebrow {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 13px;
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+}
+
+.annual-reading__header h2 {
+  position: relative;
+  z-index: 1;
+  max-width: 28ch;
+  margin: 0;
+  color: var(--apple-label);
+  font-size: clamp(21px, 2.8vw, 26px);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1.28;
+  word-break: keep-all;
+}
+
+.annual-reading__header > p {
+  position: relative;
+  z-index: 1;
+  max-width: 72ch;
+  margin: 17px 0 0;
+  color: var(--apple-secondary);
+  font-size: 15px;
+  font-weight: 520;
+  line-height: 1.8;
+  word-break: keep-all;
+}
+
+.annual-reading__evidence {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.annual-reading__evidence li {
+  padding: 6px 9px;
+  color: var(--apple-secondary);
+  border: 1px solid var(--apple-separator);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--apple-surface-2) 78%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.annual-reading__sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  background: var(--apple-separator);
+  gap: 1px;
+}
+
+.annual-reading__section {
+  min-width: 0;
+  background: var(--apple-surface);
+}
+
+.annual-reading__section summary {
+  min-height: 92px;
+  padding: 18px 20px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  list-style: none;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.annual-reading__section summary::-webkit-details-marker,
+.annual-reading__calendar summary::-webkit-details-marker {
+  display: none;
+}
+
+.annual-reading__section summary:hover,
+.annual-reading__section summary:focus-visible,
+.annual-reading__section[open] summary {
+  background: var(--apple-surface-2);
+}
+
+.annual-reading__section summary:focus-visible,
+.annual-reading__calendar summary:focus-visible {
+  outline: 2px solid var(--apple-accent);
+  outline-offset: -3px;
+}
+
+.annual-reading__section-index {
+  align-self: start;
+  padding-top: 2px;
+  color: var(--apple-accent);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.annual-reading__section-heading {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.annual-reading__section-heading strong {
+  color: var(--apple-label);
+  font-size: 16px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+
+.annual-reading__section-heading small {
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: keep-all;
+}
+
+.annual-reading__section-tone {
+  align-self: start;
+  padding: 5px 7px;
+  border: 1px solid var(--apple-separator);
+  border-radius: 999px;
+  color: var(--apple-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.annual-reading__section-tone--strong {
+  color: var(--apple-accent);
+  border-color: color-mix(in srgb, var(--apple-accent) 38%, var(--apple-separator));
+}
+
+.annual-reading__section-tone--watch {
+  color: var(--fire-deep, #a34b38);
+}
+
+.annual-reading__prose {
+  padding: 0 20px 23px 42px;
+}
+
+.annual-reading__prose p {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--apple-secondary);
+  font-size: clamp(14px, 1.4vw, 15.5px);
+  font-weight: 500;
+  line-height: 1.78;
+  word-break: keep-all;
+}
+
+.annual-reading__prose p + p {
+  margin-top: 13px;
+}
+
+.annual-reading__calendar {
+  border-top: 1px solid var(--apple-separator);
+  background: var(--apple-surface);
+}
+
+.annual-reading__calendar > summary {
+  min-height: 70px;
+  padding: 17px clamp(20px, 4vw, 42px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.annual-reading__calendar > summary span {
+  color: var(--apple-label);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+.annual-reading__calendar > summary small {
+  color: var(--apple-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.annual-reading__calendar > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--apple-accent);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.annual-reading__calendar[open] > summary::after {
+  content: "−";
+}
+
+.annual-reading__calendar > ol {
+  margin: 0;
+  padding: 0 clamp(20px, 4vw, 42px) 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  list-style: none;
+  background: var(--apple-separator);
+}
+
+.annual-reading__month {
+  min-width: 0;
+  padding: 17px 18px;
+  background: var(--apple-surface-2);
+}
+
+.annual-reading__month > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.annual-reading__month strong {
+  color: var(--apple-label);
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.annual-reading__month span {
+  color: var(--apple-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.annual-reading__month p {
+  margin: 10px 0 0;
+  color: var(--apple-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.7;
+  word-break: keep-all;
+}
+
+.annual-reading__calendar-note {
+  margin: 0;
+  padding: 0 clamp(20px, 4vw, 42px) 26px;
+  color: var(--apple-tertiary, var(--apple-secondary));
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.annual-reading__closing {
+  padding: 27px clamp(22px, 4vw, 42px) 30px;
+  color: var(--apple-label);
+  border-top: 1px solid var(--apple-separator);
+  background: color-mix(in srgb, var(--apple-accent) 6%, var(--apple-surface));
+}
+
+.annual-reading__closing > span {
+  color: var(--apple-accent);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+}
+
+.annual-reading__closing h3 {
+  margin: 9px 0 0;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+}
+
+.annual-reading__rules {
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+  list-style: none;
+  counter-reset: annual-rule;
+}
+
+.annual-reading__rules li {
+  counter-increment: annual-rule;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  color: var(--apple-secondary);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1.65;
+}
+
+.annual-reading__rules li::before {
+  content: counter(annual-rule, decimal-leading-zero);
+  color: var(--apple-accent);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 767px) {
+  .fortune-year-nav {
+    width: 100%;
+    margin-top: 18px;
+  }
+
+  .fortune-year-nav button {
+    min-height: 48px;
+    padding-inline: 7px;
+    font-size: 12px;
+  }
+
+  .annual-reading {
+    margin-top: 30px;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .annual-reading__header {
+    padding: 27px 20px 25px;
+  }
+
+  .annual-reading__header h2 {
+    font-size: 21px;
+  }
+
+  .annual-reading__header > p {
+    font-size: 14px;
+    line-height: 1.75;
+  }
+
+  .annual-reading__sections,
+  .annual-reading__calendar > ol,
+  .annual-reading__rules {
+    grid-template-columns: 1fr;
+  }
+
+  .annual-reading__section summary {
+    min-height: 84px;
+    padding: 16px 20px;
+  }
+
+  .annual-reading__section-heading strong {
+    font-size: 15px;
+  }
+
+  .annual-reading__prose {
+    padding: 0 20px 22px;
+  }
+
+  .annual-reading__prose p {
+    max-width: none;
+    font-size: 14px;
+    line-height: 1.78;
+    overflow-wrap: anywhere;
+  }
+
+  .annual-reading__calendar > summary {
+    min-height: 66px;
+    padding: 16px 20px;
+  }
+
+  .annual-reading__calendar > summary small {
+    display: none;
+  }
+
+  .annual-reading__calendar > ol {
+    padding-inline: 20px;
+  }
+
+  .annual-reading__month {
+    padding: 16px;
+  }
+
+  .annual-reading__closing {
+    padding: 25px 20px 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fortune-year-nav button,
+  .annual-reading__section summary {
+    transition: none;
+  }
 }
 
 .deep-reading__index button {
@@ -1552,12 +2080,14 @@
 
 @media (prefers-reduced-transparency: reduce) {
   .deep-reading,
+  .annual-reading,
   .life-course,
   .reading-disclaimer {
     --apple-surface: rgb(244, 236, 220);
   }
 
   body.dark .deep-reading,
+  body.dark .annual-reading,
   body.dark .life-course,
   body.dark .reading-disclaimer {
     --apple-surface: rgb(17, 24, 30);
@@ -1568,6 +2098,12 @@
   }
 
   .deep-reading__intro,
+  .annual-reading,
+  .annual-reading__header,
+  .annual-reading__section,
+  .annual-reading__calendar,
+  .annual-reading__month,
+  .annual-reading__closing,
   .deep-reading__index,
   .deep-reading__chapters,
   .deep-chapter,
@@ -1580,5 +2116,12 @@
   .life-phases,
   .life-phase__scores > div {
     backdrop-filter: none;
+  }
+
+  .annual-reading__section,
+  .annual-reading__calendar,
+  .annual-reading__month,
+  .annual-reading__closing {
+    background-color: var(--apple-surface);
   }
 }

@@ -13,18 +13,24 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ExpectedSignerSha256 = 'da1950eab27b62b7c0ac92a21b34a2fab32ff582f0e68be0d6e72d56488508aa'
-$ArtifactBaseName = [System.Text.Encoding]::UTF8.GetString(
-    [System.Convert]::FromBase64String('7Leo66qF7ISg66eM7IS466ClX+yVoO2UjOumrOuUlOyekOyduF/rs7TtmLg=')
-)
+$ArtifactBaseName = 'jansang-manse-annual-year-reading-release'
 $ReleaseWebFiles = @(
     'index.html',
+    'annual-reading.js',
+    'reading.js',
+    'reading.css',
+    'life-model.js',
+    'life-forecast.js',
     'luxury.css',
     'apple.css',
+    'priestess.css',
     'nav.js',
     'share.js',
     'polish.css',
     'main-logo.png',
-    'cosmos.jpg'
+    'cosmos.jpg',
+    'jansang-calligraphy-brush.webp',
+    'manse-hero-v2.webp'
 )
 $WebOnlyFiles = @(
     'sw.js',
@@ -33,7 +39,7 @@ $WebOnlyFiles = @(
     'icon-512.png',
     'apple-touch-icon.png'
 )
-$ProtectedFiles = @('index.html', 'nav.js', 'share.js')
+$ProtectedFiles = @('index.html', 'annual-reading.js', 'reading.js', 'life-model.js', 'life-forecast.js', 'nav.js', 'share.js')
 
 function Resolve-AbsolutePath {
     param([string]$BasePath, [string]$Candidate)
@@ -210,20 +216,19 @@ function Assert-WebOnlyAssets {
     }
 
     $serviceWorker = Get-Content -LiteralPath (Join-Path $WebRoot 'sw.js') -Raw -Encoding UTF8
-    $precacheMatch = [regex]::Match(
-        $serviceWorker,
-        'const\s+PRECACHE\s*=\s*\[(?<entries>[\s\S]*?)\]\s*;'
-    )
-    if (-not $precacheMatch.Success) { throw 'Service worker PRECACHE inventory missing or malformed.' }
-    $precacheEntries = @(
-        [regex]::Matches(
-            $precacheMatch.Groups['entries'].Value,
-            "['`"](?<path>\./[^'`"]+)['`"]"
-        ) | ForEach-Object { $_.Groups['path'].Value }
-    )
-    foreach ($relativePath in @('manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png')) {
-        if ($precacheEntries -notcontains "./$relativePath") {
-            throw "Service worker precache is missing web-only asset: $relativePath"
+    if ($serviceWorker -match '\bPRECACHE\b|caches\.open|caches\.match|\.put\(') {
+        throw 'The tombstone worker must not create or read runtime caches.'
+    }
+    if ($serviceWorker -match 'addEventListener\s*\(\s*[''\"]fetch[''\"]') {
+        throw 'The tombstone worker must not intercept requests.'
+    }
+    $runtimeIndex = Get-Content -LiteralPath (Join-Path $WebRoot 'index.html') -Raw -Encoding UTF8
+    if ($runtimeIndex -match 'navigator\.serviceWorker\.register\s*\(') {
+        throw 'The page must not register a new service worker.'
+    }
+    foreach ($requiredPattern in @('registration\.unregister\s*\(', 'caches\.keys\s*\(', 'no-store, no-cache, must-revalidate')) {
+        if ($runtimeIndex -notmatch $requiredPattern) {
+            throw "Permanent no-cache cleanup contract is missing: $requiredPattern"
         }
     }
 }

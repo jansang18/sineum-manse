@@ -22,7 +22,9 @@ const UI_ROOT = process.env.UI_ROOT
   : path.join(APP_ROOT, 'www');
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
-const widths = TEST_GROUP === 'reading-readability'
+const widths = TEST_GROUP === 'annual-year-reading'
+  ? [390, 1280]
+  : TEST_GROUP === 'reading-readability'
   ? [390, 768, 1280]
   : TEST_GROUP === 'luck-flow-responsive'
     ? [390, 560, 561, 600, 601, 710, 768, 1220]
@@ -62,6 +64,7 @@ const runsLuckFlowResponsive = () =>
   !TEST_GROUP || TEST_GROUP === 'luck-flow-responsive';
 const runsLongReading = () =>
   !TEST_GROUP || TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability';
+const runsAnnualYearReading = () => TEST_GROUP === 'annual-year-reading';
 const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
 
 async function resetLuckFlow(page) {
@@ -1486,11 +1489,24 @@ function inspectReleaseContract() {
   for (const relativePath of webOnlyFiles) {
     assert.ok(fs.existsSync(path.join(WEB_ROOT, relativePath)), `web-only release asset is missing: ${relativePath}`);
   }
+  for (const requiredRuntime of [
+    'annual-reading.js', 'reading.js', 'reading.css', 'life-model.js', 'life-forecast.js',
+    'priestess.css', 'jansang-calligraphy-brush.webp', 'manse-hero-v2.webp'
+  ]) {
+    assert.ok(releaseFiles.includes(requiredRuntime), `release source inventory is missing runtime asset: ${requiredRuntime}`);
+  }
+  const protectedFilesBlock = script.match(/\$ProtectedFiles\s*=\s*@\(([^\r\n]+)\)/);
+  assert.ok(protectedFilesBlock, 'protected source inventory must be declared');
+  const protectedFiles = [...protectedFilesBlock[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+  for (const requiredProtected of ['index.html', 'annual-reading.js', 'reading.js', 'life-model.js', 'life-forecast.js']) {
+    assert.ok(protectedFiles.includes(requiredProtected), `protected source inventory is missing: ${requiredProtected}`);
+  }
   for (const [pattern, message] of [
     [/\$ErrorActionPreference\s*=\s*['"]Stop['"]/, 'PowerShell errors must fail the release'],
     [/Assert-SigningConfiguration/, 'signing configuration must be preflighted'],
     [/Assert-WebOnlyAssets/, 'web-only PWA assets must be preflighted'],
-    [/const\\s\+PRECACHE\\s\*\=\\s\*\\\[\(\?<entries>/, 'service-worker validation must inspect the active PRECACHE array body'],
+    [/tombstone worker must not intercept requests/, 'service-worker validation must enforce the no-cache tombstone'],
+    [/navigator\\\.serviceWorker\\\.register/, 'release preflight must reject new service-worker registration'],
     [/Sync-CleanAssets/, 'clean Capacitor sync must be explicit'],
     [/obfuscate_assets\.js/, 'Android assets must be obfuscated'],
     [/tests[\\/]ui-regression\.js/, 'the versioned protected regression must run'],
@@ -1564,6 +1580,145 @@ async function fillAndCalculate(page) {
     document.getElementById('calcBtn').click();
   });
   await sleep(600);
+}
+
+async function inspectAnnualYearReading(page, width) {
+  if (!runsAnnualYearReading()) return;
+  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
+  await page.evaluate(() => document.querySelector('.tab[data-tab="fortune"]').click());
+  await sleep(100);
+
+  const snapshot = async () => page.evaluate(() => {
+    const fortune = document.getElementById('fortuneContent');
+    const annual = fortune.querySelector('.annual-reading');
+    const navButtons = [...fortune.querySelectorAll('.fortune-year-nav button')];
+    const sectionGrid = annual?.querySelector('.annual-reading__sections');
+    const bodyCopy = annual?.querySelector('.annual-reading__section p');
+    const children = [...fortune.children];
+    const overall = fortune.querySelector('.overall-card');
+    const life = fortune.querySelector('.life-course');
+    const style = element => element ? getComputedStyle(element) : null;
+    return {
+      year: Number(annual?.dataset.annualYear || 0),
+      ganji: annual?.dataset.annualGanji || '',
+      headName: fortune.querySelector('.fortune-head .nm')?.textContent.trim() || '',
+      yearTag: fortune.querySelector('.fortune-head .year-tag')?.textContent.trim() || '',
+      overallLabel: overall?.querySelector('.ov-label')?.textContent.trim() || '',
+      annualTitle: annual?.querySelector('h2')?.textContent.trim() || '',
+      textLength: annual?.textContent.replace(/\s+/g, ' ').trim().length || 0,
+      sectionCount: annual?.querySelectorAll('.annual-reading__section').length || 0,
+      openSectionCount: annual?.querySelectorAll('.annual-reading__section[open]').length || 0,
+      calendarOpen: annual?.querySelector('.annual-reading__calendar')?.open || false,
+      lifeMetric: life?.dataset.lifeMetricActive || '',
+      openLifePhases: [...(life?.querySelectorAll('[data-life-phase-disclosure][open]') || [])]
+        .map(details => details.dataset.lifePhaseDisclosure),
+      monthCount: annual?.querySelectorAll('.annual-reading__month').length || 0,
+      navCount: navButtons.length,
+      minNavHeight: Math.min(...navButtons.map(button => button.getBoundingClientRect().height)),
+      activeControl: document.activeElement?.dataset.fortuneYearControl || null,
+      currentControlDisabled: fortune.querySelector('[data-fortune-year-current]')?.getAttribute('aria-disabled') === 'true',
+      bodyFontSize: Number.parseFloat(style(bodyCopy)?.fontSize || '0'),
+      bodyLineHeight: Number.parseFloat(style(bodyCopy)?.lineHeight || '0'),
+      sectionColumns: style(sectionGrid)?.gridTemplateColumns.split(' ').length || 0,
+      order: [children.indexOf(overall), children.indexOf(annual), children.indexOf(life)],
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      annualAriaLive: annual?.getAttribute('aria-live') || '',
+      status: {
+        live: fortune.querySelector('.fortune-year-status')?.getAttribute('aria-live') || '',
+        atomic: fortune.querySelector('.fortune-year-status')?.getAttribute('aria-atomic') || '',
+        text: fortune.querySelector('.fortune-year-status')?.textContent.trim() || ''
+      },
+      legacyCardCount: fortune.querySelectorAll('.fortune-cards, .f-card').length
+    };
+  });
+
+  const initial = await snapshot();
+  await page.evaluate(() => {
+    selectedFortuneYear = 2026;
+    renderFortune();
+  });
+  await sleep(150);
+  const fixed2026 = await snapshot();
+  await page.evaluate(() => {
+    const fortune = document.getElementById('fortuneContent');
+    fortune.querySelectorAll('.annual-reading__section')[2].open = true;
+    fortune.querySelector('.annual-reading__calendar').open = true;
+    fortune.querySelector('[data-life-metric="money"]')?.click();
+    const phase = fortune.querySelector('[data-life-phase-disclosure="1"]');
+    if (phase) phase.open = true;
+  });
+  await page.click('[data-fortune-year-next]');
+  await sleep(150);
+  const next = await snapshot();
+  await page.click('[data-fortune-year-current]');
+  await sleep(150);
+  const restored = await snapshot();
+
+  const escaped = await page.evaluate(() => {
+    window.__annualReadingXss = 0;
+    const payload = '<img src=x onerror="window.__annualReadingXss=1">';
+    const host = document.createElement('div');
+    host.innerHTML = renderAnnualReading({
+      year: 2026,
+      ganji: payload,
+      eyebrow: payload,
+      title: payload,
+      deck: payload,
+      evidence: [payload],
+      sections: [{ id: payload, title: payload, summary: payload, paragraphs: [payload] }],
+      months: [{ month: 1, ganji: payload, label: payload, guidance: payload }],
+      rules: [payload]
+    }, 2026, 1989);
+    document.body.append(host);
+    const safe = window.__annualReadingXss === 0 && !host.querySelector('img');
+    host.remove();
+    return safe;
+  });
+  await page.emulateMediaFeatures([]);
+
+  const currentYear = new Date().getFullYear();
+  assert.equal(initial.year, currentYear, `${width}px annual reading must default to the current year`);
+  assert.match(initial.headName, /올해운/);
+  assert.match(initial.overallLabel, /종합 올해운/);
+  assert.equal(initial.currentControlDisabled, true, `${width}px current-year control must be inactive at the current year`);
+  assert.equal(fixed2026.year, 2026, `${width}px explicit 2026 annual reading`);
+  assert.equal(fixed2026.ganji, '병오', `${width}px 2026 annual ganji`);
+  assert.equal(initial.sectionCount, 8, `${width}px detailed annual section count`);
+  assert.equal(initial.openSectionCount, 1, `${width}px one annual section must start expanded`);
+  assert.equal(initial.monthCount, 12, `${width}px monthly annual guide count`);
+  assert.ok(initial.textLength >= 3000, `${width}px annual detail was only ${initial.textLength} chars`);
+  assert.equal(initial.navCount, 3, `${width}px year navigation control count`);
+  assert.ok(initial.minNavHeight >= 43.5, `${width}px year navigation target below 44px: ${initial.minNavHeight}`);
+  assert.equal(initial.annualAriaLive, '', `${width}px the full annual report must not be a live region`);
+  assert.deepEqual(initial.status, {
+    live: 'polite',
+    atomic: 'true',
+    text: `${currentYear}년 ${initial.ganji}년 상세운으로 변경됨`
+  }, `${width}px year update must use a concise live status`);
+  assert.equal(initial.legacyCardCount, 0, `${width}px removed annual score cards must stay removed`);
+
+  assert.equal(next.year, 2027, `${width}px next-year control did not advance the 2026 report`);
+  assert.equal(next.ganji, '정미', `${width}px 2027 annual ganji`);
+  assert.match(next.headName, currentYear === 2027 ? /올해운/ : /2027년 운세/);
+  assert.match(next.yearTag, /^2027년/);
+  assert.match(next.overallLabel, currentYear === 2027 ? /종합 올해운/ : /종합 2027년 운/);
+  assert.match(next.annualTitle, /2027년.*상세운/);
+  assert.equal(next.activeControl, 'next', `${width}px focus must survive a next-year rerender`);
+  assert.equal(next.openSectionCount, 2, `${width}px annual disclosure state must survive a year rerender`);
+  assert.equal(next.calendarOpen, true, `${width}px monthly calendar state must survive a year rerender`);
+  assert.equal(next.lifeMetric, 'money', `${width}px lifetime metric state must survive a year rerender`);
+  assert.ok(next.openLifePhases.includes('1'), `${width}px lifetime disclosure state must survive a year rerender`);
+  assert.equal(next.currentControlDisabled, false, `${width}px current-year return must enable away from today`);
+  assert.notEqual(next.textLength, 0);
+  assert.deepEqual(next.order, [1, 2, 3], `${width}px annual report must sit between overall and lifetime`);
+
+  assert.equal(restored.year, currentYear, `${width}px current-year return did not restore today`);
+  assert.equal(restored.activeControl, 'current', `${width}px focus must survive the current-year rerender`);
+  assert.ok(restored.bodyFontSize >= 14, `${width}px annual body copy below 14px`);
+  assert.ok(restored.bodyLineHeight / restored.bodyFontSize >= 1.5, `${width}px annual body copy is cramped`);
+  assert.equal(restored.sectionColumns, width >= 768 ? 2 : 1, `${width}px annual detail column count`);
+  assert.ok(restored.overflow <= 1, `${width}px annual reading overflowed by ${restored.overflow}px`);
+  assert.equal(escaped, true, `${width}px annual report renderer allowed executable markup`);
 }
 
 async function inspectLongReading(page, width) {
@@ -1762,6 +1917,11 @@ async function inspectLongReading(page, width) {
         deepChapter: document.querySelector('#fortuneContent .deep-chapter'),
         deepClosing: document.querySelector('#fortuneContent .deep-closing'),
         disclaimer: document.querySelector('#fortuneContent .reading-disclaimer'),
+        annualReading: document.querySelector('#fortuneContent .annual-reading'),
+        annualHeader: document.querySelector('#fortuneContent .annual-reading__header'),
+        annualSection: document.querySelector('#fortuneContent .annual-reading__section'),
+        annualMonth: document.querySelector('#fortuneContent .annual-reading__month'),
+        annualClosing: document.querySelector('#fortuneContent .annual-reading__closing'),
         lifeCourse: document.querySelector('#fortuneContent .life-course'),
         lifePlot: document.querySelector('#fortuneContent .life-course__plot'),
         lifeSummaryStat: document.querySelector('#fortuneContent .life-course__summary-stats > div'),
@@ -3889,6 +4049,12 @@ async function inspectWidth(browser, width) {
 
   await inspectLuckFlowResponsive(page, width);
   if (TEST_GROUP === 'luck-flow-responsive') {
+    await page.close();
+    return;
+  }
+
+  await inspectAnnualYearReading(page, width);
+  if (TEST_GROUP === 'annual-year-reading') {
     await page.close();
     return;
   }
