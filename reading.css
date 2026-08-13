@@ -294,7 +294,7 @@
 }
 
 .annual-reading__prose {
-  padding: 0 20px 23px 42px;
+  padding: 18px 20px 23px 42px;
 }
 
 .annual-reading__prose p {
@@ -354,9 +354,9 @@
 
 .annual-reading__calendar > ol {
   margin: 0;
-  padding: 0 clamp(20px, 4vw, 42px) 24px;
+  padding: 0 0 24px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 1px;
   list-style: none;
   background: var(--apple-separator);
@@ -504,7 +504,7 @@
   }
 
   .annual-reading__prose {
-    padding: 0 20px 22px;
+    padding: 18px 20px 22px;
   }
 
   .annual-reading__prose p {
@@ -521,10 +521,6 @@
 
   .annual-reading__calendar > summary small {
     display: none;
-  }
-
-  .annual-reading__calendar > ol {
-    padding-inline: 20px;
   }
 
   .annual-reading__month {

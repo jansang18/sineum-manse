@@ -23,7 +23,7 @@ const UI_ROOT = process.env.UI_ROOT
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'annual-year-reading'
-  ? [390, 1280]
+  ? [390, 768, 1280]
   : TEST_GROUP === 'reading-readability'
   ? [390, 768, 1280]
   : TEST_GROUP === 'luck-flow-responsive'
@@ -1662,6 +1662,43 @@ async function inspectAnnualYearReading(page, width) {
   await sleep(150);
   const restored = await snapshot();
 
+  const annualLayout = await page.evaluate(() => {
+    const annual = document.querySelector('#fortuneContent .annual-reading');
+    const sections = [...annual.querySelectorAll('.annual-reading__section')];
+    sections.forEach(section => { section.open = true; });
+
+    const proseTopGaps = sections.map(section => {
+      const summary = section.querySelector('summary');
+      const firstParagraph = section.querySelector('.annual-reading__prose p');
+      return firstParagraph.getBoundingClientRect().top - summary.getBoundingClientRect().bottom;
+    });
+
+    const calendar = annual.querySelector('.annual-reading__calendar');
+    calendar.open = true;
+    const grid = calendar.querySelector('ol');
+    const gridStyle = getComputedStyle(grid);
+    const gridRect = grid.getBoundingClientRect();
+    const paddingLeft = Number.parseFloat(gridStyle.paddingLeft);
+    const paddingRight = Number.parseFloat(gridStyle.paddingRight);
+    const months = [...grid.querySelectorAll('.annual-reading__month')]
+      .map(month => {
+        const rect = month.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, width: rect.width };
+      });
+
+    return {
+      proseTopGaps,
+      monthColumns: gridStyle.gridTemplateColumns.split(' ').length,
+      monthGrid: {
+        outerLeft: gridRect.left,
+        outerRight: gridRect.right,
+        contentWidth: gridRect.width - paddingLeft - paddingRight
+      },
+      months,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+
   const escaped = await page.evaluate(() => {
     window.__annualReadingXss = 0;
     const payload = '<img src=x onerror="window.__annualReadingXss=1">';
@@ -1726,6 +1763,27 @@ async function inspectAnnualYearReading(page, width) {
   assert.ok(restored.bodyLineHeight / restored.bodyFontSize >= 1.5, `${width}px annual body copy is cramped`);
   assert.equal(restored.sectionColumns, 1, `${width}px annual detail must use one full-width column`);
   assert.ok(restored.overflow <= 1, `${width}px annual reading overflowed by ${restored.overflow}px`);
+  assert.equal(annualLayout.proseTopGaps.length, 8, `${width}px annual prose spacing coverage`);
+  assert.ok(
+    annualLayout.proseTopGaps.every(gap => gap >= 15),
+    `${width}px annual first paragraphs are too close to their dividers: ${annualLayout.proseTopGaps.join(', ')}`
+  );
+  assert.equal(annualLayout.months.length, 12, `${width}px monthly geometry coverage`);
+
+  assert.equal(annualLayout.monthColumns, 1, `${width}px monthly guide must use one full-width column`);
+  annualLayout.months.forEach((month, index) => {
+    assert.ok(
+      Math.abs(month.width - annualLayout.monthGrid.contentWidth) <= 1,
+      `${width}px month ${index + 1} does not fill the monthly guide width`
+    );
+    assert.ok(
+      Math.abs(month.left - annualLayout.monthGrid.outerLeft) <= 1 &&
+        Math.abs(month.right - annualLayout.monthGrid.outerRight) <= 1,
+      `${width}px month ${index + 1} does not reach the monthly guide edges`
+    );
+  });
+
+  assert.ok(annualLayout.overflow <= 1, `${width}px expanded annual layout overflowed by ${annualLayout.overflow}px`);
   assert.equal(escaped, true, `${width}px annual report renderer allowed executable markup`);
 }
 
