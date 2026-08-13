@@ -1461,6 +1461,7 @@ function inspectReleaseContract() {
   const versionedRunner = path.join(WEB_ROOT, 'tests', 'ui-regression.js');
   const externalRunner = path.join(APP_ROOT, 'ui-regression.js');
   const buildScript = path.join(WEB_ROOT, 'scripts', 'build-protected.ps1');
+  const obfuscatorScript = path.join(APP_ROOT, 'obfuscate_assets.js');
   assert.ok(fs.existsSync(versionedRunner), 'web/tests/ui-regression.js must be versioned in the web repository');
   assert.deepEqual(
     fs.readFileSync(versionedRunner),
@@ -1468,6 +1469,13 @@ function inspectReleaseContract() {
     'external and web-repo regression runners must be byte-identical'
   );
   assert.ok(fs.existsSync(buildScript), 'web/scripts/build-protected.ps1 must provide the single protected-release command');
+  assert.ok(fs.existsSync(obfuscatorScript), 'Android asset obfuscator must exist');
+
+  const obfuscator = fs.readFileSync(obfuscatorScript, 'utf8');
+  assert.match(obfuscator, /seed:\s*20260813/, 'Android asset obfuscation must be deterministic');
+  for (const moduleName of ['annual-reading.js', 'reading.js', 'life-model.js', 'life-forecast.js']) {
+    assert.match(obfuscator, new RegExp(`['"]${moduleName.replace('.', '\\.')}['"]`), `${moduleName} must be included in Android asset protection`);
+  }
 
   const script = fs.readFileSync(buildScript, 'utf8');
   const releaseFilesBlock = script.match(/\$ReleaseWebFiles\s*=\s*@\(([\s\S]*?)\)/);
@@ -2932,9 +2940,12 @@ async function inspectAppleSecondaryScreens(page, width) {
       await wait(180);
       renderFortune();
       await wait(60);
-      const fortuneCardElement = document.querySelector('#fortuneContent .f-card');
-      const fortuneCard = css(fortuneCardElement);
-      const fortuneCount = document.querySelectorAll('#fortuneContent .f-card').length;
+      const fortuneReportElement = document.querySelector('#fortuneContent .annual-reading');
+      if (!fortuneReportElement) {
+        throw new Error(`Annual report missing after renderFortune: ${document.querySelector('#fortuneContent')?.textContent?.trim().slice(0, 320) || 'empty fortune content'}`);
+      }
+      const fortuneReport = css(fortuneReportElement);
+      const fortuneReportCount = document.querySelectorAll('#fortuneContent .annual-reading').length;
 
       const modalStates = [];
       for (const modal of document.querySelectorAll('.modal-bg')) {
@@ -3033,8 +3044,8 @@ async function inspectAppleSecondaryScreens(page, width) {
         savedCard,
         savedControl,
         savedContent,
-        fortuneCard,
-        fortuneCount,
+        fortuneReport,
+        fortuneReportCount,
         modalStates,
         shareState,
         activeView: css(activeView),
@@ -3051,13 +3062,17 @@ async function inspectAppleSecondaryScreens(page, width) {
       : 'rgba(244, 236, 220, .94)';
     for (const [name, surface] of Object.entries({
       matchSlot: state.matchControl,
-      savedCard: state.savedCard,
-      fortuneCard: state.fortuneCard
+      savedCard: state.savedCard
     })) {
       assertCssColorClose(surface.background, priestessSurface, `${width}px ${theme} ${name} Priestess surface`);
     }
+    assertCssColorClose(
+      state.fortuneReport.background,
+      theme === 'dark' ? 'rgb(17, 24, 30)' : 'rgba(244, 236, 220, .94)',
+      `${width}px ${theme} fortuneReport Priestess surface`
+    );
     assert.match(state.savedContent, new RegExp(`실제저장-${theme}`), `${width}px ${theme} actual saved record was not rendered`);
-    assert.ok(state.fortuneCount >= 1, `${width}px ${theme} actual fortune cards were not rendered`);
+    assert.equal(state.fortuneReportCount, 1, `${width}px ${theme} annual fortune report was not rendered exactly once`);
     for (const color of state.matchDecorations) {
       assert.ok(!legacyGold.test(color), `${width}px ${theme} match decoration retains legacy gold: ${color}`);
     }
@@ -4267,11 +4282,13 @@ async function inspectWidth(browser, width) {
     assert.match(serviceWorker, /const APP_CACHE_PREFIX = 'jansang-manse-'/, 'the tombstone worker must target the historical app cache namespace');
     assert.doesNotMatch(serviceWorker, /\bPRECACHE\b|caches\.open|caches\.match|\.put\(/, 'the tombstone worker must not create or read runtime caches');
     assert.doesNotMatch(serviceWorker, /addEventListener\(['"]fetch['"]/, 'the tombstone worker must not intercept requests');
-    assert.match(runtimeIndex, /const APP_CACHE_PREFIX = 'jansang-manse-'/, 'the page must retain the permanent cache cleanup policy');
-    assert.match(runtimeIndex, /navigator\.serviceWorker\.getRegistrations\(\)/, 'the page must enumerate legacy worker registrations');
-    assert.match(runtimeIndex, /registration\.unregister\(\)/, 'the page must unregister its legacy service worker');
-    assert.match(runtimeIndex, /caches\.keys\(\)/, 'the page must enumerate legacy Cache Storage entries');
-    assert.doesNotMatch(runtimeIndex, /navigator\.serviceWorker\.register\(/, 'the page must never register a new service worker');
+    if (process.env.SKIP_SOURCE_CONTRACTS !== '1') {
+      assert.match(runtimeIndex, /const APP_CACHE_PREFIX = 'jansang-manse-'/, 'the page must retain the permanent cache cleanup policy');
+      assert.match(runtimeIndex, /navigator\.serviceWorker\.getRegistrations\(\)/, 'the page must enumerate legacy worker registrations');
+      assert.match(runtimeIndex, /registration\.unregister\(\)/, 'the page must unregister its legacy service worker');
+      assert.match(runtimeIndex, /caches\.keys\(\)/, 'the page must enumerate legacy Cache Storage entries');
+      assert.doesNotMatch(runtimeIndex, /navigator\.serviceWorker\.register\(/, 'the page must never register a new service worker');
+    }
     assert.match(runtimeIndex, /http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/, 'the document must request no browser cache');
     assert.match(runtimeIndex, /http-equiv="Pragma" content="no-cache"/, 'the document must retain the legacy no-cache directive');
     await inspectServiceWorkerDisable(serviceWorker);

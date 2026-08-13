@@ -277,18 +277,29 @@ function Test-ProtectedAssets {
     $assetRoot = Join-Path $ResolvedAppRoot 'android\app\src\main\assets\public'
     $runner = Join-Path $WebRoot 'tests\ui-regression.js'
     $previousAppRoot = $env:APP_ROOT
+    $previousWebRoot = $env:WEB_ROOT
     $previousUiRoot = $env:UI_ROOT
     $previousSkipSourceContracts = $env:SKIP_SOURCE_CONTRACTS
+    $previousNodePath = $env:NODE_PATH
     try {
         $env:APP_ROOT = $ResolvedAppRoot
+        $env:WEB_ROOT = $WebRoot
         $env:UI_ROOT = $assetRoot
         $env:SKIP_SOURCE_CONTRACTS = '1'
+        $appNodeModules = Join-Path $ResolvedAppRoot 'node_modules'
+        $env:NODE_PATH = if ([string]::IsNullOrWhiteSpace($previousNodePath)) {
+            $appNodeModules
+        } else {
+            "$appNodeModules$([IO.Path]::PathSeparator)$previousNodePath"
+        }
         $null = Invoke-Checked -Label 'protected UI regression' -FilePath $Toolchain.Node `
             -Arguments @($runner) -WorkingDirectory $WebRoot
     } finally {
         $env:APP_ROOT = $previousAppRoot
+        $env:WEB_ROOT = $previousWebRoot
         $env:UI_ROOT = $previousUiRoot
         $env:SKIP_SOURCE_CONTRACTS = $previousSkipSourceContracts
+        $env:NODE_PATH = $previousNodePath
     }
 }
 
