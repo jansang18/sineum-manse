@@ -3027,6 +3027,11 @@ async function inspectAppleSecondaryScreens(page, width) {
   for (const theme of themes) {
     const state = await page.evaluate(async ({ theme, width }) => {
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const waitForAnimations = async element => {
+        const animations = element.getAnimations({ subtree: true });
+        await Promise.all(animations.map(animation => animation.finished.catch(() => undefined)));
+        await wait(0);
+      };
       document.body.classList.toggle('dark', theme === 'dark');
       await wait(300);
 
@@ -3099,7 +3104,7 @@ async function inspectAppleSecondaryScreens(page, width) {
       const modalStates = [];
       for (const modal of document.querySelectorAll('.modal-bg')) {
         window.openAppModal(modal);
-        await wait(260);
+        await waitForAnimations(modal);
         const panel = modal.querySelector('.modal');
         const grabber = getComputedStyle(panel, '::before');
         const controls = [...panel.querySelectorAll('button')].filter(button => button.getClientRects().length).map(css);
@@ -3116,7 +3121,7 @@ async function inspectAppleSecondaryScreens(page, width) {
           focusedInside: modal.contains(document.activeElement)
         });
         window.closeAppModal(modal);
-        await wait(230);
+        await waitForAnimations(modal);
       }
 
       window.shareCard(window.currentSaju || currentSaju);
