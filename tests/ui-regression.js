@@ -600,7 +600,6 @@ async function inspectShellWidth(page, width) {
       viewport: document.documentElement.clientWidth,
       header: box('.top-bar'),
       tabs: box('.tabs'),
-      introMarginTop: parseFloat(getComputedStyle(document.querySelector('.input-intro')).marginTop),
       inputView: box('#view-input'),
       search: box('.person-search-btn'),
       card: box('.input-card'),
@@ -611,7 +610,7 @@ async function inspectShellWidth(page, width) {
 
   const reference = geometry.tabs;
   for (const [name, rect] of Object.entries(geometry)) {
-    if (name === 'viewport' || name === 'tabs' || name === 'introMarginTop') continue;
+    if (name === 'viewport' || name === 'tabs') continue;
     assert.ok(
       Math.abs(rect.width - reference.width) <= 1,
       `${width}px ${name} width ${rect.width}px must match tabs ${reference.width}px`
@@ -621,10 +620,6 @@ async function inspectShellWidth(page, width) {
       `${width}px ${name} left ${rect.left}px must match tabs ${reference.left}px`
     );
   }
-  assert.ok(
-    geometry.introMarginTop >= -38.5 && geometry.introMarginTop <= -37.5,
-    `${width}px intro must move up by about 1cm/38px, got ${geometry.introMarginTop}px`
-  );
   assert.ok(reference.left >= 0 && reference.right <= geometry.viewport + 1, `${width}px shared shell overflows viewport`);
 }
 
@@ -4172,10 +4167,9 @@ async function inspectWidth(browser, width) {
   assert.equal(await page.$eval('link[href="luxury.css"]', () => true), true);
   const bg = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--obsidian-bg').trim());
   assert.equal(bg, '#07080d');
-  const heroArt = await page.$eval('.manse-art', element => ({
-    backgroundImage: getComputedStyle(element).backgroundImage
-  }));
-  assert.match(heroArt.backgroundImage, /manse-hero-v2\.webp/, `${width}px manseryeok hero source`);
+  assert.equal(await page.$('.input-intro'), null, `${width}px oversized input intro must be removed`);
+  assert.equal(await page.$('.manse-art'), null, `${width}px manseryeok hero art must be removed`);
+  assert.equal(await page.$('.manse-calligraphy'), null, `${width}px hero calligraphy must be removed`);
   assert.equal(await page.$('.intro-logo-img'), null, `${width}px decorative Hanja logo must be removed`);
   const inputPolish = await page.evaluate(() => ({
     cardBorder: getComputedStyle(document.querySelector('.input-card')).borderTopColor,

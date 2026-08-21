@@ -8,14 +8,7 @@ const root = path.resolve(__dirname, '..');
 const chrome = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const url = pathToFileURL(path.join(root, 'index.html')).href;
 
-for (const file of ['priestess.css', 'manse-hero-v2.webp', 'jansang-calligraphy-brush.webp']) {
-  assert.ok(fs.statSync(path.join(root, file)).size > 0, `${file} is missing or empty`);
-}
-
-const serviceWorker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-for (const asset of ['priestess.css', 'manse-hero-v2.webp', 'jansang-calligraphy-brush.webp']) {
-  assert.ok(serviceWorker.includes(`'./${asset}'`), `${asset} is not precached`);
-}
+assert.ok(fs.statSync(path.join(root, 'priestess.css')).size > 0, 'priestess.css is missing or empty');
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
 assert.equal(manifest.background_color, '#E9DFCC');
@@ -38,23 +31,20 @@ async function inspectTheme(page, width, scheme) {
         bottom: box.bottom
       };
     };
-    const arts = [...document.querySelectorAll('.manse-art')];
     const input = document.getElementById('inBirth');
     const nameInput = document.getElementById('inputName');
     const personSearchInput = document.getElementById('psQuery');
     input.value = '19860219';
     return {
       stylesheet: [...document.styleSheets].some(sheet => sheet.href?.endsWith('/priestess.css')),
-      artCount: arts.length,
-      artImages: arts.map(art => getComputedStyle(art).backgroundImage),
+      introCount: document.querySelectorAll('.input-intro').length,
+      artCount: document.querySelectorAll('.manse-art').length,
+      calligraphyCount: document.querySelectorAll('.manse-calligraphy').length,
       brand: document.querySelector('.top-bar .title')?.textContent.trim(),
-      heroCopy: document.querySelector('.manse-hero-copy')?.textContent.replace(/\s+/g, ' ').trim(),
-      calligraphySrc: document.querySelector('.manse-calligraphy')?.getAttribute('src'),
-      hasDecorativeHanja: /[神命還]/.test(document.querySelector('.input-intro')?.textContent || ''),
       hasLegacyLogo: Boolean(document.querySelector('.intro-logo-img')),
       inputDecoration: getComputedStyle(document.querySelector('.input-card'), '::after').content,
-      hero: rect('.input-intro'),
       tabs: rect('.tabs'),
+      firstControl: rect('.person-search-btn'),
       button: rect('#calcBtn'),
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
@@ -71,12 +61,10 @@ async function inspectTheme(page, width, scheme) {
   });
 
   assert.equal(state.stylesheet, true, `${width}px ${scheme} theme stylesheet missing`);
-  assert.equal(state.artCount, 1, `${width}px ${scheme} manseryeok art count`);
-  assert.ok(state.artImages.some(value => value.includes('manse-hero-v2.webp')));
+  assert.equal(state.introCount, 0, `${width}px ${scheme} oversized intro must be removed`);
+  assert.equal(state.artCount, 0, `${width}px ${scheme} hero art must be removed`);
+  assert.equal(state.calligraphyCount, 0, `${width}px ${scheme} hero calligraphy must be removed`);
   assert.equal(state.brand, '잔상 만세력');
-  assert.match(state.heroCopy, /천년의 시간을 펼치다/);
-  assert.equal(state.calligraphySrc, 'jansang-calligraphy-brush.webp');
-  assert.equal(state.hasDecorativeHanja, false);
   assert.equal(state.hasLegacyLogo, false);
   assert.equal(state.inputDecoration, 'none');
   assert.equal(state.inputValue, '19860219');
@@ -88,10 +76,10 @@ async function inspectTheme(page, width, scheme) {
   assert.equal(state.namePlaceholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.equal(state.personSearchPlaceholderColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
   assert.equal(state.personSearchPlaceholderFillColor, scheme === 'dark' ? 'rgba(237, 229, 213, 0.36)' : 'rgba(26, 32, 34, 0.36)');
-  assert.ok(state.hero.height >= 220, `${width}px hero is too short`);
-  assert.ok(state.hero.top >= state.tabs.bottom - 1, `${width}px hero overlaps the sticky tabs`);
+  const firstControlGap = state.firstControl.top - state.tabs.bottom;
+  assert.ok(firstControlGap >= 0 && firstControlGap <= 48, `${width}px first input control gap is ${firstControlGap}px`);
   assert.ok(state.button.height >= 52, `${width}px primary action is too short`);
-  assert.ok(state.hero.left >= 0 && state.hero.right <= state.viewport + 1, `${width}px hero overflows`);
+  assert.ok(state.firstControl.left >= 0 && state.firstControl.right <= state.viewport + 1, `${width}px first input control overflows`);
   assert.ok(state.scrollWidth <= state.viewport + 1, `${width}px document overflows`);
 }
 
@@ -109,22 +97,6 @@ async function inspectTheme(page, width, scheme) {
       await inspectTheme(page, width, 'light');
       await page.close();
     }
-
-    const scrollingPage = await browser.newPage();
-    await scrollingPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await scrollingPage.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
-    await scrollingPage.goto(url, { waitUntil: 'networkidle0' });
-    await scrollingPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const scrolledHeader = await scrollingPage.evaluate(() => ({
-      scrollY: window.scrollY,
-      topBarBottom: document.querySelector('.top-bar').getBoundingClientRect().bottom,
-      tabsBottom: document.querySelector('.tabs').getBoundingClientRect().bottom
-    }));
-    assert.ok(scrolledHeader.scrollY >= 120, 'page must scroll far enough to test header behavior');
-    assert.ok(scrolledHeader.topBarBottom < 0, 'title bar must scroll away with the page');
-    assert.ok(scrolledHeader.tabsBottom < 0, 'navigation bar must scroll away with the page');
-    await scrollingPage.close();
 
     const resultPage = await browser.newPage();
     await resultPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
@@ -144,26 +116,18 @@ async function inspectTheme(page, width, scheme) {
     assert.ok(result.overflow <= 1, `result overflow is ${result.overflow}px`);
     assert.equal(result.bottomBackground, 'rgba(8, 13, 17, 0.97)');
     assert.equal(result.cardBackground, 'rgba(17, 24, 30, 0.95)');
-    await resultPage.close();
 
-    const reducedPage = await browser.newPage();
-    await reducedPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
-    await reducedPage.emulateMediaFeatures([
-      { name: 'prefers-color-scheme', value: 'dark' },
-      { name: 'prefers-reduced-motion', value: 'reduce' }
-    ]);
-    await reducedPage.goto(url, { waitUntil: 'networkidle0' });
-    const reduced = await reducedPage.evaluate(() => ({
-      heroOpacity: getComputedStyle(document.querySelector('.manse-art')).opacity,
-      heroTransform: getComputedStyle(document.querySelector('.manse-art')).transform,
-      running: document.querySelector('.input-intro').getAnimations({ subtree: true }).length
+    await resultPage.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const scrolledHeader = await resultPage.evaluate(() => ({
+      scrollY: window.scrollY,
+      topBarBottom: document.querySelector('.top-bar').getBoundingClientRect().bottom,
+      tabsBottom: document.querySelector('.tabs').getBoundingClientRect().bottom
     }));
-    assert.deepEqual(reduced, {
-      heroOpacity: '1',
-      heroTransform: 'none',
-      running: 0
-    });
-    await reducedPage.close();
+    assert.ok(scrolledHeader.scrollY >= 120, 'result page must scroll far enough to test header behavior');
+    assert.ok(scrolledHeader.topBarBottom < 0, 'title bar must scroll away with the result page');
+    assert.ok(scrolledHeader.tabsBottom < 0, 'navigation bar must scroll away with the result page');
+    await resultPage.close();
 
     console.log('Jansang manseryeok theme regression PASS');
   } finally {
