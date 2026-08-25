@@ -306,6 +306,7 @@ body.dark {
   cursor: not-allowed !important;
   pointer-events: none !important;
   filter: saturate(.55) !important;
+  transition: none !important;
 }
 
 .primary-btn:focus-visible,
@@ -1908,8 +1909,6 @@ html {
 
 .view.active > * {
   animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
 }
 
 .view,
@@ -1989,6 +1988,24 @@ html {
   margin: 0 !important;
   text-align: left !important;
 }
+
+.fortune-head--empty.view-head {
+  height: clamp(76px, 10vw, 112px);
+  min-height: 76px;
+  padding: clamp(14px, 2.2vw, 24px) 0 !important;
+}
+
+.view-empty {
+  width: min(100%, var(--app-reading-measure));
+  margin-inline: auto;
+  padding-block: clamp(28px, 6vw, 56px);
+  color: var(--apple-secondary);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.view-empty p { margin: 0; }
 
 .fortune-head-summary {
   display: flex;

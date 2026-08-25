@@ -21,6 +21,20 @@
     return Array.isArray(section?.evidence) ? section.evidence.slice() : [];
   }
 
+  function chapter(section, source) {
+    if (!section) return null;
+    return {
+      id: section.id || '',
+      source,
+      number: section.number || '',
+      category: section.category || '',
+      title: section.title || '',
+      lead: section.lead || section.summary || '',
+      paragraphs: paragraphs(section),
+      evidence: evidence(section)
+    };
+  }
+
   function compose(input) {
     const annualReport = input?.annualReport;
     const deepReport = input?.deepReport;
@@ -30,27 +44,35 @@
 
     const annual = new Map(annualReport.sections.map(section => [section.id, section]));
     const deep = new Map((deepReport?.sections || []).map(section => [section.id, section]));
-    const yearGroups = GROUPS.map(group => ({
-      id: group.id,
-      title: group.title,
-      paragraphs: [
-        ...group.annual.flatMap(id => paragraphs(annual.get(id))),
-        ...group.deep.flatMap(id => paragraphs(deep.get(id)))
-      ],
-      evidence: [
-        ...group.annual.flatMap(id => evidence(annual.get(id))),
-        ...group.deep.flatMap(id => evidence(deep.get(id)))
-      ]
-    }));
+    const yearGroups = GROUPS.map(group => {
+      const annualChapters = group.annual.map(id => chapter(annual.get(id), 'annual')).filter(Boolean);
+      const deepChapters = group.deep.map(id => chapter(deep.get(id), 'deep')).filter(Boolean);
+      return {
+        id: group.id,
+        title: group.title,
+        chapters: [...annualChapters, ...deepChapters],
+        paragraphs: [...annualChapters, ...deepChapters].flatMap(item => item.paragraphs),
+        evidence: [...annualChapters, ...deepChapters].flatMap(item => item.evidence)
+      };
+    });
 
     const closing = deepReport?.closing || {};
     yearGroups[yearGroups.length - 1].paragraphs.push(...paragraphs(closing));
+    const closingChapter = chapter({ ...closing, id: 'closing' }, 'closing');
+    if (closingChapter && (closingChapter.title || closingChapter.paragraphs.length)) {
+      yearGroups[yearGroups.length - 1].chapters.push(closingChapter);
+    }
 
     return {
       year: annualReport.year,
       ganji: annualReport.ganji,
       title: annualReport.title,
       deck: annualReport.deck,
+      deepIntro: {
+        eyebrow: deepReport?.eyebrow || '',
+        title: deepReport?.title || '',
+        deck: deepReport?.deck || ''
+      },
       evidence: Array.isArray(annualReport.evidence)
         ? annualReport.evidence.filter(item => !/^대운\s/.test(String(item)))
         : [],

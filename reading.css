@@ -69,6 +69,7 @@
 }
 
 .reading-section__head,
+.reading-deep-intro,
 .reading-year-group,
 .reading-month-list,
 .reading-method-note,
@@ -107,6 +108,37 @@
   overflow-wrap: anywhere;
 }
 
+.reading-deep-intro {
+  margin-top: clamp(24px, 4vw, 36px);
+  padding: 18px 0;
+  border-block: 1px solid var(--apple-separator, var(--line));
+}
+
+.reading-deep-intro > span,
+.reading-chapter__head > span {
+  display: block;
+  color: var(--apple-accent, var(--accent));
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.reading-deep-intro h3 {
+  margin: 7px 0 0;
+  color: var(--apple-label, var(--text));
+  font-size: clamp(17px, 2vw, 20px);
+  line-height: 1.42;
+  letter-spacing: -.015em;
+}
+
+.reading-deep-intro p {
+  margin: 8px 0 0;
+  color: var(--apple-secondary, var(--text-sub));
+  font-size: 14px;
+  line-height: 1.72;
+  word-break: keep-all;
+}
+
 .reading-year-group { margin-top: clamp(32px, 5vw, 54px); }
 .reading-year-group + .reading-year-group { margin-top: clamp(34px, 5.5vw, 58px); }
 
@@ -120,6 +152,30 @@
   line-height: 1.4;
   letter-spacing: -.015em;
 }
+
+.reading-chapter + .reading-chapter { margin-top: clamp(28px, 4vw, 40px); }
+
+.reading-chapter__head h4 {
+  margin: 6px 0 0;
+  color: var(--apple-label, var(--text));
+  font-size: clamp(16px, 1.8vw, 18px);
+  font-weight: 780;
+  line-height: 1.48;
+  letter-spacing: -.012em;
+  word-break: keep-all;
+}
+
+.reading-chapter__lead {
+  margin: 11px 0 0;
+  color: var(--apple-secondary, var(--text-sub));
+  font-size: clamp(14px, 1.45vw, 16px);
+  font-weight: 650;
+  line-height: 1.78;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.reading-chapter .reading-prose { margin-top: 12px; }
 
 .reading-prose {
   font-size: clamp(15px, 1.6vw, 17px);
@@ -237,6 +293,7 @@
 
 @media (prefers-contrast: more) {
   .reading-section,
+  .reading-deep-intro,
   .reading-year-group h3,
   .reading-month,
   .reading-month-list,

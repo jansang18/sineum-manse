@@ -1709,6 +1709,10 @@ async function inspectUnifiedReading(page, width) {
       title: root.querySelector('[data-reading-section="year"] h2')?.textContent.trim() || '',
       yearGroups: [...root.querySelectorAll('.reading-year-group h3')]
         .map(heading => heading.textContent.trim()),
+      deepIntroTitle: root.querySelector('.reading-deep-intro h3')?.textContent.trim() || '',
+      deepChapters: root.querySelectorAll('.reading-chapter[data-reading-source="deep"]').length,
+      deepLeads: root.querySelectorAll('.reading-chapter[data-reading-source="deep"] .reading-chapter__lead').length,
+      closingTitles: root.querySelectorAll('.reading-chapter[data-reading-source="closing"] h4').length,
       months: root.querySelectorAll('.reading-month').length,
       monthLabels: [...root.querySelectorAll('.reading-month__label')]
         .map(label => label.textContent.trim()),
@@ -1749,6 +1753,10 @@ async function inspectUnifiedReading(page, width) {
 
   assert.deepEqual(initial.order, ['year', 'months', 'daeun']);
   assert.deepEqual(initial.yearGroups, ['올해의 핵심', '일과 재물', '관계와 생활', '건강과 주의', '실행 기준']);
+  assert.ok(initial.deepIntroTitle.length > 0);
+  assert.equal(initial.deepChapters, 10);
+  assert.equal(initial.deepLeads, 10);
+  assert.equal(initial.closingTitles, 1);
   assert.equal(initial.months, 12);
   assert.equal(initial.monthLabels[0], '1월');
   assert.equal(initial.monthLabels[11], '12월');

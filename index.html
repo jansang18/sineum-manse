@@ -1741,7 +1741,13 @@
     </div>
   </section>
 
-  <section class="view" id="view-result" role="tabpanel" aria-labelledby="tab-result" hidden></section>
+  <section class="view" id="view-result" role="tabpanel" aria-labelledby="tab-result" hidden>
+    <header class="view-head result-head">
+      <h2>원국</h2>
+      <p>입력한 생년월일로 원국과 운의 흐름을 펼칩니다.</p>
+    </header>
+    <div class="view-empty"><p>먼저 <strong>입력</strong> 탭에서 사주를 펼쳐주세요.</p></div>
+  </section>
 
   <section class="view" id="view-fortune" role="tabpanel" aria-labelledby="tab-fortune" hidden>
     <div id="fortuneContent"></div>
@@ -14568,6 +14574,14 @@ function renderUnifiedReading(report) {
   const evidence = items => (items || []).length
     ? `<ul class="reading-evidence">${items.map(item => `<li>${escapeHtml(String(item))}</li>`).join('')}</ul>`
     : '';
+  const chapters = items => (items || []).map(chapter => `<section class="reading-chapter" data-reading-source="${escapeHtml(chapter.source || '')}">
+    <header class="reading-chapter__head">
+      ${chapter.number || chapter.category ? `<span>${escapeHtml([chapter.number, chapter.category].filter(Boolean).join(' · '))}</span>` : ''}
+      ${chapter.title ? `<h4>${escapeHtml(chapter.title)}</h4>` : ''}
+    </header>
+    ${chapter.lead ? `<p class="reading-chapter__lead">${escapeHtml(chapter.lead)}</p>` : ''}
+    <div class="reading-prose">${paragraphs(chapter.paragraphs)}</div>
+  </section>`).join('');
   return `<article class="unified-reading" aria-labelledby="unifiedReadingTitle">
     <section class="reading-section reading-year" data-reading-section="year">
       <header class="reading-section__head">
@@ -14576,9 +14590,14 @@ function renderUnifiedReading(report) {
         <p>${escapeHtml(report.deck || '')}</p>
       </header>
       ${evidence(report.evidence)}
+      ${report.deepIntro?.title || report.deepIntro?.deck ? `<aside class="reading-deep-intro">
+        ${report.deepIntro.eyebrow ? `<span>${escapeHtml(report.deepIntro.eyebrow)}</span>` : ''}
+        ${report.deepIntro.title ? `<h3>${escapeHtml(report.deepIntro.title)}</h3>` : ''}
+        ${report.deepIntro.deck ? `<p>${escapeHtml(report.deepIntro.deck)}</p>` : ''}
+      </aside>` : ''}
       ${(report.yearGroups || []).map(group => `<section class="reading-year-group">
         <h3>${escapeHtml(group.title || '')}</h3>
-        <div class="reading-prose">${paragraphs(group.paragraphs)}</div>
+        ${group.chapters?.length ? chapters(group.chapters) : `<div class="reading-prose">${paragraphs(group.paragraphs)}</div>`}
         ${evidence(group.evidence)}
       </section>`).join('')}
       ${report.rules?.length ? `<ol class="reading-rules">${report.rules.map(rule => `<li>${escapeHtml(String(rule))}</li>`).join('')}</ol>` : ''}
@@ -14628,7 +14647,10 @@ function renderFortune(focusYearControl = '') {
 
 function _renderFortuneInner(focusYearControl = '') {
   if (!currentSaju) {
-    $('#fortuneContent').innerHTML = `<div class="fortune-empty">
+    $('#fortuneContent').innerHTML = `<header class="view-head fortune-head fortune-head--empty">
+      <h2>풀이</h2>
+      <p>연도 종합부터 12개월 월운과 대운까지 차례로 읽습니다.</p>
+    </header><div class="fortune-empty">
       <div class="ico">🔮</div>
       <p>먼저 <strong>입력</strong> 탭에서 사주를 펼쳐주세요<br>또는 <strong>저장</strong>된 명반을 불러오세요</p>
     </div>`;
