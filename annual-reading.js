@@ -142,6 +142,11 @@
     const [strongKey, strongScore] = strongest(scores);
     const [weakKey, weakScore] = weakest(scores);
     const age = number(input.age, year - number(input.birthYear, year));
+    const daeunStartAge = number(input.daeunStartAge, NaN);
+    const daeunEndAge = number(input.daeunEndAge, NaN);
+    const daeunAgeSpan = Number.isFinite(daeunStartAge)
+      ? `${daeunStartAge}세${Number.isFinite(daeunEndAge) ? `부터 ${daeunEndAge}세까지` : '부터'}`
+      : '약 10년 동안';
     const strongLabel = DOMAIN_LABELS[strongKey];
     const weakLabel = DOMAIN_LABELS[weakKey];
     const balanceText = input.strong
@@ -173,7 +178,7 @@
         summary: `${input.daeunGanji || '선택 연도 대운'} 위에 ${ganji} 세운이 올라오는 구조`,
         tone: 'normal',
         paragraphs: [
-          `${year}년에 해당하는 대운 ${input.daeunGanji || ''}의 천간 ${input.daeunStemGod || '십신'}과 지지 ${input.daeunBranchGod || '십신'}은 약 10년 동안 이어지는 배경입니다. 그 위에 ${year}년의 ${stemGod}·${branchGod}이 올라오므로, 선택 연도의 사건은 갑자기 생긴 단독 신호라기보다 이미 진행 중인 대운의 과제를 더 분명하게 드러내는 촉발점으로 보는 편이 맞습니다.`,
+          `선택한 대운 ${input.daeunGanji || ''}의 천간 ${input.daeunStemGod || '십신'}과 지지 ${input.daeunBranchGod || '십신'}은 ${daeunAgeSpan} 이어지는 배경입니다. 그 위에 ${year}년의 ${stemGod}·${branchGod}이 올라오므로, 선택 연도의 사건은 갑자기 생긴 단독 신호라기보다 이미 진행 중인 대운의 과제를 더 분명하게 드러내는 촉발점으로 보는 편이 맞습니다.`,
           `대운은 방향을 만들고 세운은 시점을 선명하게 합니다. 대운에서 요구하는 역할과 ${year}년의 역할이 같다면 일이 빠르게 진행될 수 있지만 부담도 한곳에 몰립니다. 반대로 서로 다른 요구가 들어오면 직장과 가정, 안정과 변화, 내 기준과 타인의 기준 사이에서 우선순위를 다시 정해야 합니다.`,
           `연도 기준 ${age}세에 해당하는 이 해에는 결과만 보는 것보다 다음 해에도 남을 자산을 구분해야 합니다. 기술·자격·평판·저축·건강 습관처럼 시간이 지나도 남는 것을 먼저 선택하고, 즉각적인 인정이나 감정 해소만 남는 선택은 하루 이상 간격을 두고 다시 검토하십시오.`
         ]

@@ -11856,6 +11856,7 @@ Sigrid Niehaus|19641229|F|
 <script src="korean-lunar-calendar.min.js"></script>
 <script src="reading.js"></script>
 <script src="annual-reading.js"></script>
+<script src="unified-reading.js"></script>
 <script src="life-model.js"></script>
 <script src="life-forecast.js"></script>
 <script>
@@ -14565,8 +14566,28 @@ function buildAnnualMonthGuide(saju, year) {
   });
 }
 
+function resolveReadingDaeun(saju, fortune) {
+  const list = Array.isArray(saju?.daeun?.list) ? saju.daeun.list : [];
+  const explicit = Number.isInteger(selectedDaeun) && list[selectedDaeun]
+    ? selectedDaeun
+    : list.indexOf(fortune.curDaeun);
+  const index = explicit >= 0 ? explicit : 0;
+  const value = list[index] || fortune.curDaeun;
+  const next = list[index + 1];
+  return {
+    index,
+    value,
+    startAge: value.age,
+    endAge: next ? next.age - 1 : null,
+    ganji: `${STEM_KOR[value.stem]}${BRANCH_KOR[value.branch]}`,
+    stemGod: SIPSIN_KOR[getSipsin(saju.dStem, value.stem)],
+    branchGod: SIPSIN_KOR[getSipsin(saju.dStem, JIJANGAN[value.branch][0])]
+  };
+}
+
 function buildAnnualReading(fortune, saju) {
   if (!window.SajuAnnualReading?.build) return null;
+  const readingDaeun = resolveReadingDaeun(saju, fortune);
   return window.SajuAnnualReading.build({
     name: saju.name,
     gender: saju.gender,
@@ -14582,9 +14603,11 @@ function buildAnnualReading(fortune, saju) {
     seunBranchGod: SIPSIN_KOR[fortune.seunBranchSipsin],
     annualStemElement: EL_KOR[STEM_EL[fortune.seun.stem]],
     annualBranchElement: EL_KOR[BRANCH_EL[fortune.seun.branch]],
-    daeunGanji: `${STEM_KOR[fortune.curDaeun.stem]}${BRANCH_KOR[fortune.curDaeun.branch]}`,
-    daeunStemGod: SIPSIN_KOR[fortune.daeunStemSipsin],
-    daeunBranchGod: SIPSIN_KOR[fortune.daeunBranchSipsin],
+    daeunGanji: readingDaeun.ganji,
+    daeunStemGod: readingDaeun.stemGod,
+    daeunBranchGod: readingDaeun.branchGod,
+    daeunStartAge: readingDaeun.startAge,
+    daeunEndAge: readingDaeun.endAge,
     harmony: fortune.inter.harmony,
     conflict: fortune.inter.conflict,
     scores: fortune.scores,
