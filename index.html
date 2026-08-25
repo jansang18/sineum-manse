@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>잔상 만세력</title>
-<meta name="description" content="잔상 만세력 · 자평명리학 1000년 만세력 · 운세풀이 · 궁합">
+<meta name="description" content="잔상 만세력 · 자평명리학 1000년 만세력 · 운세풀이">
 <meta name="theme-color" content="#E9DFCC" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#080D11" media="(prefers-color-scheme: dark)">
 <!-- iOS PWA (홈화면 추가시 앱처럼 작동) -->
@@ -114,8 +114,6 @@
   body.dark .cal-day.selected { background: var(--selected-bg); }
   body.dark .luck-item.selected { background: var(--today-bg); }
   body.dark .siju-item.selected { background: var(--today-bg); }
-  body.dark .match-slot.a.filled { background: #2a1a17; }
-  body.dark .match-slot.b.filled { background: #17202a; }
   /* 다크모드: 하드코딩된 흰 배경 보정 */
   body.dark .sub-luck.inner { background: var(--bg-soft); border-color: var(--line); }
   body.dark .day-item { background: var(--bg-soft); border-color: var(--line); }
@@ -129,10 +127,6 @@
   body.dark .modal-actions button.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
   body.dark .f-bar { background: var(--bg-elev); }
   body.dark .f-text { background: var(--bg-soft); }
-  body.dark .match-slot.filled { background: var(--bg-soft); }
-  body.dark .match-picker-modal .pick-new-btn { background: var(--bg-soft); }
-  body.dark .mb-bar { background: var(--bg-elev); }
-  body.dark .match-reset { background: var(--bg-soft); }
 
   /* 다크모드에서 하드코딩된 흰 배경 요소 오버라이드 */
   body.dark .ohaeng-cell,
@@ -142,12 +136,7 @@
   body.dark .siju-item,
   body.dark .modal-actions button,
   body.dark .f-text,
-  body.dark .mb-text,
   body.dark .f-bar,
-  body.dark .mb-bar,
-  body.dark .match-slot.filled,
-  body.dark .match-reset,
-  body.dark .pick-new-btn,
   body.dark .top-bar {
     background: var(--bg-elev);
   }
@@ -158,8 +147,7 @@
   body.dark .modal-actions button.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
   body.dark .primary-btn { background: var(--fire-deep); }
   body.dark .result-right .luck-section { background: var(--bg-soft); }
-  body.dark .overall-card .ov-text,
-  body.dark .match-total-card .mt-text {
+  body.dark .overall-card .ov-text {
     background: rgba(255,255,255,0.04);
     color: var(--text);
   }
@@ -168,7 +156,7 @@
   body.dark .f-card-title .f-ico { filter: brightness(1.1); }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   /* iOS Safari 클릭 호환성: cursor pointer가 있어야 click이 발화됨 */
-  button, a, label, [role="button"], .tab, .luck-item, .saved-card, .cal-day, .siju-item, .pillar-col, .day-item, .match-slot, .pick-item, .bb, .icon-btn, .segmented button {
+  button, a, label, [role="button"], .tab, .luck-item, .saved-card, .cal-day, .siju-item, .pillar-col, .day-item, .bb, .icon-btn, .segmented button {
     cursor: pointer;
     touch-action: manipulation;
   }
@@ -1641,297 +1629,8 @@
     padding: 5px 10px; font-size: 11.5px;
   }
 
-  /* ============================================
-     궁합 화면
-     ============================================ */
-  .match-intro {
-    text-align: center;
-    padding: 20px 0 24px;
-  }
-  .match-intro .big {
-    font-size: 22px; font-weight: 800;
-    letter-spacing: -0.02em; margin-bottom: 6px;
-  }
-  .match-intro .big em { color: var(--fire-deep); font-style: normal; }
-  .match-intro .sub {
-    font-size: 13px; font-weight: 500; color: var(--text-sub);
-  }
-
-  .match-picker-row {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 8px;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  .match-slot {
-    background: var(--bg-soft);
-    border: 1.5px dashed var(--line);
-    border-radius: 14px;
-    padding: 18px 12px;
-    text-align: center;
-    cursor: pointer;
-    min-height: 90px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    transition: background-color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.15s;
-  }
-  .match-slot.filled {
-    border-style: solid;
-    background: white;
-    border-color: var(--line);
-  }
-  .match-slot.a.filled { border-color: var(--fire-deep); background: #fff4f1; }
-  .match-slot.b.filled { border-color: var(--accent); background: #eff6ff; }
-  .match-slot:active { transform: scale(0.98); }
-  .match-slot .slot-ico {
-    font-size: 24px;
-    margin-bottom: 6px;
-    opacity: 0.5;
-  }
-  .match-slot .slot-hint {
-    font-size: 12px; font-weight: 700; color: var(--text-sub);
-  }
-  .match-slot .slot-name {
-    font-size: 15px; font-weight: 800;
-    letter-spacing: -0.01em;
-    margin-bottom: 4px;
-  }
-  .match-slot .slot-info {
-    font-size: 11px; font-weight: 600; color: var(--text-sub);
-    margin-bottom: 6px;
-  }
-  .match-slot .slot-pillars {
-    display: flex; justify-content: center; gap: 2px;
-    font-family: 'Apple SD Gothic Neo', 'Noto Serif KR', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', serif;
-    font-size: 13px; font-weight: 900;
-  }
-  .match-slot .slot-pillars .sp {
-    padding: 2px 4px;
-    border-radius: 4px;
-    color: white;
-    min-width: 18px;
-    text-align: center;
-  }
-  .match-slot .slot-pillars .sp.el-earth { color: #2a2200; }
-  .match-slot .slot-pillars .sp.el-metal { color: #333; }
-  .match-vs {
-    font-size: 14px; font-weight: 900;
-    color: var(--fire-deep);
-    padding: 0 4px;
-  }
-
-  .match-go-btn {
-    width: 100%;
-    padding: 15px;
-    background: var(--text);
-    color: white;
-    border: none;
-    font-family: inherit;
-    font-size: 15px; font-weight: 800;
-    border-radius: 14px;
-    cursor: pointer;
-    margin-bottom: 16px;
-  }
-  .match-go-btn:disabled {
-    background: var(--line);
-    color: var(--text-light);
-    cursor: not-allowed;
-  }
-  .match-go-btn:not(:disabled):active { transform: scale(0.99); }
-
-  .match-picker-modal .pick-list {
-    max-height: 50vh;
-    overflow-y: auto;
-    margin-top: 8px;
-  }
-  .match-picker-modal .pick-item {
-    padding: 14px;
-    background: var(--bg-soft);
-    border-radius: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    border: 1.5px solid transparent;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .match-picker-modal .pick-item:hover {
-      border-color: var(--line);
-    }
-  }
-  .match-picker-modal .pick-item .pi-head {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 6px;
-  }
-  .match-picker-modal .pick-item .pi-name {
-    font-size: 15px; font-weight: 800;
-  }
-  .match-picker-modal .pick-item .pi-name .g-tag {
-    display: inline-block; font-size: 10px; font-weight: 700;
-    color: var(--fire-deep); background: #ffe9e2;
-    padding: 2px 5px; border-radius: 5px; margin-left: 5px;
-    vertical-align: 1px;
-  }
-  .match-picker-modal .pick-item .pi-date {
-    font-size: 11px; font-weight: 600; color: var(--text-sub);
-  }
-  .match-picker-modal .pick-item .pi-pill {
-    display: flex; gap: 3px; margin-top: 6px;
-  }
-  .match-picker-modal .pick-item .pi-pill .pp {
-    padding: 3px 5px; font-family: 'Apple SD Gothic Neo', 'Noto Serif KR', 'Noto Sans KR', 'Malgun Gothic', '맑은 고딕', serif;
-    font-size: 11px; font-weight: 800; color: white;
-    border-radius: 4px; min-width: 20px; text-align: center;
-  }
-  .match-picker-modal .pick-item .pi-pill .pp.el-earth { color: #2a2200; }
-  .match-picker-modal .pick-item .pi-pill .pp.el-metal { color: #333; }
-  .match-picker-modal .pick-add-current {
-    padding: 14px;
-    background: #fff4f1;
-    border: 1.5px solid var(--fire-deep);
-    border-radius: 12px;
-    margin-bottom: 12px;
-    cursor: pointer;
-    text-align: center;
-    font-size: 14px; font-weight: 800;
-    color: var(--fire-deep);
-  }
-  .match-picker-modal .pick-new-btn {
-    width: 100%;
-    padding: 14px;
-    background: white;
-    border: 1.5px solid var(--line);
-    border-radius: 12px;
-    margin-top: 10px;
-    cursor: pointer;
-    font-size: 14px; font-weight: 800;
-    color: var(--text);
-  }
-  .match-picker-modal .empty-pick {
-    text-align: center;
-    padding: 30px 20px;
-    color: var(--text-light);
-    font-size: 13px;
-  }
-
-  .match-new-form {
-    padding-top: 4px;
-  }
-
-  /* 궁합 결과 */
-  .match-result {
-    padding-top: 4px;
-  }
-  .match-total-card {
-    background: var(--match-grad);
-    border-radius: 20px;
-    padding: 24px 20px;
-    text-align: center;
-    margin-bottom: 16px;
-    border: 1.5px solid var(--match-border);
-  }
-  .match-total-card .mt-label {
-    font-size: 12px; font-weight: 800;
-    color: var(--fire-deep);
-    letter-spacing: 0.05em;
-    margin-bottom: 10px;
-  }
-  .match-total-card .mt-score {
-    font-size: 48px; font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    margin-bottom: 6px;
-  }
-  .match-total-card .mt-score .pt {
-    font-size: 20px; font-weight: 700;
-    color: var(--text-sub);
-  }
-  .match-total-card .mt-grade {
-    display: inline-block;
-    padding: 5px 14px;
-    background: var(--fire-deep);
-    color: white;
-    font-size: 13px; font-weight: 800;
-    border-radius: 20px;
-    margin-bottom: 12px;
-  }
-  .match-total-card .mt-names {
-    font-size: 15px; font-weight: 800;
-    margin-bottom: 8px;
-  }
-  .match-total-card .mt-text {
-    font-size: 13px; font-weight: 500;
-    line-height: 1.7;
-    text-align: left;
-    background: rgba(255,255,255,0.7);
-    padding: 12px 14px;
-    border-radius: 12px;
-    margin-top: 6px;
-  }
-
-  .match-breakdown {
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .mb-card {
-    background: var(--bg-soft);
-    border-radius: 14px;
-    padding: 16px;
-  }
-  .mb-head {
-    display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 10px;
-  }
-  .mb-title {
-    font-size: 14px; font-weight: 800;
-  }
-  .mb-score {
-    font-size: 15px; font-weight: 900;
-    color: var(--text);
-  }
-  .mb-score .pt {
-    font-size: 11px; font-weight: 700; color: var(--text-sub);
-  }
-  .mb-bar {
-    height: 6px;
-    background: white;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 10px;
-  }
-  .mb-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-    transition: width 0.5s ease;
-  }
-  .mb-text {
-    font-size: 12.5px; font-weight: 500;
-    color: var(--text); line-height: 1.7;
-    background: white;
-    padding: 10px 12px;
-    border-radius: 10px;
-  }
-  .mb-tags {
-    display: flex; flex-wrap: wrap; gap: 5px;
-    margin-top: 8px;
-  }
-  .mb-tags .tag {
-    padding: 5px 9px; font-size: 11px;
-  }
-
-  .match-reset {
-    width: 100%;
-    padding: 13px;
-    background: white;
-    border: 1.5px solid var(--line);
-    font-family: inherit; font-size: 13px; font-weight: 700;
-    color: var(--text-sub);
-    border-radius: 12px;
-    cursor: pointer;
-    margin-top: 14px;
-  }
-
   @media (min-width: 768px) {
-    #view-fortune, #view-match { max-width: 720px; margin: 0 auto; }
+    #view-fortune { max-width: 720px; margin: 0 auto; }
     .overall-card { padding: 28px 24px; }
     .overall-card .ov-score { font-size: 52px; }
     .f-card { padding: 22px; }
@@ -1985,7 +1684,6 @@
     <button type="button" class="tab active" id="tab-input" role="tab" aria-selected="true" aria-controls="view-input" data-tab="input">입력</button>
     <button type="button" class="tab" id="tab-result" role="tab" aria-selected="false" aria-controls="view-result" data-tab="result">원국</button>
     <button type="button" class="tab" id="tab-fortune" role="tab" aria-selected="false" aria-controls="view-fortune" data-tab="fortune">풀이</button>
-    <button type="button" class="tab" id="tab-match" role="tab" aria-selected="false" aria-controls="view-match" data-tab="match">궁합</button>
     <button type="button" class="tab" id="tab-calendar" role="tab" aria-selected="false" aria-controls="view-calendar" data-tab="calendar">만세력</button>
     <button type="button" class="tab" id="tab-saved" role="tab" aria-selected="false" aria-controls="view-saved" data-tab="saved">저장</button>
   </nav>
@@ -2035,7 +1733,7 @@
     <div id="inErr" role="alert"></div>
 
     <div class="note-text" style="margin-top: 20px;">
-      <strong>잔상 만세력</strong>은 서기 1026년부터 2099년까지 약 1,000년의 만세력을 지원합니다. 원국에서 대운→세운→월운→일운을 차례로 펼쳐볼 수 있고, <strong>풀이</strong> 탭에서는 올해운·연애·직장·금전·건강·이사운을, <strong>궁합</strong> 탭에서는 두 사람의 사주를 비교할 수 있습니다.
+      <strong>잔상 만세력</strong>은 서기 1026년부터 2099년까지 약 1,000년의 만세력을 지원합니다. 원국에서 대운→세운→월운→일운을 차례로 펼쳐볼 수 있고, <strong>풀이</strong> 탭에서는 연도 종합·12개월 월운·대운 흐름을 한 번에 확인할 수 있습니다.
     </div>
   </section>
 
@@ -2043,10 +1741,6 @@
 
   <section class="view" id="view-fortune" role="tabpanel" aria-labelledby="tab-fortune" hidden>
     <div id="fortuneContent"></div>
-  </section>
-
-  <section class="view" id="view-match" role="tabpanel" aria-labelledby="tab-match" hidden>
-    <div id="matchContent"></div>
   </section>
 
   <section class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar" hidden>
@@ -2096,16 +1790,6 @@
     <div class="similar-body"></div>
     <div class="modal-actions">
       <button type="button" class="primary" id="similarClose">닫기</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg match-picker-modal" id="matchPickerModal" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="matchPickerModalTitle" tabindex="-1">
-    <h3 id="matchPickerModalTitle">사주 선택</h3>
-    <div id="matchPickerBody"></div>
-    <div class="modal-actions">
-      <button type="button" id="matchPickerCancel">취소</button>
     </div>
   </div>
 </div>
@@ -12147,48 +11831,6 @@ Sigrid Niehaus|19641229|F|
 헨드리|19990928|M|K-pop 아이돌
 </script>
 
-<div class="modal-bg" id="matchNewModal" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="matchNewModalTitle" tabindex="-1">
-    <h3 id="matchNewModalTitle">새 사주 입력</h3>
-    <div class="match-new-form">
-      <div class="field">
-        <label class="field-label">이름</label>
-        <input class="input" id="mnfName" placeholder="이름 (선택)" />
-      </div>
-      <div class="field field-row">
-        <div class="field-half">
-          <label class="field-label">성별</label>
-          <div class="segmented" id="mnfGender">
-            <button type="button" data-val="M" class="active">남자</button>
-            <button type="button" data-val="F">여자</button>
-          </div>
-        </div>
-        <div class="field-half">
-          <label class="field-label">양/음력</label>
-          <div class="segmented" id="mnfCal">
-            <button type="button" data-val="solar" class="active">양력</button>
-            <button type="button" data-val="lunar">음력</button>
-          </div>
-        </div>
-      </div>
-      <div class="field field-row">
-        <div class="field-half">
-          <label class="field-label">생년월일 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(YYYYMMDD)</span></label>
-          <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="mnfBirth" placeholder="19890319" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        </div>
-        <div class="field-half">
-          <label class="field-label">태어난 시간 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(HHMM · 선택)</span></label>
-          <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="mnfTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
-        </div>
-      </div>
-    </div>
-    <div class="modal-actions">
-      <button type="button" id="mnfCancel">취소</button>
-      <button type="button" class="primary" id="mnfConfirm">사주 세우기</button>
-    </div>
-  </div>
-</div>
-
 <div class="modal-bg" id="aboutModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aboutModalTitle" tabindex="-1">
     <h3 id="aboutModalTitle">잔상 만세력</h3>
@@ -12200,8 +11842,7 @@ Sigrid Niehaus|19641229|F|
       · 시주 계산 : 야자시 구분<br>
       · 월주 기준 : 절기<br>
       · 대운 : 남양녀음 순행 / 남음녀양 역행<br>
-      · 풀이 : 올해운·연애·직장·금전·건강·이사<br>
-      · 궁합 : 일간·지지 합충, 오행보완, 용신비교
+      · 풀이 : 연도 종합·12개월 월운·대운 흐름
     </div>
     <div style="font-size:11px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
       본 앱의 풀이는 전통 명리학 이론에 기반한 해석으로, 참고용입니다. 실제 삶의 선택과 결과는 본인의 의지와 노력에 달려있습니다.
@@ -12893,7 +12534,6 @@ $$('.tab').forEach(t => {
   }
   if (tab === 'saved') renderSaved();
   if (tab === 'fortune') renderFortune();
-  if (tab === 'match') renderMatch();
   });
 });
 syncTabA11y($('.tab.active'));
@@ -14481,11 +14121,6 @@ $$('.modal-bg').forEach(m => {
   m.addEventListener('click', e => { if (e.target === m) window.closeAppModal(m); });
 });
 
-// 궁합 모달 이벤트
-onTap($('#matchPickerCancel'), closeMatchPicker);
-onTap($('#mnfCancel'), closeMatchNewForm);
-onTap($('#mnfConfirm'), submitMatchNewForm);
-
 /* 테마 토글 (라이트/다크) */
 function applyTheme(theme) {
   const sun = document.getElementById('themeIconSun');
@@ -15237,524 +14872,6 @@ function _renderFortuneInner(focusYearControl = '', restoreState = null) {
   });
 }
 
-
-/* ============================================
-   궁합
-   ============================================ */
-
-let matchSlotA = null;  // { name, saju data... } 또는 null
-let matchSlotB = null;
-let matchPickerTarget = null; // 'A' or 'B'
-let pendingMatchSlotMotion = null;
-let matchSlotMotionToken = 0;
-
-function renderMatch() {
-  try {
-    if (matchSlotA && matchSlotB) {
-      renderMatchResult();
-    } else {
-      renderMatchPicker();
-    }
-  } catch (e) {
-    console.error('궁합 렌더링 에러:', e);
-    const box = document.getElementById('matchContent');
-    if (box) {
-      box.innerHTML = `<div class="match-empty">
-        <div class="ico">⚠️</div>
-        <p>궁합 생성 중 오류가 발생했습니다<br><span style="font-size:12px;color:var(--text-light)">${escapeHtml(e.message || String(e))}</span></p>
-      </div>`;
-    }
-  }
-}
-
-function renderMatchPicker() {
-  const fillA = matchSlotA ? renderSlotFilled(matchSlotA, 'a') : renderSlotEmpty('a', '본인');
-  const fillB = matchSlotB ? renderSlotFilled(matchSlotB, 'b') : renderSlotEmpty('b', '상대');
-  const canGo = matchSlotA && matchSlotB;
-
-  $('#matchContent').innerHTML = `
-    <div class="match-intro">
-      <div class="big">두 사람의 <em>궁합</em></div>
-      <div class="sub">저장된 명반을 선택하거나, 새로 입력해 비교하세요</div>
-    </div>
-
-    <div class="match-picker-row">
-      ${fillA}
-      <div class="match-vs">VS</div>
-      ${fillB}
-    </div>
-
-    <button type="button" class="match-go-btn" id="matchGoBtn" ${canGo ? '' : 'disabled'}>
-      ${canGo ? '궁합 보기' : '두 사람을 모두 선택하세요'}
-    </button>
-
-    ${(matchSlotA || matchSlotB) ? `<button type="button" class="match-reset" id="matchResetBtn">처음부터 다시</button>` : ''}
-  `;
-
-  $$('.match-slot').forEach(el => {
-    el.addEventListener('click', () => {
-      matchPickerTarget = el.dataset.slot.toUpperCase();
-      openMatchPicker();
-    });
-  });
-  if (canGo) $('#matchGoBtn').addEventListener('click', renderMatchResult);
-  const resetBtn = $('#matchResetBtn');
-  if (resetBtn) resetBtn.addEventListener('click', () => {
-    matchSlotA = null; matchSlotB = null;
-    pendingMatchSlotMotion = null;
-    matchSlotMotionToken++;
-    renderMatch();
-  });
-  if (pendingMatchSlotMotion) {
-    const key = pendingMatchSlotMotion;
-    pendingMatchSlotMotion = null;
-    const token = matchSlotMotionToken;
-    requestAnimationFrame(() => {
-      if (token !== matchSlotMotionToken) return;
-      animateNewMatchSlot(key);
-    });
-  }
-}
-
-function animateNewMatchSlot(key) {
-  const slot = document.querySelector(`.match-slot.${key}.filled`);
-  if (!slot) return;
-  slot.dataset.motionCount = String((parseInt(slot.dataset.motionCount || '0', 10)) + 1);
-  if (!slot.animate) return;
-  const reduce = reducedMotion();
-  slot.animate([
-    { opacity: 0, transform: reduce ? 'scale(1)' : 'scale(.97)' },
-    { opacity: 1, transform: 'scale(1)' }
-  ], { duration: reduce ? 100 : 180, easing: 'cubic-bezier(.2,.7,.2,1)' });
-}
-
-function renderSlotEmpty(key, label) {
-  return `<div class="match-slot ${key}" data-slot="${key}">
-    <div class="slot-ico">➕</div>
-    <div class="slot-hint">${label}<br>선택·입력</div>
-  </div>`;
-}
-
-function renderSlotFilled(person, key) {
-  const pl = [
-    { s: person.yStem, b: person.yBranch },
-    { s: person.mStem, b: person.mBranch },
-    { s: person.dStem, b: person.dBranch }
-  ];
-  if (person.hStem >= 0) pl.push({ s: person.hStem, b: person.hBranch });
-  return `<div class="match-slot ${key} filled" data-slot="${key}">
-    <div class="slot-name">${escapeHtml(person.name)} <span style="font-size:11px; font-weight:700; color:${person.gender==='M'?'var(--accent)':'var(--fire-deep)'};">${person.gender==='M'?'남':'여'}</span></div>
-    <div class="slot-info">${person.year}.${pad(person.month)}.${pad(person.day)}</div>
-    <div class="slot-pillars">
-      ${pl.map(p => `<span class="sp ${EL_CLASS[STEM_EL[p.s]]}">${STEM[p.s]}</span><span class="sp ${EL_CLASS[BRANCH_EL[p.b]]}">${BRANCH[p.b]}</span>`).join('')}
-    </div>
-  </div>`;
-}
-
-async function openMatchPicker() {
-  // 모달로 저장된 명반 리스트 + 현재 사주 + 새로 입력 옵션
-  let list = [];
-  try {
-    const res = await window.storage.list('saju:');
-    if (res && res.keys) for (const k of res.keys) {
-      const r = await window.storage.get(k);
-      if (r) list.push(JSON.parse(r.value));
-    }
-  } catch (e) { list = JSON.parse(localStorage.getItem('saju_list') || '[]'); }
-  list.sort((a,b) => (b.savedAt || 0) - (a.savedAt || 0));
-
-  let itemsHtml = '';
-  if (currentSaju) {
-    itemsHtml += `<div class="pick-add-current" data-use-current>
-      ✨ 현재 원국 사용 — ${escapeHtml(currentSaju.name)} (${currentSaju.gender==='M'?'남':'여'})
-    </div>`;
-  }
-  if (list.length === 0 && !currentSaju) {
-    itemsHtml += `<div class="empty-pick">저장된 명반이 없습니다<br>'새 사주 입력'으로 직접 입력하세요</div>`;
-  } else if (list.length > 0) {
-    itemsHtml += `<div style="font-size:12px; font-weight:700; color:var(--text-sub); margin-bottom:8px; padding-left:4px;">저장된 명반</div>`;
-    itemsHtml += list.map(r => {
-      const pl = [
-        { s: r.yStem, b: r.yBranch },
-        { s: r.mStem, b: r.mBranch },
-        { s: r.dStem, b: r.dBranch }
-      ];
-      if (r.hStem >= 0) pl.push({ s: r.hStem, b: r.hBranch });
-      return `<div class="pick-item" data-id="${escapeHtml(String(r.id || ''))}">
-        <div class="pi-head">
-          <div class="pi-name">${escapeHtml(r.name)} <span class="g-tag">${r.gender==='M'?'남':'여'}</span></div>
-          <div class="pi-date">${r.year}.${pad(r.month)}.${pad(r.day)}</div>
-        </div>
-        <div class="pi-pill">
-          ${pl.map(p => `<span class="pp ${EL_CLASS[STEM_EL[p.s]]}">${STEM[p.s]}</span><span class="pp ${EL_CLASS[BRANCH_EL[p.b]]}">${BRANCH[p.b]}</span>`).join('')}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  $('#matchPickerBody').innerHTML = `
-    <div class="pick-list">${itemsHtml}</div>
-    <button type="button" class="pick-new-btn" id="pickNewBtn">+ 새 사주 입력</button>
-  `;
-
-  // 이벤트 바인딩
-  const useCurrent = $('#matchPickerBody [data-use-current]');
-  if (useCurrent) {
-    useCurrent.addEventListener('click', () => {
-      setMatchSlot(matchPickerTarget, { ...currentSaju });
-      closeMatchPicker();
-    });
-  }
-  $$('#matchPickerBody .pick-item').forEach(el => {
-    el.addEventListener('click', async () => {
-      const id = el.dataset.id;
-      let rec;
-      try { const r = await window.storage.get('saju:' + id); if (r) rec = JSON.parse(r.value); }
-      catch (err) {
-        const arr = JSON.parse(localStorage.getItem('saju_list') || '[]');
-        rec = arr.find(x => x.id === id);
-      }
-      if (rec) { setMatchSlot(matchPickerTarget, rec); closeMatchPicker(); }
-    });
-  });
-  $('#pickNewBtn').addEventListener('click', () => {
-    closeMatchPicker();
-    openMatchNewForm();
-  });
-
-  window.openAppModal($('#matchPickerModal'));
-}
-
-function closeMatchPicker() {
-  window.closeAppModal($('#matchPickerModal'));
-}
-
-function setMatchSlot(target, person) {
-  const wasEmpty = target === 'A' ? !matchSlotA : !matchSlotB;
-  if (target === 'A') matchSlotA = person;
-  else matchSlotB = person;
-  matchSlotMotionToken++;
-  pendingMatchSlotMotion = wasEmpty ? target.toLowerCase() : null;
-  renderMatch();
-}
-
-function openMatchNewForm() {
-  window.openAppModal($('#matchNewModal'));
-  // 폼 초기화
-  $('#mnfName').value = '';
-  $('#mnfBirth').value = '';
-  $('#mnfTime').value = '';
-  // 성별/달력 기본값
-  $$('#mnfGender button').forEach(b => b.classList.toggle('active', b.dataset.val === 'M'));
-  $$('#mnfCal button').forEach(b => b.classList.toggle('active', b.dataset.val === 'solar'));
-}
-function closeMatchNewForm() {
-  window.closeAppModal($('#matchNewModal'));
-}
-
-// 궁합 점수 산출
-function calcCompatibility(a, b) {
-  // 1) 일간 관계 (가장 중요) - 천간합 (+), 천간충 (-), 상생 (+), 상극 (-)
-  const ganhapT = {0:5,1:6,2:7,3:8,4:9,5:0,6:1,7:2,8:3,9:4};
-  const ganchT = {0:6,1:7,2:8,3:9,6:0,7:1,8:2,9:3};
-  let ilganScore = 50;
-  let ilganNotes = [];
-  if (ganhapT[a.dStem] === b.dStem) { ilganScore += 25; ilganNotes.push(`일간합 (${STEM_KOR[a.dStem]}-${STEM_KOR[b.dStem]})`); }
-  else if (ganchT[a.dStem] === b.dStem) { ilganScore -= 20; ilganNotes.push(`일간충 (${STEM_KOR[a.dStem]}-${STEM_KOR[b.dStem]})`); }
-  else {
-    const rel = elRelation(STEM_EL[a.dStem], STEM_EL[b.dStem]);
-    if (rel === 'same') { ilganScore += 5; ilganNotes.push(`같은 오행 (${EL_KOR[STEM_EL[a.dStem]]})`); }
-    else if (rel === 'gen') { ilganScore += 15; ilganNotes.push(`${STEM_KOR[a.dStem]}이 ${STEM_KOR[b.dStem]}을 생`); }
-    else if (rel === 'beingen') { ilganScore += 15; ilganNotes.push(`${STEM_KOR[b.dStem]}이 ${STEM_KOR[a.dStem]}을 생`); }
-    else if (rel === 'cont') { ilganScore -= 8; ilganNotes.push(`${STEM_KOR[a.dStem]}이 ${STEM_KOR[b.dStem]}을 극`); }
-    else if (rel === 'beingcont') { ilganScore -= 8; ilganNotes.push(`${STEM_KOR[b.dStem]}이 ${STEM_KOR[a.dStem]}을 극`); }
-  }
-  // 음양 보완
-  if (STEM_YIN[a.dStem] !== STEM_YIN[b.dStem]) { ilganScore += 5; ilganNotes.push('음양 조화'); }
-  ilganScore = Math.max(5, Math.min(95, ilganScore));
-
-  // 2) 일지 관계 - 육합, 삼합, 충, 형
-  const yuk = {0:1,1:0,2:11,3:10,4:9,5:8,6:7,7:6,8:5,9:4,10:3,11:2};
-  const chu = {0:6,1:7,2:8,3:9,4:10,5:11,6:0,7:1,8:2,9:3,10:4,11:5};
-  const samIdx = [[8,0,4],[11,3,7],[2,6,10],[5,9,1]];
-  let iljiScore = 50;
-  let iljiNotes = [];
-  if (yuk[a.dBranch] === b.dBranch) { iljiScore += 22; iljiNotes.push(`일지 육합 (${BRANCH_KOR[a.dBranch]}${BRANCH_KOR[b.dBranch]})`); }
-  else if (chu[a.dBranch] === b.dBranch) { iljiScore -= 22; iljiNotes.push(`일지 충 (${BRANCH_KOR[a.dBranch]}${BRANCH_KOR[b.dBranch]})`); }
-  else {
-    // 삼합
-    let samHit = false;
-    samIdx.forEach(arr => {
-      if (arr.includes(a.dBranch) && arr.includes(b.dBranch)) {
-        iljiScore += 15;
-        iljiNotes.push(`일지 반합 (${BRANCH_KOR[a.dBranch]}${BRANCH_KOR[b.dBranch]})`);
-        samHit = true;
-      }
-    });
-    if (!samHit) {
-      // 형
-      if ([2,5,8].includes(a.dBranch) && [2,5,8].includes(b.dBranch) && a.dBranch !== b.dBranch) {
-        iljiScore -= 12; iljiNotes.push(`일지 형 (${BRANCH_KOR[a.dBranch]}${BRANCH_KOR[b.dBranch]})`);
-      } else if ([1,10,7].includes(a.dBranch) && [1,10,7].includes(b.dBranch) && a.dBranch !== b.dBranch) {
-        iljiScore -= 10; iljiNotes.push(`일지 형 (${BRANCH_KOR[a.dBranch]}${BRANCH_KOR[b.dBranch]})`);
-      } else if (a.dBranch === b.dBranch) {
-        iljiScore += 3; iljiNotes.push(`같은 일지 (${BRANCH_KOR[a.dBranch]})`);
-      } else {
-        iljiScore += 0;
-      }
-    }
-  }
-  iljiScore = Math.max(5, Math.min(95, iljiScore));
-
-  // 3) 오행 보완 - 상대방 부족한 오행을 내가 채워주는가
-  let ohaengScore = 50;
-  const ohaengNotes = [];
-  const totalA = a.ohaeng.reduce((x,y)=>x+y, 0);
-  const totalB = b.ohaeng.reduce((x,y)=>x+y, 0);
-  for (let i = 0; i < 5; i++) {
-    const aR = a.ohaeng[i] / totalA;
-    const bR = b.ohaeng[i] / totalB;
-    if (aR < 0.1 && bR > 0.25) { ohaengScore += 6; ohaengNotes.push(`상대가 ${EL_KOR[i]} 보완`); }
-    if (bR < 0.1 && aR > 0.25) { ohaengScore += 6; ohaengNotes.push(`내가 ${EL_KOR[i]} 보완`); }
-    if (aR > 0.4 && bR > 0.4) { ohaengScore -= 6; ohaengNotes.push(`${EL_KOR[i]} 과다 중복`); }
-  }
-  ohaengScore = Math.max(15, Math.min(90, ohaengScore));
-
-  // 4) 원국 전체 지지 합충 - 연월일시 간의 합충 총량 계산
-  const branchesA = [a.yBranch, a.mBranch, a.dBranch];
-  if (a.hBranch >= 0) branchesA.push(a.hBranch);
-  const branchesB = [b.yBranch, b.mBranch, b.dBranch];
-  if (b.hBranch >= 0) branchesB.push(b.hBranch);
-  let interScore = 50;
-  let hapCount = 0, chungCount = 0;
-  const interNotes = [];
-  branchesA.forEach((bra, i) => {
-    branchesB.forEach((brb, j) => {
-      if (yuk[bra] === brb) hapCount++;
-      if (chu[bra] === brb) chungCount++;
-    });
-  });
-  // 삼합 체크
-  samIdx.forEach(arr => {
-    const inA = arr.filter(x => branchesA.includes(x)).length;
-    const inB = arr.filter(x => branchesB.includes(x)).length;
-    const together = arr.filter(x => branchesA.includes(x) || branchesB.includes(x)).length;
-    if (together >= 3 && inA >= 1 && inB >= 1) hapCount += 1.5;
-  });
-  interScore += hapCount * 5;
-  interScore -= chungCount * 4;
-  if (hapCount > 0) interNotes.push(`합 ${Math.round(hapCount)}개`);
-  if (chungCount > 0) interNotes.push(`충 ${chungCount}개`);
-  interScore = Math.max(10, Math.min(95, Math.round(interScore)));
-
-  // 5) 용신 비교 - 용신 오행이 상대의 명식에 풍부한가
-  const yA = getYongsin(a);
-  const yB = getYongsin(b);
-  let yongScore = 50;
-  const yongNotes = [];
-  const bRatioForA = b.ohaeng[yA.yongsin] / totalB;
-  const aRatioForB = a.ohaeng[yB.yongsin] / totalA;
-  if (bRatioForA > 0.2) { yongScore += 15; yongNotes.push(`상대가 내 용신(${EL_KOR[yA.yongsin]}) 풍부`); }
-  else if (bRatioForA > 0.1) { yongScore += 7; }
-  if (aRatioForB > 0.2) { yongScore += 15; yongNotes.push(`내가 상대 용신(${EL_KOR[yB.yongsin]}) 풍부`); }
-  else if (aRatioForB > 0.1) { yongScore += 7; }
-  yongScore = Math.max(15, Math.min(90, yongScore));
-
-  // 총점 - 가중 평균
-  const total = Math.round(
-    ilganScore * 0.28 +
-    iljiScore * 0.27 +
-    ohaengScore * 0.15 +
-    interScore * 0.17 +
-    yongScore * 0.13
-  );
-
-  return {
-    total,
-    sub: {
-      ilgan: { score: Math.round(ilganScore), notes: ilganNotes, title: '일간 관계', sub: '두 사람의 본성이 만나는 방식' },
-      ilji: { score: Math.round(iljiScore), notes: iljiNotes, title: '일지 관계', sub: '배우자 자리 · 친밀함의 궁합' },
-      ohaeng: { score: Math.round(ohaengScore), notes: ohaengNotes, title: '오행 보완', sub: '서로의 결핍을 채우는가' },
-      inter: { score: interScore, notes: interNotes, title: '원국 합충', sub: '전체 기운의 얽힘' },
-      yong: { score: Math.round(yongScore), notes: yongNotes, title: '용신 조화', sub: '서로에게 필요한 기운을 주는가' }
-    }
-  };
-}
-
-function compatGrade(score) {
-  if (score >= 85) return '천생연분';
-  if (score >= 75) return '대길';
-  if (score >= 65) return '길';
-  if (score >= 55) return '중상';
-  if (score >= 45) return '평';
-  if (score >= 35) return '주의';
-  return '난관';
-}
-
-function compatNarrative(compat) {
-  const t = compat.total;
-  const ilgan = compat.sub.ilgan.score;
-  const ilji = compat.sub.ilji.score;
-
-  if (t >= 80) {
-    return '은 명리적으로 매우 잘 어울리는 한 쌍입니다. 일간이 조화롭고 일지가 가까워, 일상에서의 호흡이 자연스럽고 큰 갈등 없이 관계가 깊어집니다. 서로의 부족함을 채워주는 관계로, 장기적인 동반자로도 적합합니다.';
-  } else if (t >= 65) {
-    return `은 전반적으로 좋은 궁합입니다. 작은 마찰은 있을 수 있으나 근본적으로 상생하는 관계라, 서로 노력하면 오랜 관계로 발전할 수 있습니다. ${ilgan > 60 ? '특히 성격적 이해도가 높아' : '일지가 가까워'} 편안함을 주는 사이입니다.`;
-  } else if (t >= 50) {
-    return '은 평균적인 궁합입니다. 크게 좋지도 나쁘지도 않으며, 관계의 질은 전적으로 두 분의 노력과 이해에 달려있습니다. 성격 차이가 보이는 부분은 대화로 풀고, 서로의 다름을 존중하는 태도가 중요합니다.';
-  } else if (t >= 35) {
-    return `은 주의가 필요한 궁합입니다. ${ilgan < 45 ? '일간이 서로를 자극해 자존심 싸움이 벌어지기 쉽고, ' : ''}${ilji < 45 ? '일지가 충돌해 가까이 지낼수록 갈등이 커질 수 있습니다. ' : ''}관계를 지속하려면 상대의 영역을 깊이 침범하지 않는 거리두기와, 말보다 행동으로 보여주는 배려가 필요합니다.`;
-  } else {
-    return '은 명리적으로 난관이 많은 궁합입니다. 일간·일지·원국 전반에서 충돌 요소가 겹쳐, 서로를 자극하고 소진시키기 쉽습니다. 그러나 명리는 운명이 아니라 경향성이니, 관계를 유지하고자 한다면 서로를 바꾸려 하지 말고 있는 그대로 받아들이는 연습이 필수적입니다.';
-  }
-}
-
-function renderCompatibilityDescription(container, compat, a, b) {
-  container.replaceChildren();
-  const firstName = document.createElement('strong');
-  firstName.textContent = typeof a.name === 'string' && a.name ? a.name : '본인';
-  const secondName = document.createElement('strong');
-  secondName.textContent = typeof b.name === 'string' && b.name ? b.name : '상대';
-  container.append(
-    firstName,
-    document.createTextNode('과(와) '),
-    secondName,
-    document.createTextNode(compatNarrative(compat))
-  );
-}
-
-function genSubText(key, sub, a, b) {
-  const s = sub.score;
-  if (key === 'ilgan') {
-    if (s >= 75) return '두 사람의 본성이 잘 맞습니다. 서로의 기운을 자연스럽게 이해하고 받아들이는 사이입니다.';
-    if (s >= 55) return '일간이 무난히 조화를 이룹니다. 큰 갈등 없이 일상을 공유할 수 있는 관계입니다.';
-    if (s >= 40) return '일간이 서로 다른 방향을 가리키지만, 노력으로 극복 가능한 수준입니다.';
-    return '일간이 서로를 자극하는 관계입니다. 자존심이 부딪치기 쉬우니 대화의 톤을 조심하세요.';
-  }
-  if (key === 'ilji') {
-    if (s >= 75) return '배우자 자리가 서로를 환영합니다. 함께 있을수록 편안해지는 사이입니다.';
-    if (s >= 55) return '일지가 원만히 어우러져, 동거나 생활 공유에 무리가 없습니다.';
-    if (s >= 40) return '일지가 중립적입니다. 친밀해지려면 의식적인 노력이 필요합니다.';
-    return '일지가 충돌해 가까이 지낼수록 불편함이 드러날 수 있습니다. 물리적·정서적 거리 조절이 중요합니다.';
-  }
-  if (key === 'ohaeng') {
-    if (s >= 70) return '서로의 오행을 훌륭히 보완합니다. 내가 부족한 것을 상대가, 상대가 부족한 것을 내가 채워주는 관계입니다.';
-    if (s >= 50) return '오행이 겹치지도 너무 어긋나지도 않는, 균형 잡힌 조합입니다.';
-    return '오행이 특정 기운에 쏠려 있어, 서로의 에너지를 비슷하게 소모하는 경향이 있습니다.';
-  }
-  if (key === 'inter') {
-    if (s >= 70) return '원국 전체에서 합의 기운이 많아, 만남 자체가 서로의 명식을 활성화합니다.';
-    if (s >= 50) return '평균적인 상호작용입니다. 특별히 좋지도 나쁘지도 않은 흐름입니다.';
-    return '충과 형이 많아, 감정의 기복이 잦을 수 있습니다. 안정된 환경에서 관계를 다져가세요.';
-  }
-  if (key === 'yong') {
-    if (s >= 70) return '서로가 서로에게 필요한 기운을 풍부히 가지고 있어, 함께 있을 때 운이 밝아지는 관계입니다.';
-    if (s >= 50) return '용신의 일부가 맞닿아 있어, 상대가 곁에 있는 것이 도움이 되는 사이입니다.';
-    return '용신이 서로에게 크게 채워지지 않아, 운의 관점에서는 중립입니다.';
-  }
-  return '';
-}
-
-function renderMatchResult() {
-  matchSlotMotionToken++;
-  pendingMatchSlotMotion = null;
-  const compat = calcCompatibility(matchSlotA, matchSlotB);
-  const grade = compatGrade(compat.total);
-
-  const subs = ['ilgan', 'ilji', 'ohaeng', 'inter', 'yong'];
-
-  const subsHtml = subs.map(k => {
-    const sub = compat.sub[k];
-    return `<div class="mb-card">
-      <div class="mb-head">
-        <div class="mb-title">${sub.title} <span style="font-size:11px; font-weight:600; color:var(--text-sub); margin-left:4px;">· ${sub.sub}</span></div>
-        <div class="mb-score">${sub.score}<span class="pt">점</span></div>
-      </div>
-      <div class="mb-bar"><div class="mb-bar-fill" style="width:${sub.score}%; background:${barColorByScore(sub.score)};"></div></div>
-      <div class="mb-text">${genSubText(k, sub, matchSlotA, matchSlotB)}</div>
-      ${sub.notes.length ? `<div class="mb-tags">${sub.notes.map(n => `<span class="tag">${n}</span>`).join('')}</div>` : ''}
-    </div>`;
-  }).join('');
-
-  $('#matchContent').innerHTML = `
-    <div class="match-result">
-      <div class="match-picker-row" style="margin-bottom:20px;">
-        ${renderSlotFilled(matchSlotA, 'a')}
-        <div class="match-vs">&</div>
-        ${renderSlotFilled(matchSlotB, 'b')}
-      </div>
-
-      <div class="match-total-card">
-        <div class="mt-label">종합 궁합</div>
-        <div class="mt-score">${compat.total}<span class="pt">점</span></div>
-        <div class="mt-grade">${grade}</div>
-        <div class="mt-names">${escapeHtml(matchSlotA.name)} &nbsp;✕&nbsp; ${escapeHtml(matchSlotB.name)}</div>
-        <div class="mt-text" id="matchCompatText"></div>
-      </div>
-
-      <div class="match-breakdown">
-        ${subsHtml}
-      </div>
-
-      <button type="button" class="match-reset" id="matchResetBtn2">다시 선택하기</button>
-
-      <div style="margin-top:16px; padding:14px; background:var(--bg-soft); border-radius:12px; font-size:11.5px; font-weight:500; color:var(--text-sub); line-height:1.7; text-align:center;">
-        ⚠︎ 궁합은 일간·일지·오행보완·합충·용신을 종합한 참고용입니다. 명리는 관계의 경향이지 결과가 아닙니다.
-      </div>
-  `;
-
-  renderCompatibilityDescription($('#matchCompatText'), compat, matchSlotA, matchSlotB);
-  $('#matchResetBtn2').addEventListener('click', () => {
-    matchSlotA = null; matchSlotB = null;
-    pendingMatchSlotMotion = null;
-    matchSlotMotionToken++;
-    renderMatch();
-    window.scrollTo({top: 0, behavior: 'smooth'});
-  });
-}
-
-// 궁합 새 입력 모달 submit
-function submitMatchNewForm() {
-  const name = $('#mnfName').value.trim() || '상대방';
-  const gender = $('#mnfGender .active').dataset.val;
-  const calendar = $('#mnfCal .active').dataset.val;
-  const birthRaw = $('#mnfBirth').value.trim();
-  const timeRaw = $('#mnfTime').value.trim();
-
-  if (birthRaw.length !== 8 || !/^\d{8}$/.test(birthRaw)) {
-    alert('생년월일을 8자리 숫자로 입력해주세요 (예: 19890319)');
-    return;
-  }
-  const y = +birthRaw.slice(0, 4);
-  const m = +birthRaw.slice(4, 6);
-  const d = +birthRaw.slice(6, 8);
-
-  const unknown = timeRaw === '';
-  let h = 0, mi = 0;
-  if (!unknown) {
-    if (!/^\d{3,4}$/.test(timeRaw)) {
-      alert('시간을 4자리 숫자로 입력하거나 비워두세요 (예: 1430)');
-      return;
-    }
-    const t = timeRaw.padStart(4, '0');
-    h = +t.slice(0, 2);
-    mi = +t.slice(2, 4);
-    if (h < 0 || h > 23 || mi < 0 || mi > 59) {
-      alert('시간 범위를 확인해주세요');
-      return;
-    }
-  }
-
-  if (!y || !m || !d) { alert('생년월일을 입력해주세요'); return; }
-  if (m < 1 || m > 12 || d < 1 || d > 31) { alert('생년월일 형식을 확인해주세요'); return; }
-  if (y < 1026 || y > 2099) { alert('1026 ~ 2099년 범위로 입력해주세요'); return; }
-  try {
-    const saju = calcSaju({ year: y, month: m, day: d, hour: h, minute: mi, calendar, gender, unknown });
-    saju.name = name;
-    setMatchSlot(matchPickerTarget, saju);
-    closeMatchNewForm();
-  } catch (e) { console.error(e); alert('계산 오류: ' + e.message); }
-}
 
 // 입력 필드는 모두 공란으로 시작
 

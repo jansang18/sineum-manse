@@ -24,6 +24,8 @@ const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html
 const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'annual-year-reading'
   ? [390, 768, 1280]
+  : TEST_GROUP === 'unified-surface'
+  ? [320, 390, 720, 884, 1280]
   : TEST_GROUP === 'reading-readability'
   ? [390, 768, 1280]
   : TEST_GROUP === 'luck-flow-responsive'
@@ -65,6 +67,7 @@ const runsLuckFlowResponsive = () =>
 const runsLongReading = () =>
   !TEST_GROUP || TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability';
 const runsAnnualYearReading = () => TEST_GROUP === 'annual-year-reading';
+const runsUnifiedSurface = () => TEST_GROUP === 'unified-surface';
 const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
 const runsLunarInput = () => !TEST_GROUP || TEST_GROUP === 'lunar-input';
 
@@ -508,7 +511,7 @@ async function inspectAllTabShellWidths(page, width) {
   assert.ok(Math.abs(inputShell.header.width - inputShell.tabs.width) <= 1, `${width}px input shell bars must match`);
   assert.match(inputShell.scrollbarGutter, /\bstable\b/, `${width}px root must reserve a stable scrollbar gutter`);
 
-  for (const tab of ['result', 'fortune', 'match', 'calendar', 'saved']) {
+  for (const tab of ['result', 'fortune', 'calendar', 'saved']) {
     await page.click(`.tab[data-tab="${tab}"]`);
     await sleep(60);
     const geometry = await page.evaluate(() => {
@@ -1095,17 +1098,6 @@ function inspectFinalSecuritySourceContracts() {
     /\.innerHTML\s*=|insertAdjacentHTML\(/,
     'saved records must be rendered with DOM APIs rather than HTML parsing sinks'
   );
-  const compatibilityRendererSource = indexHtml.match(
-    /function renderCompatibilityDescription\([^)]*\)\s*\{[\s\S]*?\r?\n\}/
-  );
-  assert.ok(compatibilityRendererSource, 'compatibility description DOM renderer is required');
-  assert.match(compatibilityRendererSource[0], /\.textContent\s*=/);
-  assert.match(compatibilityRendererSource[0], /document\.createTextNode\(/);
-  assert.doesNotMatch(
-    compatibilityRendererSource[0],
-    /\.innerHTML\s*=|insertAdjacentHTML\(/,
-    'imported names must never reach an HTML parsing sink in compatibility descriptions'
-  );
   assert.doesNotMatch(
     indexHtml,
     /function genCompatText\(/,
@@ -1449,25 +1441,11 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
     window.closeAppModal(document.getElementById('similarModal'));
     await wait(230);
 
-    document.querySelector('.tab[data-tab="match"]').click();
-    await wait(30);
-    document.querySelector('.match-slot.a').click();
-    await wait(30);
-    document.querySelector('#matchPickerBody .pick-item').click();
-    await wait(240);
-    document.querySelector('.match-slot.b').click();
-    await wait(30);
-    document.querySelector('#matchPickerBody .pick-item').click();
-    await wait(240);
-    snapshots.push(snapshot('match', document.getElementById('matchContent')));
-
-    const finalNameText = document.querySelector('#matchContent .mt-text')?.textContent || '';
     for (const key of await listKeys()) await window.storage.delete(key);
     localStorage.removeItem('saju_list');
     return {
       maliciousName,
       snapshots,
-      finalNameText,
       finalExecuted: window.__x
     };
   });
@@ -1476,9 +1454,10 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
     assert.equal(snapshot.executed, 0, `${width}px imported name executed in ${snapshot.name}`);
     assert.deepEqual(snapshot.attackerNodes, [], `${width}px attacker node reached ${snapshot.name}`);
   }
-  assert.equal(state.finalExecuted, 0, `${width}px imported name executed during compatibility calculation`);
-  assert.match(state.finalNameText, /홍길동/, 'legitimate Korean name characters must be preserved');
-  assert.match(state.finalNameText, /<img src=x onerror=/, 'malicious markup must remain inert visible text');
+  assert.equal(state.finalExecuted, 0, `${width}px imported name executed in downstream surfaces`);
+  const visibleText = state.snapshots.map(snapshot => snapshot.text).join('\n');
+  assert.match(visibleText, /홍길동/, 'legitimate Korean name characters must be preserved');
+  assert.match(visibleText, /<img src=x onerror=/, 'malicious markup must remain inert visible text');
 }
 
 function inspectReleaseContract() {
@@ -1616,6 +1595,29 @@ async function fillAndCalculate(page) {
     document.getElementById('calcBtn').click();
   });
   await sleep(600);
+}
+
+async function inspectUnifiedSurface(page, width) {
+  if (!runsUnifiedSurface()) return;
+  const state = await page.evaluate(() => ({
+    tabs: [...document.querySelectorAll('.tab')].map(tab => tab.dataset.tab),
+    labels: [...document.querySelectorAll('.tab')].map(tab => tab.textContent.trim()),
+    matchNodes: document.querySelectorAll(
+      '[data-tab="match"], #view-match, #matchPickerModal, #matchNewModal, [class^="match-"]'
+    ).length,
+    matchRuntime: typeof window.renderMatch,
+    inputMentionsMatch: document.getElementById('view-input').textContent.includes('궁합'),
+    aboutMentionsMatch: document.getElementById('aboutModal').textContent.includes('궁합'),
+    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+  }));
+
+  assert.deepEqual(state.tabs, ['input', 'result', 'fortune', 'calendar', 'saved']);
+  assert.deepEqual(state.labels, ['입력', '원국', '풀이', '만세력', '저장']);
+  assert.equal(state.matchNodes, 0);
+  assert.equal(state.matchRuntime, 'undefined');
+  assert.equal(state.inputMentionsMatch, false);
+  assert.equal(state.aboutMentionsMatch, false);
+  assert.ok(state.overflow <= 1, `${width}px removed compatibility surface overflows by ${state.overflow}px`);
 }
 
 async function inspectAnnualYearReading(page, width) {
@@ -3054,16 +3056,6 @@ async function inspectAppleSecondaryScreens(page, width) {
         };
       };
 
-      document.querySelector('.tab[data-tab="match"]').click();
-      await wait(180);
-      document.querySelector('#matchResetBtn, #matchResetBtn2')?.click();
-      if (typeof renderMatch === 'function') renderMatch();
-      await wait(40);
-      const matchSlot = document.querySelector('.match-slot');
-      const matchControl = css(matchSlot);
-      const matchDecorations = [...document.querySelectorAll('.match-slot .plus, .match-slot .slot-ico')]
-        .flatMap(element => [getComputedStyle(element).color, getComputedStyle(element, '::before').color]);
-
       document.querySelector('.tab[data-tab="calendar"]').click();
       await wait(180);
       const calendarCell = document.querySelector('.cal-day.clickable');
@@ -3189,8 +3181,6 @@ async function inspectAppleSecondaryScreens(page, width) {
       const result = {
         surface: getComputedStyle(surfaceProbe).backgroundColor,
         accent: getComputedStyle(document.documentElement).getPropertyValue('--apple-accent').trim(),
-        matchControl,
-        matchDecorations,
         calendarSelected,
         calendarToday,
         calendarDecorations,
@@ -3215,7 +3205,6 @@ async function inspectAppleSecondaryScreens(page, width) {
       ? 'rgba(17, 24, 30, .95)'
       : 'rgba(244, 236, 220, .94)';
     for (const [name, surface] of Object.entries({
-      matchSlot: state.matchControl,
       savedCard: state.savedCard
     })) {
       assertCssColorClose(surface.background, priestessSurface, `${width}px ${theme} ${name} Priestess surface`);
@@ -3227,9 +3216,6 @@ async function inspectAppleSecondaryScreens(page, width) {
     );
     assert.match(state.savedContent, new RegExp(`실제저장-${theme}`), `${width}px ${theme} actual saved record was not rendered`);
     assert.equal(state.fortuneReportCount, 1, `${width}px ${theme} annual fortune report was not rendered exactly once`);
-    for (const color of state.matchDecorations) {
-      assert.ok(!legacyGold.test(color), `${width}px ${theme} match decoration retains legacy gold: ${color}`);
-    }
     assertCssColorClose(
       state.calendarSelected.borderTop.toLowerCase(),
       theme === 'dark' ? 'rgb(197, 167, 111)' : 'rgb(113, 82, 52)',
@@ -3250,7 +3236,6 @@ async function inspectAppleSecondaryScreens(page, width) {
       assert.equal(cell.boxShadow, 'none', `${width}px ${theme} calendar cells must not glow`);
     }
     for (const [name, control] of Object.entries({
-      matchSlot: state.matchControl,
       calendarNext: state.calendarControl,
       savedDelete: state.savedControl
     })) {
@@ -3291,7 +3276,6 @@ async function inspectAppleSecondaryScreens(page, width) {
     assert.equal(state.activeView.animationName, 'none', `${width}px ${theme} views must not auto-cascade`);
     assert.notEqual(state.activeView.iterationCount, 'infinite', `${width}px ${theme} views must not loop`);
     for (const [name, element] of Object.entries({
-      matchSlot: state.matchControl,
       calendarDay: state.calendarSelected,
       savedCard: state.savedCard
     })) {
@@ -3577,6 +3561,12 @@ async function inspectWidth(browser, width) {
 
   await inspectCalendarCurrentYear(page, width);
   if (TEST_GROUP === 'calendar-current-year') {
+    await page.close();
+    return;
+  }
+
+  await inspectUnifiedSurface(page, width);
+  if (TEST_GROUP === 'unified-surface') {
     await page.close();
     return;
   }
@@ -4118,55 +4108,6 @@ async function inspectWidth(browser, width) {
       }
     }
 
-    const matchMotion = await page.evaluate(async () => {
-      document.querySelector('.tab[data-tab="match"]').click();
-      setMatchSlot('A', { ...currentSaju });
-      await new Promise(resolve => setTimeout(resolve, 220));
-      const a = document.querySelector('.match-slot.a.filled');
-      const b = document.querySelector('.match-slot.b.filled');
-      return { aCount: a?.dataset.motionCount, bExists: !!b };
-    });
-    assert.equal(matchMotion.aCount, '1');
-    assert.equal(matchMotion.bExists, false);
-
-    const replacementMotion = await page.evaluate(async () => {
-      document.getElementById('matchResetBtn').click();
-      const person1 = { ...currentSaju, name: 'person1' };
-      const person2 = { ...currentSaju, name: 'person2' };
-      setMatchSlot('A', person1);
-      setMatchSlot('A', person2);
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      const a = document.querySelector('.match-slot.a.filled');
-      return {
-        name: a?.querySelector('.slot-name')?.textContent.trim(),
-        motionCount: a?.dataset.motionCount,
-        animations: a?.getAnimations().length || 0
-      };
-    });
-    assert.match(replacementMotion.name, /^person2/);
-    assert.equal(replacementMotion.motionCount, undefined);
-    assert.equal(replacementMotion.animations, 0);
-
-    if (runsGroup('reduced-match')) {
-      await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-      const reducedMatch = await page.evaluate(async () => {
-        document.getElementById('matchResetBtn')?.click();
-        setMatchSlot('A', { ...currentSaju, name: 'reduced motion' });
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-        const slot = document.querySelector('.match-slot.a.filled');
-        const animation = slot?.getAnimations()[0];
-        const frames = animation?.effect?.getKeyframes() || [];
-        return {
-          transforms: frames.map(frame => frame.transform),
-          opacities: frames.map(frame => Number(frame.opacity)),
-          duration: animation?.effect?.getTiming().duration
-        };
-      });
-      await page.emulateMediaFeatures([]);
-      assert.deepEqual(reducedMatch.opacities, [0, 1], 'reduced-motion slot feedback must retain the opacity cue');
-      assert.equal(new Set(reducedMatch.transforms).size, 1, `reduced-motion slot transforms differ: ${reducedMatch.transforms.join(' → ')}`);
-      assert.equal(reducedMatch.duration, 100);
-    }
   }
 
   assert.equal(await page.$eval('link[href="luxury.css"]', () => true), true);
@@ -4330,13 +4271,6 @@ async function inspectWidth(browser, width) {
   }));
   assert.equal(fortunePalette.tag, fortunePalette.inset, `${width}px fortune tag must use the grouped inset surface`);
 
-  await page.evaluate(() => document.querySelector('.tab[data-tab="match"]').click());
-  await sleep(200);
-  assertCssColorClose(
-    await page.$eval('.match-intro em', element => getComputedStyle(element).color),
-    'rgb(197, 167, 111)',
-    `${width}px match emphasis Priestess dark accent`
-  );
   await page.evaluate(() => document.querySelector('.tab[data-tab="result"]').click());
   await sleep(150);
 
