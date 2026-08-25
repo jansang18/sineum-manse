@@ -25,7 +25,7 @@ const TEST_GROUP = process.env.TEST_GROUP || '';
 const widths = TEST_GROUP === 'annual-year-reading' || TEST_GROUP === 'unified-reading'
   ? [390, 768, 1280]
   : TEST_GROUP === 'unified-surface'
-  ? [320, 390, 720, 884, 1280]
+  ? [320, 360, 390, 412, 520, 600, 720, 768, 884, 1024, 1280, 1440]
   : TEST_GROUP === 'reading-readability'
   ? [390, 768, 1280]
   : TEST_GROUP === 'luck-flow-responsive'
@@ -639,15 +639,22 @@ async function inspectFoldLayout(page, width) {
       viewport: document.documentElement.clientWidth,
       header: rect('.top-bar'),
       tabs: rect('.tabs'),
+      view: rect('#view-input'),
       card: rect('.input-card'),
       action: rect('.primary-btn')
     };
   });
-  const expected = Math.min(720, geometry.viewport - 32);
-  for (const name of ['header', 'tabs', 'card', 'action']) {
+  const expected = geometry.header.width;
+  for (const name of ['tabs', 'view']) {
     const rect = geometry[name];
     assert.ok(Math.abs(rect.width - expected) <= 1, `${width}px unfolded ${name} must use the wider fold measure`);
-    assert.ok(Math.abs(rect.left - (geometry.viewport - expected) / 2) <= 1, `${width}px unfolded ${name} must remain centered`);
+    assert.ok(Math.abs(rect.left - geometry.header.left) <= 1, `${width}px unfolded ${name} must align with the shared header`);
+  }
+  assert.ok(expected > 650, `${width}px unfolded shell must consume the added fold width`);
+  assert.ok(Math.abs(geometry.card.width - geometry.action.width) <= 1, `${width}px input card and action widths differ`);
+  for (const name of ['card', 'action']) {
+    assert.ok(geometry[name].left >= geometry.view.left, `${width}px ${name} escapes the shared view`);
+    assert.ok(geometry[name].right <= geometry.view.right + 1, `${width}px ${name} escapes the shared view`);
   }
 }
 
@@ -1600,17 +1607,42 @@ async function fillAndCalculate(page) {
 
 async function inspectUnifiedSurface(page, width) {
   if (!runsUnifiedSurface()) return;
-  const state = await page.evaluate(() => ({
-    tabs: [...document.querySelectorAll('.tab')].map(tab => tab.dataset.tab),
-    labels: [...document.querySelectorAll('.tab')].map(tab => tab.textContent.trim()),
-    matchNodes: document.querySelectorAll(
-      '[data-tab="match"], #view-match, #matchPickerModal, #matchNewModal, [class^="match-"]'
-    ).length,
-    matchRuntime: typeof window.renderMatch,
-    inputMentionsMatch: document.getElementById('view-input').textContent.includes('궁합'),
-    aboutMentionsMatch: document.getElementById('aboutModal').textContent.includes('궁합'),
-    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
-  }));
+  await fillAndCalculate(page);
+  const state = await page.evaluate(async () => {
+    const bounds = element => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, width: rect.width, top: rect.top, height: rect.height };
+    };
+    const tabs = ['input', 'result', 'fortune', 'calendar', 'saved'];
+    const rows = [];
+    for (const name of tabs) {
+      document.querySelector(`.tab[data-tab="${name}"]`).click();
+      if (name === 'saved') await renderSaved();
+      const view = document.getElementById(`view-${name}`);
+      const head = view.querySelector('.view-head');
+      rows.push({
+        name,
+        view: bounds(view),
+        head: head ? bounds(head) : null,
+        scrollWidth: view.scrollWidth,
+        clientWidth: view.clientWidth
+      });
+    }
+    return {
+      tabs: [...document.querySelectorAll('.tab')].map(tab => tab.dataset.tab),
+      labels: [...document.querySelectorAll('.tab')].map(tab => tab.textContent.trim()),
+      matchNodes: document.querySelectorAll(
+        '[data-tab="match"], #view-match, #matchPickerModal, #matchNewModal, [class^="match-"]'
+      ).length,
+      matchRuntime: typeof window.renderMatch,
+      inputMentionsMatch: document.getElementById('view-input').textContent.includes('궁합'),
+      aboutMentionsMatch: document.getElementById('aboutModal').textContent.includes('궁합'),
+      topBar: bounds(document.querySelector('.top-bar')),
+      tabBar: bounds(document.querySelector('.tabs')),
+      rows,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
 
   assert.deepEqual(state.tabs, ['input', 'result', 'fortune', 'calendar', 'saved']);
   assert.deepEqual(state.labels, ['입력', '원국', '풀이', '만세력', '저장']);
@@ -1619,6 +1651,43 @@ async function inspectUnifiedSurface(page, width) {
   assert.equal(state.inputMentionsMatch, false);
   assert.equal(state.aboutMentionsMatch, false);
   assert.ok(state.overflow <= 1, `${width}px removed compatibility surface overflows by ${state.overflow}px`);
+  const reference = state.rows[0].view;
+  for (const row of state.rows) {
+    assert.ok(row.head, `${width}px ${row.name} is missing the common view header`);
+    assert.ok(row.head.height >= 72 && row.head.height <= 132, `${width}px ${row.name} header is ${row.head.height}px tall`);
+    assert.ok(Math.abs(row.view.left - reference.left) <= 1, `${width}px ${row.name} view left differs`);
+    assert.ok(Math.abs(row.view.right - reference.right) <= 1, `${width}px ${row.name} view right differs`);
+    assert.ok(Math.abs(row.view.width - reference.width) <= 1, `${width}px ${row.name} view width differs`);
+    assert.ok(row.scrollWidth <= row.clientWidth + 1, `${width}px ${row.name} overflows its view`);
+  }
+  for (const shell of [state.topBar, state.tabBar]) {
+    assert.ok(Math.abs(shell.left - reference.left) <= 1, `${width}px chrome left differs from views`);
+    assert.ok(Math.abs(shell.width - reference.width) <= 1, `${width}px chrome ${shell.width}px differs from view ${reference.width}px`);
+  }
+
+  if (width === 390) {
+    await page.evaluate(() => {
+      document.querySelector('.tab[data-tab="fortune"]').click();
+      selectedFortuneYear = 2027;
+      renderFortune();
+    });
+    const resized = [];
+    for (const nextWidth of [390, 884, 720]) {
+      await page.setViewport({ width: nextWidth, height: 900, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+      await sleep(80);
+      resized.push(await page.evaluate(() => ({
+        width: document.querySelector('.view.active').getBoundingClientRect().width,
+        tab: document.querySelector('.tab.active')?.dataset.tab,
+        year: selectedFortuneYear,
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+      })));
+    }
+    assert.equal(resized[0].tab, 'fortune');
+    assert.equal(resized[2].year, 2027);
+    assert.ok(resized[1].width > resized[0].width, 'shell must expand from phone to unfolded width without reload');
+    assert.ok(resized[2].width > resized[0].width, 'shell must retain fluid width after shrinking from unfolded size');
+    assert.ok(resized.every(item => item.overflow <= 1), 'resizing in place must not create horizontal overflow');
+  }
 }
 
 async function inspectUnifiedReading(page, width) {
@@ -3046,12 +3115,12 @@ async function inspectAppleSecondaryScreens(page, width) {
       await wait(180);
       renderFortune();
       await wait(60);
-      const fortuneReportElement = document.querySelector('#fortuneContent .annual-reading');
+      const fortuneReportElement = document.querySelector('#fortuneContent .unified-reading');
       if (!fortuneReportElement) {
         throw new Error(`Annual report missing after renderFortune: ${document.querySelector('#fortuneContent')?.textContent?.trim().slice(0, 320) || 'empty fortune content'}`);
       }
       const fortuneReport = css(fortuneReportElement);
-      const fortuneReportCount = document.querySelectorAll('#fortuneContent .annual-reading').length;
+      const fortuneReportCount = document.querySelectorAll('#fortuneContent .unified-reading').length;
 
       const modalStates = [];
       for (const modal of document.querySelectorAll('.modal-bg')) {
@@ -3169,13 +3238,9 @@ async function inspectAppleSecondaryScreens(page, width) {
     })) {
       assertCssColorClose(surface.background, priestessSurface, `${width}px ${theme} ${name} Priestess surface`);
     }
-    assertCssColorClose(
-      state.fortuneReport.background,
-      theme === 'dark' ? 'rgb(17, 24, 30)' : 'rgba(244, 236, 220, .94)',
-      `${width}px ${theme} fortuneReport Priestess surface`
-    );
+    assert.equal(state.fortuneReport.boxShadow, 'none', `${width}px ${theme} continuous reading must not become a card`);
     assert.match(state.savedContent, new RegExp(`실제저장-${theme}`), `${width}px ${theme} actual saved record was not rendered`);
-    assert.equal(state.fortuneReportCount, 1, `${width}px ${theme} annual fortune report was not rendered exactly once`);
+    assert.equal(state.fortuneReportCount, 1, `${width}px ${theme} unified fortune report was not rendered exactly once`);
     assertCssColorClose(
       state.calendarSelected.borderTop.toLowerCase(),
       theme === 'dark' ? 'rgb(197, 167, 111)' : 'rgb(113, 82, 52)',

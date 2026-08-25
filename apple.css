@@ -1874,3 +1874,188 @@ html {
     justify-content: stretch;
   }
 }
+
+/* Unified responsive shell: one rectangle for every live surface. */
+:root {
+  --app-shell-gutter: clamp(5px, 2.4vw, 24px);
+  --app-shell-max: 1180px;
+  --app-shell-width: min(
+    calc(100vw - var(--app-shell-gutter) - var(--app-shell-gutter)),
+    var(--app-shell-max)
+  );
+  --app-reading-measure: 72ch;
+  --app-section-space: clamp(24px, 4vw, 48px);
+}
+
+.app,
+.top-bar,
+.tabs,
+.view,
+.bottom-bar {
+  width: var(--app-shell-width) !important;
+  max-width: none !important;
+  margin-inline: auto !important;
+  box-sizing: border-box;
+}
+
+.app { padding-inline: 0 !important; }
+
+.app > .top-bar,
+.app > .tabs,
+.app > .view {
+  width: 100% !important;
+}
+
+.view,
+#view-input,
+#view-result,
+#view-fortune,
+#view-calendar,
+#view-saved {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: auto !important;
+  padding: 0 clamp(10px, 2.4vw, 32px) 32px !important;
+}
+
+.tabs {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 2px !important;
+  padding-inline: clamp(2px, 1vw, 10px) !important;
+}
+
+.tabs .tab {
+  min-width: 0;
+  min-height: 48px;
+  padding-inline: 2px !important;
+  white-space: nowrap;
+  font-size: clamp(11px, 2.7vw, 14px) !important;
+}
+
+.view-head {
+  width: 100%;
+  height: clamp(76px, 10vw, 112px);
+  min-height: 76px;
+  padding: clamp(14px, 2.2vw, 24px) 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-bottom: 1px solid var(--apple-separator) !important;
+  box-sizing: border-box;
+}
+
+.view-head h2 {
+  margin: 0;
+  color: var(--apple-label);
+  font-size: clamp(19px, 2.4vw, 24px);
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+
+.view-head > p {
+  margin: 6px 0 0;
+  color: var(--apple-secondary);
+  font-size: clamp(12px, 1.5vw, 14px);
+  line-height: 1.45;
+  word-break: keep-all;
+}
+
+.view-body-measure {
+  width: min(100%, var(--app-reading-measure));
+  margin-inline: auto;
+}
+
+.person-search-btn { margin-top: clamp(16px, 3vw, 26px) !important; }
+
+.oguk-card .result-head.view-head {
+  height: clamp(96px, 11vw, 120px);
+  min-height: 96px;
+  margin-bottom: clamp(14px, 2.5vw, 24px) !important;
+  text-align: center;
+}
+
+.fortune-head.view-head {
+  height: 132px;
+  min-height: 132px;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+.fortune-head-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: min(100%, 72ch);
+  margin-inline: auto;
+}
+
+.fortune-head .nm {
+  margin: 0 0 4px !important;
+  font-size: clamp(16px, 2.2vw, 20px) !important;
+}
+
+.fortune-head .year-tag {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--apple-secondary) !important;
+  font-size: 11px !important;
+}
+
+.fortune-head .ganji-big {
+  display: flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  margin: 0 !important;
+  font-size: clamp(25px, 4vw, 34px) !important;
+  line-height: 1;
+}
+
+.fortune-head .ganji-big small {
+  margin-left: 6px;
+  color: var(--apple-secondary);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.fortune-head .fortune-year-nav {
+  width: min(100%, 72ch);
+  margin: 9px auto 0;
+}
+
+.fortune-head .fortune-year-nav button {
+  min-height: 44px;
+  padding-block: 4px;
+}
+
+.cal-head.view-head {
+  height: clamp(76px, 9vw, 96px);
+  display: grid !important;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  margin: 0 0 clamp(14px, 2.5vw, 24px) !important;
+}
+
+.saved-head { text-align: left !important; }
+.saved-toolbar { margin-top: clamp(14px, 2.5vw, 22px); }
+
+.bottom-bar {
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+}
+
+@media (max-width: 390px) {
+  .view,
+  #view-input,
+  #view-result,
+  #view-fortune,
+  #view-calendar,
+  #view-saved { padding-inline: 8px !important; }
+  .fortune-head-summary { gap: 8px; }
+  .fortune-head .ganji-big small { display: none; }
+}

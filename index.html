@@ -1689,6 +1689,10 @@
   </nav>
 
   <section class="view active" id="view-input" role="tabpanel" aria-labelledby="tab-input">
+    <header class="view-head">
+      <h2>사주 입력</h2>
+      <p>생년월일과 태어난 시간을 입력하면 원국과 운의 흐름을 펼칩니다.</p>
+    </header>
     <button type="button" class="person-search-btn" id="personSearchBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <span>인물 검색 <span style="opacity:0.7;font-weight:600;">(연예인·유명인 자동 입력)</span></span>
@@ -1744,7 +1748,7 @@
   </section>
 
   <section class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar" hidden>
-    <div class="cal-head">
+    <div class="view-head cal-head">
       <button type="button" class="cal-nav" id="calPrev" aria-label="이전 달">‹</button>
       <div class="cal-title" id="calTitle">—</div>
       <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
@@ -1754,6 +1758,10 @@
   </section>
 
   <section class="view" id="view-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
+    <header class="view-head saved-head">
+      <h2>저장한 명반</h2>
+      <p>자주 보는 원국을 다시 열거나 백업할 수 있습니다.</p>
+    </header>
     <div id="savedContent" style="padding-top: 12px;"></div>
   </section>
 </div>
@@ -12672,7 +12680,7 @@ function renderResult() {
 
   const html = `
     <div class="oguk-card">
-    <div class="result-head">
+    <div class="result-head view-head">
       <div class="name">${escapeHtml(s.name)} <span class="age-inline">(만 ${age}세)</span></div>
       <div class="info">
         ${s.gender === 'M' ? '남성' : '여성'}<br>
@@ -14731,16 +14739,16 @@ function _renderFortuneInner(focusYearControl = '') {
   const unifiedReadingHtml = renderUnifiedReading(unifiedReport);
 
   $('#fortuneContent').innerHTML = `
-    <div class="fortune-head">
-      <div class="nm">${escapeHtml(s.name)}님의 ${isCurrentYear ? '올해운' : `${fortuneYear}년 운세`}</div>
-      <div class="year-tag">${fortune.year}년 · ${STEM[fortune.seun.stem]}${BRANCH[fortune.seun.branch]}年</div>
-      <div class="ganji-big">
-        <span class="${seunClsS}">${STEM[fortune.seun.stem]}</span><span class="${seunClsB}">${BRANCH[fortune.seun.branch]}</span>
-        <span style="font-family:'Noto Sans KR'; font-size:14px; font-weight:700; color:var(--text-sub); margin-left:4px;">(${ga})</span>
-      </div>
-      <div class="ganji-sub">
-        세운천간 ${SIPSIN_KOR[fortune.seunStemSipsin]} · 지지 ${SIPSIN_KOR[fortune.seunBranchSipsin]} ·
-        ${fortune.year}년 대운 ${STEM[fortune.curDaeun.stem]}${BRANCH[fortune.curDaeun.branch]}(${SIPSIN_KOR[fortune.daeunStemSipsin]})
+    <div class="fortune-head view-head">
+      <div class="fortune-head-summary">
+        <div>
+          <div class="nm">${escapeHtml(s.name)}님의 ${isCurrentYear ? '올해운' : `${fortuneYear}년 운세`}</div>
+          <div class="year-tag">${fortune.year}년 · ${SIPSIN_KOR[fortune.seunStemSipsin]} / ${SIPSIN_KOR[fortune.seunBranchSipsin]}</div>
+        </div>
+        <div class="ganji-big" aria-label="${fortune.year}년 ${ga}년">
+          <span class="${seunClsS}">${STEM[fortune.seun.stem]}</span><span class="${seunClsB}">${BRANCH[fortune.seun.branch]}</span>
+          <small>${ga}</small>
+        </div>
       </div>
       ${renderFortuneYearNav(fortuneYear, s)}
       <output class="fortune-year-status sr-only" aria-live="polite" aria-atomic="true">${fortuneYear}년 ${ga}년 상세운으로 변경됨</output>
