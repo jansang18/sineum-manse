@@ -51,7 +51,9 @@
       ganji: annualReport.ganji,
       title: annualReport.title,
       deck: annualReport.deck,
-      evidence: Array.isArray(annualReport.evidence) ? annualReport.evidence.slice() : [],
+      evidence: Array.isArray(annualReport.evidence)
+        ? annualReport.evidence.filter(item => !/^대운\s/.test(String(item)))
+        : [],
       yearGroups,
       months: Array.isArray(annualReport.months) ? annualReport.months.slice(0, 12) : [],
       daeun: annual.get('daeun') || { id: 'daeun', title: '현재 대운 풀이', paragraphs: [] },

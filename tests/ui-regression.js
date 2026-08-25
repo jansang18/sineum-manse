@@ -22,7 +22,7 @@ const UI_ROOT = process.env.UI_ROOT
   : path.join(APP_ROOT, 'www');
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
-const widths = TEST_GROUP === 'annual-year-reading'
+const widths = TEST_GROUP === 'annual-year-reading' || TEST_GROUP === 'unified-reading'
   ? [390, 768, 1280]
   : TEST_GROUP === 'unified-surface'
   ? [320, 390, 720, 884, 1280]
@@ -68,6 +68,7 @@ const runsLongReading = () =>
   !TEST_GROUP || TEST_GROUP === 'long-reading' || TEST_GROUP === 'reading-readability';
 const runsAnnualYearReading = () => TEST_GROUP === 'annual-year-reading';
 const runsUnifiedSurface = () => TEST_GROUP === 'unified-surface';
+const runsUnifiedReading = () => TEST_GROUP === 'unified-reading';
 const runsDesktopActionRail = () => TEST_GROUP === 'desktop-action-rail';
 const runsLunarInput = () => !TEST_GROUP || TEST_GROUP === 'lunar-input';
 
@@ -1620,201 +1621,160 @@ async function inspectUnifiedSurface(page, width) {
   assert.ok(state.overflow <= 1, `${width}px removed compatibility surface overflows by ${state.overflow}px`);
 }
 
+async function inspectUnifiedReading(page, width) {
+  if (!runsUnifiedReading()) return;
+  await page.evaluate(() => document.querySelector('.tab[data-tab="fortune"]').click());
+  await sleep(100);
+
+  const snapshot = () => page.evaluate(() => {
+    const root = document.getElementById('fortuneContent');
+    return {
+      order: [...root.querySelectorAll('[data-reading-section]')]
+        .map(section => section.dataset.readingSection),
+      title: root.querySelector('[data-reading-section="year"] h2')?.textContent.trim() || '',
+      yearGroups: [...root.querySelectorAll('.reading-year-group h3')]
+        .map(heading => heading.textContent.trim()),
+      months: root.querySelectorAll('.reading-month').length,
+      monthLabels: [...root.querySelectorAll('.reading-month__label')]
+        .map(label => label.textContent.trim()),
+      monthText: [...root.querySelectorAll('.reading-month')].map(month => month.textContent.trim()),
+      yearText: root.querySelector('[data-reading-section="year"]')?.textContent || '',
+      daeunText: root.querySelector('[data-reading-section="daeun"]')?.textContent || '',
+      detailsCount: root.querySelectorAll('details').length,
+      scoreCards: root.querySelectorAll('.overall-card, .f-card, .match-total-card').length,
+      lifeGraphs: root.querySelectorAll('.life-course, [data-lifetime-graph]').length,
+      deepCards: root.querySelectorAll('.deep-reading, .deep-chapter').length,
+      disclaimerLast: root.lastElementChild?.classList.contains('reading-disclaimer') || false,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+
+  await page.evaluate(() => {
+    selectedFortuneYear = 2026;
+    renderFortune();
+  });
+  await sleep(100);
+  const initial = await snapshot();
+  await page.click('[data-fortune-year-next]');
+  await sleep(100);
+  const next = await snapshot();
+
+  const selected = await page.evaluate(() => {
+    document.querySelector('.tab[data-tab="result"]').click();
+    const items = [...document.querySelectorAll('#daeunScroll .luck-item')];
+    const target = items.find(item => Number(item.dataset.idx) !== selectedDaeun) || items[0];
+    target.click();
+    const value = currentSaju.daeun.list[selectedDaeun];
+    const ganji = `${STEM_KOR[value.stem]}${BRANCH_KOR[value.branch]}`;
+    document.querySelector('.tab[data-tab="fortune"]').click();
+    return ganji;
+  });
+  await sleep(100);
+  const selectedState = await snapshot();
+
+  assert.deepEqual(initial.order, ['year', 'months', 'daeun']);
+  assert.deepEqual(initial.yearGroups, ['올해의 핵심', '일과 재물', '관계와 생활', '건강과 주의', '실행 기준']);
+  assert.equal(initial.months, 12);
+  assert.equal(initial.monthLabels[0], '1월');
+  assert.equal(initial.monthLabels[11], '12월');
+  assert.match(initial.daeunText, /대운/);
+  assert.equal(initial.detailsCount, 0);
+  assert.equal(initial.scoreCards, 0);
+  assert.equal(initial.lifeGraphs, 0);
+  assert.equal(initial.deepCards, 0);
+  assert.equal(initial.disclaimerLast, true);
+  assert.ok(initial.overflow <= 1, `${width}px unified reading overflowed by ${initial.overflow}px`);
+  assert.notEqual(next.title, initial.title, `${width}px next year title did not change`);
+  assert.notDeepEqual(next.monthText, initial.monthText, `${width}px next year monthly readings did not change`);
+  assert.deepEqual(next.order, ['year', 'months', 'daeun']);
+  assert.match(selectedState.daeunText, new RegExp(selected));
+  assert.doesNotMatch(selectedState.yearText, new RegExp(selected));
+}
+
 async function inspectAnnualYearReading(page, width) {
   if (!runsAnnualYearReading()) return;
   await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
   await page.evaluate(() => document.querySelector('.tab[data-tab="fortune"]').click());
   await sleep(100);
 
-  const snapshot = async () => page.evaluate(() => {
+  const snapshot = () => page.evaluate(() => {
     const fortune = document.getElementById('fortuneContent');
-    const annual = fortune.querySelector('.annual-reading');
+    const report = fortune.querySelector('.unified-reading');
     const navButtons = [...fortune.querySelectorAll('.fortune-year-nav button')];
-    const sectionGrid = annual?.querySelector('.annual-reading__sections');
-    const bodyCopy = annual?.querySelector('.annual-reading__section p');
-    const children = [...fortune.children];
-    const overall = fortune.querySelector('.overall-card');
-    const life = fortune.querySelector('.life-course');
-    const style = element => element ? getComputedStyle(element) : null;
+    const prose = fortune.querySelector('.reading-prose p');
+    const style = prose ? getComputedStyle(prose) : null;
     return {
-      year: Number(annual?.dataset.annualYear || 0),
-      ganji: annual?.dataset.annualGanji || '',
-      headName: fortune.querySelector('.fortune-head .nm')?.textContent.trim() || '',
-      yearTag: fortune.querySelector('.fortune-head .year-tag')?.textContent.trim() || '',
-      overallLabel: overall?.querySelector('.ov-label')?.textContent.trim() || '',
-      annualTitle: annual?.querySelector('h2')?.textContent.trim() || '',
-      textLength: annual?.textContent.replace(/\s+/g, ' ').trim().length || 0,
-      sectionCount: annual?.querySelectorAll('.annual-reading__section').length || 0,
-      openSectionCount: annual?.querySelectorAll('.annual-reading__section[open]').length || 0,
-      calendarOpen: annual?.querySelector('.annual-reading__calendar')?.open || false,
-      lifeMetric: life?.dataset.lifeMetricActive || '',
-      openLifePhases: [...(life?.querySelectorAll('[data-life-phase-disclosure][open]') || [])]
-        .map(details => details.dataset.lifePhaseDisclosure),
-      monthCount: annual?.querySelectorAll('.annual-reading__month').length || 0,
+      title: report?.querySelector('#unifiedReadingTitle')?.textContent.trim() || '',
+      ganji: fortune.querySelector('.fortune-head .year-tag')?.textContent.trim() || '',
+      monthCount: report?.querySelectorAll('.reading-month').length || 0,
+      groupCount: report?.querySelectorAll('.reading-year-group').length || 0,
+      textLength: report?.textContent.replace(/\s+/g, ' ').trim().length || 0,
       navCount: navButtons.length,
       minNavHeight: Math.min(...navButtons.map(button => button.getBoundingClientRect().height)),
       activeControl: document.activeElement?.dataset.fortuneYearControl || null,
       currentControlDisabled: fortune.querySelector('[data-fortune-year-current]')?.getAttribute('aria-disabled') === 'true',
-      bodyFontSize: Number.parseFloat(style(bodyCopy)?.fontSize || '0'),
-      bodyLineHeight: Number.parseFloat(style(bodyCopy)?.lineHeight || '0'),
-      sectionColumns: style(sectionGrid)?.gridTemplateColumns.split(' ').length || 0,
-      order: [children.indexOf(overall), children.indexOf(annual), children.indexOf(life)],
+      bodyFontSize: Number.parseFloat(style?.fontSize || '0'),
+      bodyLineHeight: Number.parseFloat(style?.lineHeight || '0'),
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      annualAriaLive: annual?.getAttribute('aria-live') || '',
-      status: {
-        live: fortune.querySelector('.fortune-year-status')?.getAttribute('aria-live') || '',
-        atomic: fortune.querySelector('.fortune-year-status')?.getAttribute('aria-atomic') || '',
-        text: fortune.querySelector('.fortune-year-status')?.textContent.trim() || ''
-      },
-      legacyCardCount: fortune.querySelectorAll('.fortune-cards, .f-card').length
+      status: fortune.querySelector('.fortune-year-status')?.textContent.trim() || ''
     };
   });
 
+  const currentYear = new Date().getFullYear();
   const initial = await snapshot();
   await page.evaluate(() => {
     selectedFortuneYear = 2026;
     renderFortune();
   });
-  await sleep(150);
+  await sleep(100);
   const fixed2026 = await snapshot();
-  await page.evaluate(() => {
-    const fortune = document.getElementById('fortuneContent');
-    fortune.querySelectorAll('.annual-reading__section')[2].open = true;
-    fortune.querySelector('.annual-reading__calendar').open = true;
-    fortune.querySelector('[data-life-metric="money"]')?.click();
-    const phase = fortune.querySelector('[data-life-phase-disclosure="1"]');
-    if (phase) phase.open = true;
-  });
   await page.click('[data-fortune-year-next]');
-  await sleep(150);
+  await sleep(100);
   const next = await snapshot();
   await page.click('[data-fortune-year-current]');
-  await sleep(150);
+  await sleep(100);
   const restored = await snapshot();
 
-  const annualLayout = await page.evaluate(() => {
-    const annual = document.querySelector('#fortuneContent .annual-reading');
-    const sections = [...annual.querySelectorAll('.annual-reading__section')];
-    sections.forEach(section => { section.open = true; });
-
-    const proseTopGaps = sections.map(section => {
-      const summary = section.querySelector('summary');
-      const firstParagraph = section.querySelector('.annual-reading__prose p');
-      return firstParagraph.getBoundingClientRect().top - summary.getBoundingClientRect().bottom;
-    });
-
-    const calendar = annual.querySelector('.annual-reading__calendar');
-    calendar.open = true;
-    const grid = calendar.querySelector('ol');
-    const gridStyle = getComputedStyle(grid);
-    const gridRect = grid.getBoundingClientRect();
-    const paddingLeft = Number.parseFloat(gridStyle.paddingLeft);
-    const paddingRight = Number.parseFloat(gridStyle.paddingRight);
-    const months = [...grid.querySelectorAll('.annual-reading__month')]
-      .map(month => {
-        const rect = month.getBoundingClientRect();
-        return { left: rect.left, right: rect.right, width: rect.width };
-      });
-
-    return {
-      proseTopGaps,
-      monthColumns: gridStyle.gridTemplateColumns.split(' ').length,
-      monthGrid: {
-        outerLeft: gridRect.left,
-        outerRight: gridRect.right,
-        contentWidth: gridRect.width - paddingLeft - paddingRight
-      },
-      months,
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
-    };
-  });
-
   const escaped = await page.evaluate(() => {
-    window.__annualReadingXss = 0;
-    const payload = '<img src=x onerror="window.__annualReadingXss=1">';
+    window.__unifiedReadingXss = 0;
+    const payload = '<img src=x onerror="window.__unifiedReadingXss=1">';
     const host = document.createElement('div');
-    host.innerHTML = renderAnnualReading({
-      year: 2026,
-      ganji: payload,
-      eyebrow: payload,
+    host.innerHTML = renderUnifiedReading({
       title: payload,
       deck: payload,
       evidence: [payload],
-      sections: [{ id: payload, title: payload, summary: payload, paragraphs: [payload] }],
+      yearGroups: [{ title: payload, paragraphs: [payload], evidence: [payload] }],
       months: [{ month: 1, ganji: payload, label: payload, guidance: payload }],
+      daeun: { title: payload, summary: payload, paragraphs: [payload], evidence: [payload] },
       rules: [payload]
-    }, 2026, 1989);
+    });
     document.body.append(host);
-    const safe = window.__annualReadingXss === 0 && !host.querySelector('img');
+    const safe = window.__unifiedReadingXss === 0 && !host.querySelector('img');
     host.remove();
     return safe;
   });
   await page.emulateMediaFeatures([]);
 
-  const currentYear = new Date().getFullYear();
-  assert.equal(initial.year, currentYear, `${width}px annual reading must default to the current year`);
-  assert.match(initial.headName, /올해운/);
-  assert.match(initial.overallLabel, /종합 올해운/);
-  assert.equal(initial.currentControlDisabled, true, `${width}px current-year control must be inactive at the current year`);
-  assert.equal(fixed2026.year, 2026, `${width}px explicit 2026 annual reading`);
-  assert.equal(fixed2026.ganji, '병오', `${width}px 2026 annual ganji`);
-  assert.equal(initial.sectionCount, 8, `${width}px detailed annual section count`);
-  assert.equal(initial.openSectionCount, 1, `${width}px one annual section must start expanded`);
-  assert.equal(initial.monthCount, 12, `${width}px monthly annual guide count`);
-  assert.ok(initial.textLength >= 3000, `${width}px annual detail was only ${initial.textLength} chars`);
-  assert.equal(initial.navCount, 3, `${width}px year navigation control count`);
-  assert.ok(initial.minNavHeight >= 43.5, `${width}px year navigation target below 44px: ${initial.minNavHeight}`);
-  assert.equal(initial.annualAriaLive, '', `${width}px the full annual report must not be a live region`);
-  assert.deepEqual(initial.status, {
-    live: 'polite',
-    atomic: 'true',
-    text: `${currentYear}년 ${initial.ganji}년 상세운으로 변경됨`
-  }, `${width}px year update must use a concise live status`);
-  assert.equal(initial.legacyCardCount, 0, `${width}px removed annual score cards must stay removed`);
-
-  assert.equal(next.year, 2027, `${width}px next-year control did not advance the 2026 report`);
-  assert.equal(next.ganji, '정미', `${width}px 2027 annual ganji`);
-  assert.match(next.headName, currentYear === 2027 ? /올해운/ : /2027년 운세/);
-  assert.match(next.yearTag, /^2027년/);
-  assert.match(next.overallLabel, currentYear === 2027 ? /종합 올해운/ : /종합 2027년 운/);
-  assert.match(next.annualTitle, /2027년.*상세운/);
-  assert.equal(next.activeControl, 'next', `${width}px focus must survive a next-year rerender`);
-  assert.equal(next.openSectionCount, 2, `${width}px annual disclosure state must survive a year rerender`);
-  assert.equal(next.calendarOpen, true, `${width}px monthly calendar state must survive a year rerender`);
-  assert.equal(next.lifeMetric, 'money', `${width}px lifetime metric state must survive a year rerender`);
-  assert.ok(next.openLifePhases.includes('1'), `${width}px lifetime disclosure state must survive a year rerender`);
-  assert.equal(next.currentControlDisabled, false, `${width}px current-year return must enable away from today`);
-  assert.notEqual(next.textLength, 0);
-  assert.deepEqual(next.order, [1, 2, 3], `${width}px annual report must sit between overall and lifetime`);
-
-  assert.equal(restored.year, currentYear, `${width}px current-year return did not restore today`);
-  assert.equal(restored.activeControl, 'current', `${width}px focus must survive the current-year rerender`);
-  assert.ok(restored.bodyFontSize >= 14, `${width}px annual body copy below 14px`);
-  assert.ok(restored.bodyLineHeight / restored.bodyFontSize >= 1.5, `${width}px annual body copy is cramped`);
-  assert.equal(restored.sectionColumns, 1, `${width}px annual detail must use one full-width column`);
-  assert.ok(restored.overflow <= 1, `${width}px annual reading overflowed by ${restored.overflow}px`);
-  assert.equal(annualLayout.proseTopGaps.length, 8, `${width}px annual prose spacing coverage`);
-  assert.ok(
-    annualLayout.proseTopGaps.every(gap => gap >= 15),
-    `${width}px annual first paragraphs are too close to their dividers: ${annualLayout.proseTopGaps.join(', ')}`
-  );
-  assert.equal(annualLayout.months.length, 12, `${width}px monthly geometry coverage`);
-
-  assert.equal(annualLayout.monthColumns, 1, `${width}px monthly guide must use one full-width column`);
-  annualLayout.months.forEach((month, index) => {
-    assert.ok(
-      Math.abs(month.width - annualLayout.monthGrid.contentWidth) <= 1,
-      `${width}px month ${index + 1} does not fill the monthly guide width`
-    );
-    assert.ok(
-      Math.abs(month.left - annualLayout.monthGrid.outerLeft) <= 1 &&
-        Math.abs(month.right - annualLayout.monthGrid.outerRight) <= 1,
-      `${width}px month ${index + 1} does not reach the monthly guide edges`
-    );
-  });
-
-  assert.ok(annualLayout.overflow <= 1, `${width}px expanded annual layout overflowed by ${annualLayout.overflow}px`);
-  assert.equal(escaped, true, `${width}px annual report renderer allowed executable markup`);
+  assert.match(initial.title, new RegExp(`^${currentYear}년`));
+  assert.equal(initial.currentControlDisabled, true);
+  assert.match(fixed2026.title, /^2026년 병오년/);
+  assert.match(next.title, /^2027년 정미년/);
+  assert.equal(next.activeControl, 'next');
+  assert.equal(next.currentControlDisabled, false);
+  assert.match(restored.title, new RegExp(`^${currentYear}년`));
+  assert.equal(restored.activeControl, 'current');
+  for (const state of [initial, fixed2026, next, restored]) {
+    assert.equal(state.monthCount, 12, `${width}px monthly reading count`);
+    assert.equal(state.groupCount, 5, `${width}px annual reading group count`);
+    assert.ok(state.textLength >= 8500, `${width}px long reading was only ${state.textLength} chars`);
+    assert.equal(state.navCount, 3, `${width}px year navigation count`);
+    assert.ok(state.minNavHeight >= 43.5, `${width}px year navigation target below 44px`);
+    assert.ok(state.bodyFontSize >= 14, `${width}px reading body below 14px`);
+    assert.ok(state.bodyLineHeight / state.bodyFontSize >= 1.5, `${width}px reading body is cramped`);
+    assert.ok(state.overflow <= 1, `${width}px annual reading overflowed by ${state.overflow}px`);
+  }
+  assert.match(next.status, /2027년 정미년 상세운으로 변경됨/);
+  assert.equal(escaped, true, `${width}px unified reading renderer must escape model text`);
 }
 
 async function inspectLunarInput(page, width) {
@@ -4164,6 +4124,12 @@ async function inspectWidth(browser, width) {
 
   await inspectLuckFlowResponsive(page, width);
   if (TEST_GROUP === 'luck-flow-responsive') {
+    await page.close();
+    return;
+  }
+
+  await inspectUnifiedReading(page, width);
+  if (TEST_GROUP === 'unified-reading') {
     await page.close();
     return;
   }
