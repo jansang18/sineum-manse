@@ -1484,7 +1484,7 @@ function inspectReleaseContract() {
 
   const obfuscator = fs.readFileSync(obfuscatorScript, 'utf8');
   assert.match(obfuscator, /seed:\s*20260813/, 'Android asset obfuscation must be deterministic');
-  for (const moduleName of ['annual-reading.js', 'reading.js', 'life-model.js', 'life-forecast.js']) {
+  for (const moduleName of ['annual-reading.js', 'reading.js', 'unified-reading.js', 'life-model.js', 'life-forecast.js']) {
     assert.match(obfuscator, new RegExp(`['"]${moduleName.replace('.', '\\.')}['"]`), `${moduleName} must be included in Android asset protection`);
   }
 
@@ -1513,7 +1513,7 @@ function inspectReleaseContract() {
     assert.ok(fs.existsSync(path.join(WEB_ROOT, relativePath)), `web-only release asset is missing: ${relativePath}`);
   }
   for (const requiredRuntime of [
-    'korean-lunar-calendar.min.js', 'annual-reading.js', 'reading.js', 'reading.css', 'life-model.js', 'life-forecast.js',
+    'korean-lunar-calendar.min.js', 'annual-reading.js', 'reading.js', 'unified-reading.js', 'reading.css', 'life-model.js', 'life-forecast.js',
     'priestess.css', 'jansang-calligraphy-brush.webp', 'manse-hero-v2.webp'
   ]) {
     assert.ok(releaseFiles.includes(requiredRuntime), `release source inventory is missing runtime asset: ${requiredRuntime}`);
@@ -1521,7 +1521,7 @@ function inspectReleaseContract() {
   const protectedFilesBlock = script.match(/\$ProtectedFiles\s*=\s*@\(([^\r\n]+)\)/);
   assert.ok(protectedFilesBlock, 'protected source inventory must be declared');
   const protectedFiles = [...protectedFilesBlock[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
-  for (const requiredProtected of ['index.html', 'annual-reading.js', 'reading.js', 'life-model.js', 'life-forecast.js']) {
+  for (const requiredProtected of ['index.html', 'annual-reading.js', 'reading.js', 'unified-reading.js', 'life-model.js', 'life-forecast.js']) {
     assert.ok(protectedFiles.includes(requiredProtected), `protected source inventory is missing: ${requiredProtected}`);
   }
   for (const [pattern, message] of [
