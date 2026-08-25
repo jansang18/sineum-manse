@@ -11865,8 +11865,6 @@ Sigrid Niehaus|19641229|F|
 <script src="reading.js"></script>
 <script src="annual-reading.js"></script>
 <script src="unified-reading.js"></script>
-<script src="life-model.js"></script>
-<script src="life-forecast.js"></script>
 <script>
 /* 전역 에러 핸들러 — 콘솔에만 기록 (화면 오버레이는 iOS에서 인터랙션을 막을 수 있어 제거) */
 window.addEventListener('error', function(e) {
@@ -14398,68 +14396,6 @@ function calcYearFortune(saju) {
 
 // 기존 연도별 계산 결과를 0~80세로 펼쳐 판독 모델에 전달한다.
 // 날짜·절기·대운·점수 공식을 이 계층에서 다시 만들지 않는다.
-function buildLifeTimeline(saju) {
-  const endAge = Math.max(0, Math.min(80, 2099 - saju.year));
-  const referenceAge = new Date().getFullYear() - saju.year;
-  const currentAge = Math.max(0, Math.min(endAge, referenceAge));
-  const points = [];
-
-  for (let age = 0; age <= endAge; age += 1) {
-    const year = saju.year + age;
-    const fortune = calcFortuneAtYear(saju, year);
-    let daeunIndex = 0;
-    for (let index = 0; index < saju.daeun.list.length; index += 1) {
-      const nextAge = index < saju.daeun.list.length - 1
-        ? saju.daeun.list[index + 1].age
-        : 999;
-      if (age >= saju.daeun.list[index].age && age < nextAge) {
-        daeunIndex = index;
-        break;
-      }
-    }
-    points.push({
-      age,
-      year,
-      scores: { ...fortune.scores },
-      harmony: fortune.inter.harmony,
-      conflict: fortune.inter.conflict,
-      daeunIndex,
-      daeunChange: daeunIndex > 0 && saju.daeun.list[daeunIndex].age === age,
-      seunGanji: `${STEM[fortune.seun.stem]}${BRANCH[fortune.seun.branch]}`,
-      seunGanjiKor: `${STEM_KOR[fortune.seun.stem]}${BRANCH_KOR[fortune.seun.branch]}`,
-      seunStemGod: SIPSIN_KOR[fortune.seunStemSipsin],
-      seunBranchGod: SIPSIN_KOR[fortune.seunBranchSipsin]
-    });
-  }
-
-  const phases = saju.daeun.list.map((daeun, index) => {
-    const nextAge = index < saju.daeun.list.length - 1
-      ? saju.daeun.list[index + 1].age
-      : endAge + 1;
-    return {
-      index,
-      startAge: daeun.age,
-      endAge: Math.min(endAge, nextAge - 1),
-      stem: daeun.stem,
-      branch: daeun.branch,
-      isInitial: Boolean(daeun.isInitial),
-      ganji: `${STEM[daeun.stem]}${BRANCH[daeun.branch]}`,
-      ganjiKor: `${STEM_KOR[daeun.stem]}${BRANCH_KOR[daeun.branch]}`,
-      stemGod: SIPSIN_KOR[getSipsin(saju.dStem, daeun.stem)],
-      branchGod: SIPSIN_KOR[getSipsin(saju.dStem, JIJANGAN[daeun.branch][0])]
-    };
-  }).filter(phase => phase.startAge <= endAge && phase.endAge >= 0);
-
-  return window.SajuGangpaeLifeModel?.build({
-    methodVersion: 'fortune-v1-public-daeun',
-    currentAge,
-    unknownTime: Boolean(saju.unknown),
-    points,
-    phases
-  }) || null;
-}
-
-// 운세 텍스트 생성
 function genFortuneText(area, fortune, saju) {
   const s = fortune.scores[area];
   const seunStemSS = SIPSIN_KOR[fortune.seunStemSipsin];

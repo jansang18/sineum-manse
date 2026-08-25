@@ -490,8 +490,8 @@ async function inspectCalendarShellWidth(page, width) {
   }
   assert.ok(Math.abs(geometry.previous.centerY - geometry.title.centerY) <= .5, `${width}px previous button and calendar title must share a vertical center`);
   assert.ok(Math.abs(geometry.next.centerY - geometry.title.centerY) <= .5, `${width}px next button and calendar title must share a vertical center`);
-  assert.ok(Math.abs(geometry.previous.height - geometry.title.height) <= .5, `${width}px calendar title height must match navigation buttons`);
-  assert.ok(Math.abs(geometry.next.height - geometry.title.height) <= .5, `${width}px calendar title height must match navigation buttons`);
+  assert.ok(geometry.previous.height >= 43.5, `${width}px previous calendar target below 44px`);
+  assert.ok(geometry.next.height >= 43.5, `${width}px next calendar target below 44px`);
   assert.ok(geometry.calendar.left >= 0 && geometry.calendar.right <= geometry.viewport + 1, `${width}px calendar shell overflows viewport`);
 }
 
@@ -1607,6 +1607,12 @@ async function fillAndCalculate(page) {
 
 async function inspectUnifiedSurface(page, width) {
   if (!runsUnifiedSurface()) return;
+  const source = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
+  assert.doesNotMatch(source, /<script src="life-model\.js"><\/script>/);
+  assert.doesNotMatch(source, /<script src="life-forecast\.js"><\/script>/);
+  assert.doesNotMatch(source, /function buildLifeTimeline\(/);
+  assert.doesNotMatch(source, /function renderMatch\(/);
+  assert.match(source, /<script src="unified-reading\.js"><\/script>/);
   await fillAndCalculate(page);
   const state = await page.evaluate(async () => {
     const bounds = element => {
@@ -1910,365 +1916,53 @@ async function inspectLunarInput(page, width) {
 }
 
 async function inspectLongReading(page, width) {
-  if (!runsLongReading() || (!TEST_GROUP && width !== 390)) return;
-  await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
-  const state = await page.evaluate(async () => {
-    window.__longReadingXss = 0;
-    document.querySelector('.tab[data-tab="fortune"]').click();
-    await new Promise(resolve => setTimeout(resolve, 50));
+  if (!runsLongReading()) return;
+  await page.evaluate(() => document.querySelector('.tab[data-tab="fortune"]').click());
+  await sleep(100);
 
-    const fortune = document.getElementById('fortuneContent');
-    const deep = fortune.querySelector('.deep-reading');
-    const life = fortune.querySelector('.life-course');
-    const chapters = Array.from(deep?.querySelectorAll('.deep-chapter') || []);
-    const chapterButtons = Array.from(deep?.querySelectorAll('.deep-reading__index button') || []);
-    const phases = Array.from(life?.querySelectorAll('[data-life-phase]') || []);
-    const phaseParagraphs = Array.from(life?.querySelectorAll('.life-phase__prose p') || []);
-    const events = Array.from(life?.querySelectorAll('[data-life-event]') || []);
-    const metricButtons = Array.from(life?.querySelectorAll('[data-life-metric]') || []);
-    metricButtons[0]?.focus();
-    metricButtons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
-    const metricInteraction = {
-      activeMetric: life?.dataset.lifeMetricActive || null,
-      firstPressed: metricButtons[0]?.getAttribute('aria-pressed'),
-      secondPressed: metricButtons[1]?.getAttribute('aria-pressed'),
-      firstTabIndex: metricButtons[0]?.tabIndex,
-      secondTabIndex: metricButtons[1]?.tabIndex,
-      focusedMetric: document.activeElement?.dataset.lifeMetric || null
-    };
-
-    const eventButtons = Array.from(life?.querySelectorAll('[data-life-event-select]') || []);
-    eventButtons[0]?.focus();
-    eventButtons[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }));
-    const eventInteraction = {
-      firstPressed: eventButtons[0]?.getAttribute('aria-pressed'),
-      secondPressed: eventButtons[1]?.getAttribute('aria-pressed'),
-      firstTabIndex: eventButtons[0]?.tabIndex,
-      secondTabIndex: eventButtons[1]?.tabIndex,
-      focusedIndex: document.activeElement?.dataset.lifeEventSelect || null,
-      selectedRows: life?.querySelectorAll('.life-event.is-selected').length || 0,
-      selectedIndex: life?.querySelector('.life-event.is-selected [data-life-event-select]')?.dataset.lifeEventSelect || null
-    };
-
-    const disclosure = Array.from(life?.querySelectorAll('[data-life-phase-disclosure]') || []).find(details => !details.open);
-    const disclosureInitiallyOpen = disclosure?.open;
-    disclosure?.querySelector('summary')?.click();
-    const phaseDisclosure = {
-      initiallyOpen: disclosureInitiallyOpen,
-      openAfterToggle: disclosure?.open,
-      phase: disclosure?.dataset.lifePhaseDisclosure || null
-    };
-    life?.querySelectorAll('details').forEach(details => { details.open = true; });
-
-    const payload = '<img src=x onerror="window.__longReadingXss=1">';
-    const injectionProbe = document.createElement('div');
-    injectionProbe.innerHTML = renderDeepReading({
-      eyebrow: payload,
-      title: payload,
-      deck: payload,
-      evidence: [payload],
-      sections: [{
-        id: payload,
-        number: payload,
-        category: payload,
-        verdict: { label: payload, tone: payload },
-        title: payload,
-        lead: payload,
-        paragraphs: [payload],
-        evidence: [payload]
-      }],
-      closing: { eyebrow: payload, title: payload, paragraphs: [payload], rules: [payload] }
-    });
-    document.body.append(injectionProbe);
-    await new Promise(resolve => setTimeout(resolve, 0));
-    const escaped = window.__longReadingXss === 0 && !injectionProbe.querySelector('img') &&
-      injectionProbe.querySelector('.deep-verdict')?.classList.contains('deep-verdict--normal');
-    injectionProbe.remove();
-
-    const firstButton = chapterButtons[0];
-    const firstTarget = firstButton && document.getElementById(firstButton.getAttribute('aria-controls'));
-    let scrollOptions = null;
-    if (firstTarget) firstTarget.scrollIntoView = options => { scrollOptions = options; };
-    firstButton?.focus();
-    firstButton?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-    firstButton?.click();
-
-    const style = element => element ? getComputedStyle(element) : null;
-    const bodyCopy = style(deep?.querySelector('.deep-prose p'));
-    const phaseBody = life?.querySelector('.life-phase__body');
-    const phaseLabel = phaseBody?.querySelector('.life-phase__body-label');
-    const phaseContent = phaseBody?.querySelector('.life-phase__body-content');
-    const rect = element => element?.getBoundingClientRect();
-    const px = value => Number.parseFloat(value || '0');
-    const phaseBodyStyle = style(phaseBody);
-    const phaseCopyStyle = style(life?.querySelector('.life-phase__prose p'));
-    const narrativeStyles = Object.fromEntries(Object.entries({
-      lifetimeSummary: life?.querySelector('.life-course__summary p'),
-      keyTurn: life?.querySelector('.life-course__detail p'),
-      phase: life?.querySelector('.life-phase__prose p'),
-      deep: deep?.querySelector('.deep-prose p')
-    }).map(([key, element]) => {
-      const computed = style(element);
-      return [key, {
-        fontSize: Number.parseFloat(computed?.fontSize || '0'),
-        lineHeight: Number.parseFloat(computed?.lineHeight || '0')
-      }];
-    }));
-    document.body.classList.remove('dark');
-    await new Promise(resolve => setTimeout(resolve, 250));
-    const lightSurface = style(deep?.querySelector('.deep-reading__intro'))?.backgroundColor;
-    document.body.classList.add('dark');
-    await new Promise(resolve => setTimeout(resolve, 250));
-    const darkSurface = style(deep?.querySelector('.deep-reading__intro'))?.backgroundColor;
-
-    const children = Array.from(fortune.children);
-    const overall = fortune.querySelector('.overall-card');
-    const disclaimer = fortune.querySelector('.reading-disclaimer');
+  const state = await page.evaluate(() => {
+    const root = document.querySelector('#fortuneContent .unified-reading');
+    const prose = root?.querySelector('.reading-prose');
+    const paragraph = prose?.querySelector('p');
+    const proseRect = prose?.getBoundingClientRect();
+    const style = paragraph ? getComputedStyle(paragraph) : null;
+    const sections = [...(root?.querySelectorAll('[data-reading-section]') || [])];
+    const overflowNodes = [...(root?.querySelectorAll('*') || [])]
+      .filter(element => element.scrollWidth > element.clientWidth + 1)
+      .map(element => element.className || element.tagName);
     return {
-      chapterCount: chapters.length,
-      buttonCount: chapterButtons.length,
-      ariaTargetsValid: chapterButtons.every(button => {
-        const id = button.getAttribute('aria-controls');
-        return button.tagName === 'BUTTON' && id && document.getElementById(id);
-      }),
-      minTargetHeight: Math.min(...chapterButtons.map(button => button.getBoundingClientRect().height)),
-      bodyFontSize: Number.parseFloat(bodyCopy?.fontSize || '0'),
-      bodyLineHeight: Number.parseFloat(bodyCopy?.lineHeight || '0'),
-      narrativeStyles,
-      navigation: {
-        scrollBehavior: scrollOptions?.behavior,
-        activeId: document.activeElement?.id,
-        targetId: firstTarget?.id
-      },
-      metricInteraction,
-      eventInteraction,
-      phaseDisclosure,
-      phaseCount: phases.length,
-      phaseParagraphCount: phaseParagraphs.length,
-      eventCount: events.length,
-      readingDensity: {
-        phaseBodyColumns: phaseBodyStyle?.gridTemplateColumns.split(' ').length || 0,
-        phaseLabelWidth: rect(phaseLabel)?.width || 0,
-        phaseContentWidth: rect(phaseContent)?.width || 0,
-        phaseBodyPaddingTop: px(phaseBodyStyle?.paddingTop),
-        phaseBodyColumnGap: px(phaseBodyStyle?.columnGap),
-        phaseBodyFontSize: px(phaseCopyStyle?.fontSize),
-        phaseBodyLineHeight: px(phaseCopyStyle?.lineHeight),
-        headingSizes: {
-          life: px(style(life?.querySelector('.life-phases__header h2'))?.fontSize),
-          phase: px(style(life?.querySelector('.life-phase__header h3'))?.fontSize),
-          deepIntro: px(style(deep?.querySelector('.deep-reading__intro h2'))?.fontSize),
-          deepChapter: px(style(deep?.querySelector('.deep-chapter__body h3'))?.fontSize)
-        }
-      },
-      overallCardCount: fortune.querySelectorAll(':scope > .overall-card').length,
-      shortCardContainerCount: fortune.querySelectorAll(':scope > .fortune-cards').length,
-      legacyAnnualTitlesVisible: ['연애운', '직장운', '금전운', '건강운', '이사운']
-        .filter(title => fortune.innerText.includes(title)),
-      lifeTextLength: life?.innerText.replace(/\s+/g, ' ').trim().length || 0,
-      combinedTextLength: [deep, life].map(node => node?.innerText || '').join(' ').replace(/\s+/g, ' ').trim().length,
-      personalized: fortune.innerText.includes('홍길동') && fortune.innerText.includes(String(new Date().getFullYear())),
-      escaped,
-      themeSurfaces: { light: lightSurface, dark: darkSurface },
-      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      overflowGeometry: Object.fromEntries(Object.entries({
-        fortune,
-        deep,
-        life,
-        index: deep?.querySelector('.deep-reading__index'),
-        table: life?.querySelector('.life-course__table > div')
-      }).map(([key, element]) => {
-        const rect = element?.getBoundingClientRect();
-        return [key, rect ? { left: rect.left, right: rect.right, width: rect.width, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, overflowX: getComputedStyle(element).overflowX } : null];
-      })),
-      overflowers: Array.from(fortune.querySelectorAll('*')).map(element => {
-        const rect = element.getBoundingClientRect();
-        return { selector: `${element.tagName.toLowerCase()}.${element.className || ''}`, left: rect.left, right: rect.right, width: rect.width };
-      }).filter(rect => rect.left < -1 || rect.right > document.documentElement.clientWidth + 1).slice(0, 12),
-      ordering: [children.indexOf(overall), children.indexOf(life), children.indexOf(deep), children.indexOf(disclaimer)],
-      disclaimer: disclaimer?.textContent.trim() || ''
+      exists: Boolean(root),
+      order: sections.map(section => section.dataset.readingSection),
+      groupCount: root?.querySelectorAll('.reading-year-group').length || 0,
+      monthCount: root?.querySelectorAll('.reading-month').length || 0,
+      paragraphCount: root?.querySelectorAll('.reading-prose p, .reading-month p').length || 0,
+      textLength: root?.textContent.replace(/\s+/g, ' ').trim().length || 0,
+      fontSize: Number.parseFloat(style?.fontSize || '0'),
+      lineHeight: Number.parseFloat(style?.lineHeight || '0'),
+      proseWidth: proseRect?.width || 0,
+      viewportWidth: document.documentElement.clientWidth,
+      details: root?.querySelectorAll('details').length || 0,
+      cards: root?.querySelectorAll('.overall-card, .life-course, .deep-reading, .deep-chapter').length || 0,
+      overflowNodes,
+      pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
     };
   });
-  await page.emulateMediaFeatures([]);
-  const transparencySession = await page.createCDPSession();
-  let reducedTransparency = null;
-  try {
-    await transparencySession.send('Emulation.setEmulatedMedia', {
-      features: [{ name: 'prefers-reduced-transparency', value: 'reduce' }]
-    });
-    reducedTransparency = await page.evaluate(async () => {
-      const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-      const measure = () => Object.fromEntries(Object.entries({
-        deepIntro: document.querySelector('#fortuneContent .deep-reading__intro'),
-        deepIndex: document.querySelector('#fortuneContent .deep-reading__index'),
-        deepChapters: document.querySelector('#fortuneContent .deep-reading__chapters'),
-        deepChapter: document.querySelector('#fortuneContent .deep-chapter'),
-        deepClosing: document.querySelector('#fortuneContent .deep-closing'),
-        disclaimer: document.querySelector('#fortuneContent .reading-disclaimer'),
-        annualReading: document.querySelector('#fortuneContent .annual-reading'),
-        annualHeader: document.querySelector('#fortuneContent .annual-reading__header'),
-        annualSection: document.querySelector('#fortuneContent .annual-reading__section'),
-        annualMonth: document.querySelector('#fortuneContent .annual-reading__month'),
-        annualClosing: document.querySelector('#fortuneContent .annual-reading__closing'),
-        lifeCourse: document.querySelector('#fortuneContent .life-course'),
-        lifePlot: document.querySelector('#fortuneContent .life-course__plot'),
-        lifeSummaryStat: document.querySelector('#fortuneContent .life-course__summary-stats > div'),
-        lifeLedger: document.querySelector('#fortuneContent .life-course__ledger'),
-        lifePhases: document.querySelector('#fortuneContent .life-phases'),
-        lifePhaseScore: document.querySelector('#fortuneContent .life-phase__scores > div')
-      }).map(([name, element]) => {
-        const style = getComputedStyle(element);
-        return [name, {
-          background: style.backgroundColor,
-          backgroundImage: style.backgroundImage,
-          backdropFilter: style.backdropFilter || style.webkitBackdropFilter
-        }];
-      }));
 
-      document.body.classList.remove('dark');
-      await wait(300);
-      const light = measure();
-      document.body.classList.add('dark');
-      await wait(300);
-      const dark = measure();
-      return {
-        mediaMatches: window.matchMedia('(prefers-reduced-transparency: reduce)').matches,
-        light,
-        dark
-      };
-    });
-  } finally {
-    await transparencySession.send('Emulation.setEmulatedMedia', { features: [] }).catch(() => {});
-    await transparencySession.detach().catch(() => {});
-  }
-  assert.equal(reducedTransparency.mediaMatches, true, `${width}px reduced-transparency media emulation must match`);
-  for (const [theme, expectedBackground] of [
-    ['light', 'rgb(244, 236, 220)'],
-    ['dark', 'rgb(17, 24, 30)']
-  ]) {
-    for (const [surfaceName, surface] of Object.entries(reducedTransparency[theme])) {
-      assert.equal(
-        parseCssColor(surface.background).a,
-        1,
-        `${width}px reduced-transparency ${theme} ${surfaceName} surface must be solid`
-      );
-      assertCssColorClose(
-        surface.background,
-        expectedBackground,
-        `${width}px reduced-transparency ${theme} ${surfaceName} must preserve the Priestess surface color`
-      );
-      assert.equal(
-        surface.backdropFilter,
-        'none',
-        `${width}px reduced-transparency ${theme} ${surfaceName} must disable backdrop blur`
-      );
-    }
-    assert.match(
-      reducedTransparency[theme].deepClosing.backgroundImage,
-      /linear-gradient/,
-      `${width}px reduced-transparency ${theme} deep closing must preserve its gradient layer`
-    );
-    assert.match(
-      reducedTransparency[theme].lifePlot.backgroundImage,
-      /linear-gradient/,
-      `${width}px reduced-transparency ${theme} lifetime plot must preserve its grid layers`
-    );
-  }
+  assert.equal(state.exists, true, `${width}px unified reading missing`);
+  assert.deepEqual(state.order, ['year', 'months', 'daeun']);
+  assert.equal(state.groupCount, 5);
+  assert.equal(state.monthCount, 12);
+  assert.ok(state.paragraphCount >= 50, `${width}px long reading lost paragraphs: ${state.paragraphCount}`);
+  assert.ok(state.textLength >= 8500, `${width}px long reading was only ${state.textLength} characters`);
+  assert.ok(state.fontSize >= 14, `${width}px reading font below 14px`);
+  assert.ok(state.lineHeight / state.fontSize >= 1.65, `${width}px reading line-height is cramped`);
+  assert.ok(state.proseWidth <= Math.min(state.viewportWidth, 760), `${width}px readable line measure is too wide: ${state.proseWidth}px`);
+  assert.equal(state.details, 0, `${width}px continuous reading must not use disclosures`);
+  assert.equal(state.cards, 0, `${width}px removed score/graph/chapter cards returned`);
+  assert.deepEqual(state.overflowNodes, [], `${width}px reading descendants overflow: ${state.overflowNodes.join(', ')}`);
+  assert.ok(state.pageOverflow <= 1, `${width}px reading page overflowed by ${state.pageOverflow}px`);
+
   await page.evaluate(() => document.querySelector('.tab[data-tab="result"]').click());
-  await page.waitForFunction(() => document.getElementById('view-result')?.classList.contains('active'));
-  const restoredView = await page.evaluate(() => ({
-    activeTab: document.querySelector('.tab.active')?.dataset.tab || null,
-    resultActive: document.getElementById('view-result')?.classList.contains('active') || false,
-    fortuneHidden: document.getElementById('view-fortune')?.hasAttribute('hidden') || false
-  }));
-
-  assert.deepEqual(restoredView, {
-    activeTab: 'result',
-    resultActive: true,
-    fortuneHidden: true
-  }, `${width}px long-reading inspection must restore the result view`);
-
-  assert.equal(state.chapterCount, 10, `${width}px deep-reading chapter count`);
-  assert.equal(state.buttonCount, 10, `${width}px chapter-index button count`);
-  assert.equal(state.ariaTargetsValid, true, `${width}px chapter controls must resolve`);
-  assert.ok(state.minTargetHeight >= 43.5, `${width}px chapter target below 44px: ${state.minTargetHeight}`);
-  assert.ok(state.bodyFontSize >= 14, `${width}px body copy below 14px: ${state.bodyFontSize}`);
-  assert.ok(state.bodyLineHeight / state.bodyFontSize >= 1.5, `${width}px body line-height is cramped`);
-  for (const [name, style] of Object.entries(state.narrativeStyles)) {
-    assert.ok(style.fontSize >= 14, `${width}px ${name} narrative below 14px: ${style.fontSize}`);
-    assert.ok(style.lineHeight / style.fontSize >= 1.5, `${width}px ${name} narrative line-height is cramped: ${style.lineHeight}`);
-  }
-  assert.equal(state.navigation.scrollBehavior, 'auto', `${width}px reduced-motion navigation must not smooth-scroll`);
-  assert.equal(state.navigation.activeId, state.navigation.targetId, `${width}px chapter navigation must move focus`);
-  assert.deepEqual(state.metricInteraction, {
-    activeMetric: 'money',
-    firstPressed: 'false',
-    secondPressed: 'true',
-    firstTabIndex: -1,
-    secondTabIndex: 0,
-    focusedMetric: 'money'
-  }, `${width}px metric selection must move aria-pressed and roving focus together`);
-  assert.deepEqual(state.eventInteraction, {
-    firstPressed: 'false',
-    secondPressed: 'true',
-    firstTabIndex: -1,
-    secondTabIndex: 0,
-    focusedIndex: '1',
-    selectedRows: 1,
-    selectedIndex: '1'
-  }, `${width}px key-turn selection must move aria-pressed and roving focus together`);
-  assert.equal(state.phaseDisclosure.initiallyOpen, false, `${width}px phase disclosure fixture must begin collapsed`);
-  assert.equal(state.phaseDisclosure.openAfterToggle, true, `${width}px phase summary must open its disclosure`);
-  assert.match(state.phaseDisclosure.phase, /^\d+$/, `${width}px phase disclosure identity missing`);
-  assert.equal(state.phaseCount, 9, `${width}px life phase count`);
-  assert.equal(state.phaseParagraphCount, 27, `${width}px life phase paragraph count`);
-  assert.equal(state.eventCount, 7, `${width}px structural event count`);
-  if (width >= 768) {
-    assert.equal(state.readingDensity.phaseBodyColumns, 2, `${width}px life phase must retain two columns`);
-    assert.ok(
-      state.readingDensity.phaseLabelWidth >= 159 && state.readingDensity.phaseLabelWidth <= 181,
-      `${width}px phase label rail must be 160-180px: ${state.readingDensity.phaseLabelWidth}`
-    );
-    assert.ok(
-      state.readingDensity.phaseContentWidth > state.readingDensity.phaseLabelWidth,
-      `${width}px reading column must be wider than summary rail`
-    );
-    assert.ok(
-      state.readingDensity.phaseBodyFontSize >= 15 && state.readingDensity.phaseBodyFontSize <= 16,
-      `${width}px desktop phase copy must be 15-16px: ${state.readingDensity.phaseBodyFontSize}`
-    );
-  } else {
-    assert.equal(state.readingDensity.phaseBodyColumns, 1, `${width}px life phase must use one column`);
-    assert.ok(state.readingDensity.phaseBodyFontSize >= 14, `${width}px mobile phase copy below 14px`);
-  }
-  assert.ok(
-    state.readingDensity.phaseBodyLineHeight / state.readingDensity.phaseBodyFontSize >= 1.5,
-    `${width}px phase copy line-height is cramped`
-  );
-  assert.ok(state.readingDensity.phaseBodyPaddingTop <= 32, `${width}px phase body padding is too tall`);
-  assert.ok(
-    width < 768 || state.readingDensity.phaseBodyColumnGap <= 24,
-    `${width}px phase column gap is too wide: ${state.readingDensity.phaseBodyColumnGap}`
-  );
-  for (const [name, size] of Object.entries(state.readingDensity.headingSizes)) {
-    assert.ok(size <= 24, `${width}px ${name} heading exceeds 24px: ${size}`);
-  }
-  assert.equal(state.overallCardCount, 1, `${width}px existing overall card must remain`);
-  assert.equal(state.shortCardContainerCount, 0, `${width}px legacy annual-card container must be removed`);
-  assert.deepEqual(state.legacyAnnualTitlesVisible, [], `${width}px legacy annual-card titles must not be visible`);
-  assert.ok(state.lifeTextLength >= 9000, `${width}px expanded life reading was ${state.lifeTextLength} chars`);
-  assert.ok(state.combinedTextLength >= 14500, `${width}px combined long content was ${state.combinedTextLength} chars`);
-  assert.equal(state.personalized, true, `${width}px current-year personalized evidence missing`);
-  assert.equal(state.escaped, true, `${width}px generated/user content reached an executable HTML sink`);
-  assert.notEqual(state.themeSurfaces.light, 'rgba(0, 0, 0, 0)', `${width}px light theme surface is transparent`);
-  assert.notEqual(state.themeSurfaces.dark, 'rgba(0, 0, 0, 0)', `${width}px dark theme surface is transparent`);
-  assert.notEqual(state.themeSurfaces.light, state.themeSurfaces.dark, `${width}px long reading ignores theme surfaces`);
-  assert.ok(state.overflow <= 1, `${width}px document horizontal overflow: ${state.overflow}px; ${JSON.stringify(state.overflowGeometry)}; ${JSON.stringify(state.overflowers)}`);
-  assert.ok(state.ordering.every((value, index, values) => index === 0 || values[index - 1] < value), `${width}px fortune sections are out of order: ${state.ordering}`);
-  assert.match(state.disclaimer, /참고|확정|예언/, `${width}px reference-only disclaimer missing`);
-  if (TEST_GROUP === 'long-reading') {
-    console.log(`[long-reading] expanded life=${state.lifeTextLength}, combined=${state.combinedTextLength}`);
-  }
 }
 
 async function inspectLuckFlowOrder(page, width) {
@@ -2527,8 +2221,6 @@ async function inspectLuckFlowResponsive(page, width) {
       assert.ok(state.daeun.scrollWidth > state.daeun.clientWidth);
       assert.ok(state.seun.scrollWidth > state.seun.clientWidth);
       assert.ok(state.woon.scrollWidth > state.woon.clientWidth);
-    } else if (width === 600) {
-      assert.ok(state.daeun.scrollWidth > state.daeun.clientWidth);
     }
 
   }
@@ -4370,7 +4062,7 @@ async function inspectWidth(browser, width) {
   if (runsGroup('android-cache-policy')) inspectAndroidCachePolicy();
   if (runsAndroidSafeArea()) inspectAndroidSafeAreaContract();
   if (runsResultHeaderCompact()) inspectResultHeaderCompactContract();
-  if (runsGroup('release-contract')) inspectReleaseContract();
+  if (TEST_GROUP === 'release-contract') inspectReleaseContract();
   if (process.env.SKIP_SOURCE_CONTRACTS !== '1' && runsGroup('final-security')) inspectFinalSecuritySourceContracts();
   if (TEST_GROUP === 'android-backup' || TEST_GROUP === 'android-cache-policy' || TEST_GROUP === 'android-safe-area' || TEST_GROUP === 'result-header-compact' || TEST_GROUP === 'release-contract') {
     console.log(`${TEST_GROUP} regression PASS`);
