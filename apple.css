@@ -1538,32 +1538,6 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Desktop result actions use the empty right gutter instead of covering the chart. */
-@media (min-width: 1025px) {
-  .bottom-bar {
-    left: calc(50% + 328px) !important;
-    right: auto !important;
-    bottom: max(16px, env(safe-area-inset-bottom)) !important;
-    width: 120px !important;
-    max-width: none !important;
-    padding: 8px !important;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    transform: none;
-    border: 1px solid var(--apple-separator);
-    border-radius: 14px;
-  }
-
-  .bottom-bar .bb {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 10px 8px;
-  }
-}
-
 /* Align the primary navigation rail with the chart below it. */
 .tabs {
   width: var(--apple-content-measure) !important;
@@ -2082,4 +2056,35 @@ html {
   #view-saved { padding-inline: 8px !important; }
   .fortune-head-summary { gap: 8px; }
   .fortune-head .ganji-big small { display: none; }
+}
+
+/* Keep result actions compact: the legacy desktop column rail must not
+   combine with the unified shell width and cover the result viewport. */
+.bottom-bar {
+  left: 50% !important;
+  right: auto !important;
+  width: min(520px, calc(var(--app-shell-width) - clamp(20px, 4.8vw, 64px))) !important;
+  max-width: none !important;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  transform: translateX(-50%) !important;
+  border: 1px solid var(--apple-separator) !important;
+  border-radius: 14px 14px 0 0;
+}
+
+.bottom-bar .bb {
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 44px;
+  padding: 10px 8px !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 390px) {
+  .bottom-bar {
+    width: calc(var(--app-shell-width) - 16px) !important;
+  }
 }

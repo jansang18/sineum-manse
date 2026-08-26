@@ -31,7 +31,7 @@ const widths = TEST_GROUP === 'annual-year-reading' || TEST_GROUP === 'unified-r
   : TEST_GROUP === 'luck-flow-responsive'
     ? [390, 560, 561, 600, 601, 710, 768, 1220]
   : TEST_GROUP === 'desktop-action-rail'
-    ? [390, 1024, 1025, 1280]
+    ? [320, 360, 390, 412, 720, 884, 1024, 1025, 1280]
     : TEST_GROUP === 'result-width-brand'
       ? [390, 1220, 1280]
       : TEST_GROUP === 'shell-width'
@@ -858,31 +858,31 @@ async function inspectDesktopActionRail(page, width) {
   });
 
   assert.equal(geometry.style.position, 'fixed');
-  if (width >= 1025) {
-    assert.ok(
-      geometry.bar.left >= geometry.resultContent.right + 16,
-      `${width}px action rail overlaps app content: ${JSON.stringify(geometry)}`
-    );
-    assert.ok(
-      geometry.bar.left >= 16 && geometry.bar.right <= geometry.viewport.width - 16 &&
-        geometry.bar.top >= 16 && geometry.bar.bottom <= geometry.viewport.height - 16,
-      `${width}px action rail exceeds viewport-safe bounds: ${JSON.stringify(geometry)}`
-    );
-    assert.equal(geometry.style.flexDirection, 'column');
-    assert.ok(geometry.bar.width <= 128 && geometry.bar.height > geometry.bar.width);
-    assert.ok(
-      geometry.buttons.every(button => button.lineCount === 1),
-      `${width}px desktop action labels must stay on one line: ${JSON.stringify(geometry.buttons)}`
-    );
-  } else {
-    assert.equal(geometry.style.flexDirection, 'row');
-    if (width === 390) {
-      assert.ok(Math.abs(geometry.bar.width - geometry.card.width) <= 1);
-      assert.ok(Math.abs(geometry.bar.left - geometry.card.left) <= 1);
-    }
-    assert.ok(Math.abs(geometry.bar.left - (geometry.viewport.width - geometry.bar.width) / 2) <= 1);
-    assert.ok(geometry.bar.left >= 0 && geometry.bar.right <= geometry.viewport.width + 1);
+  assert.equal(geometry.style.flexDirection, 'row');
+  assert.ok(
+    geometry.bar.height <= 88,
+    `${width}px bottom action bar blocks too much of the viewport: ${JSON.stringify(geometry.bar)}`
+  );
+  assert.ok(
+    geometry.bar.width <= Math.min(520, geometry.viewport.width - 16) + 1,
+    `${width}px bottom action bar is too wide: ${JSON.stringify(geometry.bar)}`
+  );
+  if (width === 390) {
+    assert.ok(Math.abs(geometry.bar.width - geometry.card.width) <= 1);
+    assert.ok(Math.abs(geometry.bar.left - geometry.card.left) <= 1);
   }
+  assert.ok(
+    Math.abs(
+      (geometry.bar.left + geometry.bar.right) / 2 -
+      (geometry.resultContent.left + geometry.resultContent.right) / 2
+    ) <= 1,
+    `${width}px bottom action bar is not centered on the result: ${JSON.stringify(geometry)}`
+  );
+  assert.ok(geometry.bar.left >= 0 && geometry.bar.right <= geometry.viewport.width + 1);
+  assert.ok(
+    geometry.buttons.every(button => button.lineCount === 1),
+    `${width}px bottom action labels must stay on one line: ${JSON.stringify(geometry.buttons)}`
+  );
   assert.ok(
     geometry.buttons.every(button => button.width >= 44 && button.height >= 44),
     `${width}px action rail target below 44px: ${JSON.stringify(geometry.buttons)}`
