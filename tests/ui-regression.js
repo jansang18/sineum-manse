@@ -4116,6 +4116,7 @@ async function inspectWidth(browser, width) {
     }
     assert.match(runtimeIndex, /http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate"/, 'the document must request no browser cache');
     assert.match(runtimeIndex, /http-equiv="Pragma" content="no-cache"/, 'the document must retain the legacy no-cache directive');
+    assert.match(runtimeIndex, /href="apple\.css\?v=[a-z0-9.-]+"/i, 'the frequently updated Apple stylesheet must use a release cache-buster');
     await inspectServiceWorkerDisable(serviceWorker);
   }
   if (TEST_GROUP === 'service-worker') {
