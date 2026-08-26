@@ -13,7 +13,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ExpectedSignerSha256 = 'da1950eab27b62b7c0ac92a21b34a2fab32ff582f0e68be0d6e72d56488508aa'
-$ArtifactBaseName = 'jansang-manse-unified-reading-v2.0-release'
+$ArtifactBaseName = 'jansang-manse-unified-reading-v2.1-release'
 $ReleaseWebFiles = @(
     'index.html',
     'korean-lunar-calendar.min.js',
