@@ -2353,9 +2353,10 @@ async function collectAppleComponentInspection(page) {
     }
     document.body.appendChild(probeHost);
 
-    const input = document.querySelector('.input');
+    const inputSelector = '#view-input .input-card .input';
+    const input = document.querySelector(inputSelector);
     input?.focus();
-    const focusedInput = style('.input');
+    const focusedInput = style(inputSelector);
     const primary = document.querySelector('.primary-btn');
     const enabledPrimary = style('.primary-btn');
     primary.disabled = true;
@@ -2375,7 +2376,7 @@ async function collectAppleComponentInspection(page) {
 
     return {
       geometry: {
-        input: rect('.input'),
+        input: rect(inputSelector),
         primary: rect('.primary-btn'),
         segmented: rect('.segmented'),
         tabs: [...document.querySelectorAll('.tab')]
@@ -2398,7 +2399,7 @@ async function collectAppleComponentInspection(page) {
           }))
       },
       radii: {
-        input: style('.input').borderRadius,
+        input: style(inputSelector).borderRadius,
         segmented: style('.segmented').borderRadius,
         card: style('.input-card').borderRadius
       },

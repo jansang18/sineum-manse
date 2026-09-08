@@ -85,7 +85,7 @@
     rr(c, W / 2 - 118, 72, 236, 48, 24); c.fill();
     c.fillStyle = THEME.accent;
     c.font = '700 24px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
-    c.fillText('사주 명식', W / 2, 104);
+    c.fillText(s.buildingRegistry ? '건물 만세력' : '사주 명식', W / 2, 104);
     c.fillStyle = THEME.text;
     c.font = '800 58px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
     c.fillText('잔상 만세력', W / 2, 184);
@@ -94,11 +94,11 @@
     var age = (new Date().getFullYear()) - s.year;
     c.fillStyle = THEME.text;
     c.font = '800 54px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
-    c.fillText(s.name || '이름 없음', W / 2, 292);
+    c.fillText(s.name || '이름 없음', W / 2, 292, W - 100);
     c.fillStyle = THEME.sub;
     c.font = '500 27px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
-    c.fillText((s.gender === 'M' ? '남성' : '여성') + ' · 만 ' + age + '세', W / 2, 340);
-    var dline = '양력 ' + s.year + '.' + p2(s.month) + '.' + p2(s.day) +
+    c.fillText(s.buildingRegistry ? '건물 · 사용승인일 기준' : (s.gender === 'M' ? '남성' : '여성') + ' · 만 ' + age + '세', W / 2, 340);
+    var dline = (s.buildingRegistry ? '사용승인일 ' : '양력 ') + s.year + '.' + p2(s.month) + '.' + p2(s.day) +
       (s.unknown ? ' · 시 모름' : ' · ' + p2(s.hour) + ':' + p2(s.minute));
     c.fillText(dline, W / 2, 382);
 

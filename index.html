@@ -1663,6 +1663,7 @@
   <link rel="stylesheet" href="apple.css?v=2.1-bottom-bar">
   <link rel="stylesheet" href="priestess.css">
   <link rel="stylesheet" href="reading.css">
+  <link rel="stylesheet" href="building-lookup.css?v=2.2">
 </head>
 <body>
 
@@ -1697,6 +1698,33 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
       <span>인물 검색 <span style="opacity:0.7;font-weight:600;">(연예인·유명인 자동 입력)</span></span>
     </button>
+
+    <details class="building-lookup" id="buildingLookup">
+      <summary><span>건물 날짜 조회</span><span class="building-summary-note">주소로 사용승인일 찾기</span></summary>
+      <div class="building-lookup-body">
+        <form id="buildingLookupForm">
+          <label for="buildingQuery">도로명·지번 주소 또는 건물명</label>
+          <div class="building-search-row">
+            <input class="input" id="buildingQuery" type="search" maxlength="200" placeholder="예: 도곡렉슬아파트, 서울 강남구 선릉로 221" autocomplete="street-address" enterkeyhint="search" aria-describedby="buildingStatus">
+            <button type="submit" id="buildingSearchBtn" class="building-button">조회</button>
+          </div>
+        </form>
+        <p id="buildingStatus" class="building-status" role="status" aria-live="polite">주소를 선택하면 사용승인일 기준 만세력이 바로 열립니다.</p>
+        <div id="buildingPlaces" class="building-places" aria-label="주소 검색 결과"></div>
+        <div id="buildingRecordField" hidden>
+          <label for="buildingRecords">건물·동 선택</label>
+          <select class="input" id="buildingRecords"></select>
+        </div>
+        <div id="buildingResult" class="building-result" hidden>
+          <p id="buildingName" class="building-result-name"></p>
+          <p id="buildingAddress" class="building-result-address"></p>
+          <dl><div><dt>사용승인일</dt><dd><time id="buildingApprovalDate"></time></dd></div></dl>
+          <p id="buildingSource" class="building-source"></p>
+          <p class="building-date-note">건축물대장에 기록된 사용승인일입니다. 실제 공사 완료일과 다를 수 있습니다.</p>
+          <button type="button" id="buildingApplyBtn" class="building-button building-apply">이 건물 만세력 보기</button>
+        </div>
+      </div>
+    </details>
 
     <div class="input-card">
     <div class="field">
@@ -12655,6 +12683,8 @@ onTap($('#calcBtn'), () => {
   try {
     const saju = calcSaju({ year: y, month: m, day: d, hour: h, minute: mi, calendar, gender, unknown });
     saju.name = name || '이름 없음';
+    const buildingRecord = window.jansangBuildingLookup?.getInputRecord();
+    if (buildingRecord) saju.buildingRegistry = buildingRecord;
     currentSaju = saju;
     selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
     renderResult();
@@ -12684,13 +12714,14 @@ function renderResult() {
 
   const html = `
     <div class="oguk-card">
-    <div class="result-head view-head">
-      <div class="name">${escapeHtml(s.name)} <span class="age-inline">(만 ${age}세)</span></div>
+    <div class="result-head view-head${s.buildingRegistry ? ' building-chart-head' : ''}">
+      <div class="name">${escapeHtml(s.name)} ${s.buildingRegistry ? '' : `<span class="age-inline">(만 ${age}세)</span>`}</div>
       <div class="info">
-        ${s.gender === 'M' ? '남성' : '여성'}<br>
+        ${s.buildingRegistry ? '건물 · 사용승인일 기준' : s.gender === 'M' ? '남성' : '여성'}<br>
         양력 ${s.year}.${pad(s.month)}.${pad(s.day)}${s.lunar ? ` / 음력 ${s.lunar.y}.${pad(s.lunar.m)}.${pad(s.lunar.d)}` : ''}<br>
         ${s.unknown ? '시 모름' : `${BRANCH_KOR[s.hBranch]}시 (${pad(s.hour)}시 ${pad(s.minute)}분)`}
       </div>
+      ${s.buildingRegistry ? `<p class="building-chart-source">${escapeHtml(s.buildingRegistry.roadAddress || s.buildingRegistry.parcelAddress)}<br>${escapeHtml(s.buildingRegistry.source)} · 사용승인일 ${escapeHtml(s.buildingRegistry.approvalDate)}<br>대운·풀이는 기존 사주 설정을 기준으로 계산합니다.</p>` : ''}
     </div>
 
     <div class="result-body">
@@ -13838,8 +13869,10 @@ function normalizeImportedRecord(input) {
     gender,
     unknown
   });
+  const buildingRegistry = window.jansangBuildingLookup?.restoreRecord(input.buildingRegistry, calculated);
   return {
     ...calculated,
+    ...(buildingRegistry ? { buildingRegistry } : {}),
     id: createSecureUuid(),
     name: (input.name || '이름 없음').trim().slice(0, 40) || '이름 없음',
     memo: (input.memo || '').trim().slice(0, 240),
@@ -15753,7 +15786,8 @@ clearLegacyAppCaching().catch((error) => {
    홈화면 추가 안내 — 제거됨
    ============================================ */
 </script>
-<script src="share.js"></script>
+<script src="share.js?v=2.2"></script>
 <script src="nav.js"></script>
+<script src="building-lookup.js?v=2.2"></script>
 </body>
 </html>

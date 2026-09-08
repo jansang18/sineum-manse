@@ -13,13 +13,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $ExpectedSignerSha256 = 'da1950eab27b62b7c0ac92a21b34a2fab32ff582f0e68be0d6e72d56488508aa'
-$ArtifactBaseName = 'jansang-manse-unified-reading-v2.1-release'
+$ArtifactBaseName = 'jansang-manse-building-lookup-v2.2-release'
 $ReleaseWebFiles = @(
     'index.html',
     'korean-lunar-calendar.min.js',
     'annual-reading.js',
     'reading.js',
     'unified-reading.js',
+    'building-lookup.js',
+    'building-lookup.css',
     'reading.css',
     'life-model.js',
     'life-forecast.js',
@@ -41,7 +43,7 @@ $WebOnlyFiles = @(
     'icon-512.png',
     'apple-touch-icon.png'
 )
-$ProtectedFiles = @('index.html', 'annual-reading.js', 'reading.js', 'unified-reading.js', 'life-model.js', 'life-forecast.js', 'nav.js', 'share.js')
+$ProtectedFiles = @('index.html', 'annual-reading.js', 'reading.js', 'unified-reading.js', 'building-lookup.js', 'life-model.js', 'life-forecast.js', 'nav.js', 'share.js')
 
 function Resolve-AbsolutePath {
     param([string]$BasePath, [string]$Candidate)
