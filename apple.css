@@ -1704,8 +1704,9 @@ html {
   line-height: 1 !important;
   font-family: var(--app-font-display) !important;
   font-weight: 700 !important;
-  transform: none !important;
+  transform: translate(var(--hanja-ink-x, 0px), var(--hanja-ink-y, 0px)) !important;
   transform-origin: center !important;
+  transition: none !important;
 }
 
 .pillar-block .han,

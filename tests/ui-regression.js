@@ -783,8 +783,9 @@ async function inspectResultWidthAndBrand(page, width) {
     assert.ok(pillar.width >= 83 && pillar.width <= 85, `${width}px natal block must be about 84px, got ${pillar.width}px`);
     assert.ok(Math.abs(pillar.width - pillar.height) <= 1, `${width}px natal block must stay square`);
     assert.ok(pillar.fontSize >= 51 && pillar.fontSize <= 55, `${width}px natal Hanja must be about 52px, got ${pillar.fontSize}px`);
-    assert.ok(pillar.transformY <= -2.8 && pillar.transformY >= -3.2, `${width}px natal Hanja optical offset must be about -3px, got ${pillar.transformY}px`);
-    assert.ok(pillar.glyphCenterY <= 4, `${width}px natal glyph line-box center delta ${pillar.glyphCenterY}px`);
+    // Actual ink is independently checked in hanja-ink-alignment-ui.js; the
+    // correction follows the resolved font rather than a fixed -3px offset.
+    assert.ok(Math.abs(pillar.transformY) <= Math.min(12, pillar.fontSize * 0.2), `${width}px natal Hanja optical correction is excessive: ${pillar.transformY}px`);
   }
 }
 
@@ -2483,6 +2484,7 @@ async function collectHanjaGeometry(page) {
             signedY: (glyphRect.top + glyphRect.bottom) / 2 - (rect.top + rect.bottom) / 2
           } : null,
           transform: glyph ? getComputedStyle(glyph).transform : 'none',
+          fontSize: glyph ? parseFloat(getComputedStyle(glyph).fontSize) : 0,
           inlineHack: Boolean(
             inline.top || inline.marginTop || inline.transform ||
             glyphInline?.top || glyphInline?.marginTop || glyphInline?.transform
@@ -2727,7 +2729,6 @@ async function inspectAppleDesign(page, width) {
 
     for (const [group, blocks] of Object.entries(hanjaGeometry)) {
       assert.ok(blocks.length > 0, `${width}px ${theme} ${group} geometry missing`);
-      const transforms = [];
       const rows = [];
       for (const block of blocks) {
         assert.ok(
@@ -2735,14 +2736,24 @@ async function inspectAppleDesign(page, width) {
           `${width}px ${theme} ${group} block not square: ${block.rect.width}x${block.rect.height}`
         );
         assert.ok(!block.inlineHack, `${width}px ${theme} ${group} uses an inline alignment correction`);
-        if (block.center) {
+        if (block.center && group === 'ilun') {
           const verticallyAligned = block.center.y <= 2;
           assert.ok(
             block.center.x <= 2 && verticallyAligned,
             `${width}px ${theme} ${group} Hanja is off-center: ${block.center.x}x${block.center.y} (signedY ${block.center.signedY})`
           );
         }
-        if (group !== 'ilun') transforms.push(block.transform);
+        if (group !== 'ilun') {
+          // Distinct glyphs/fonts have different ink bounds. Do not mistake a
+          // centered line box or one shared transform for centered pixels.
+          const values = block.transform === 'none' ? [1, 0, 0, 1, 0, 0]
+            : block.transform.slice(block.transform.indexOf('(') + 1, -1).split(',').map(Number);
+          const limit = Math.min(12, block.fontSize * 0.2, block.rect.height * 0.2) + 0.01;
+          assert.ok(values.length === 6 && values.every(Number.isFinite) &&
+            values.slice(0, 4).every((value, index) => Math.abs(value - [1, 0, 0, 1][index]) <= 0.001) &&
+            Math.abs(values[4]) <= limit && Math.abs(values[5]) <= limit,
+          `${width}px ${theme} ${group} optical transform must be bounded translation only: ${block.transform}`);
+        }
         const row = rows.find(candidate => Math.abs(candidate.top - block.rect.top) <= 1);
         (row || rows[rows.push({ top: block.rect.top, heights: [] }) - 1]).heights.push(block.rect.height);
       }
@@ -2751,18 +2762,6 @@ async function inspectAppleDesign(page, width) {
           Math.max(...row.heights) - Math.min(...row.heights) <= 1,
           `${width}px ${theme} ${group} row heights differ: ${row.heights.join(', ')}`
         );
-      }
-      if (group !== 'ilun') {
-        const components = value => value === 'none'
-          ? [1, 0, 0, 1, 0, 0]
-          : value.slice(value.indexOf('(') + 1, -1).split(',').map(Number);
-        const baseline = components(transforms[0]);
-        for (const transform of transforms) {
-          const values = components(transform);
-          // Fluid equal-width cells may differ by less than one layout subpixel.
-          assert.ok(values.length === baseline.length && values.every((value, index) => Math.abs(value - baseline[index]) <= .001),
-            `${width}px ${theme} ${group} uses differing CJK transforms: ${transforms.join(', ')}`);
-        }
       }
     }
 

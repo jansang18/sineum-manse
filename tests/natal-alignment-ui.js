@@ -65,7 +65,8 @@ async function inspect(browser, width, scheme, unknown) {
         columns: [...document.querySelectorAll('.pillars-4 > .pillar-col')].map(column => ({
           title: column.querySelector('.pillar-title')?.textContent.replace('↻', '').trim(),
           cells: [...column.querySelectorAll('.pillar-block')].map(cell => ({ ...box(cell),
-            glyph: { ...box(cell.querySelector('.han')), text: cell.querySelector('.han').textContent.trim() } })),
+            glyph: { ...box(cell.querySelector('.han')), text: cell.querySelector('.han').textContent.trim(),
+              fontSize: parseFloat(getComputedStyle(cell.querySelector('.han')).fontSize) } })),
           readings: [...column.querySelectorAll('.calli-kor')].map(element => ({ text: element.textContent.trim(), visible: Boolean(visible(element)), ...box(element) })),
           topLabel: column.querySelector('.pillar-sipsin-top')?.textContent.trim(),
           bottomLabel: column.querySelector('.pillar-sipsin-bot')?.textContent.trim(),
@@ -89,10 +90,12 @@ async function inspect(browser, width, scheme, unknown) {
         const rowReference = state.columns[1].cells[rowIndex];
         check(near(cell.top, rowReference.top), `${label} column ${columnIndex} row ${rowIndex}: top ${cell.top} differs from row ${rowReference.top}`);
         check(near(cell.centerY, rowReference.centerY), `${label} column ${columnIndex} row ${rowIndex}: vertical center ${cell.centerY} differs from row ${rowReference.centerY}`);
-        // .han is the rendered character line box. Font-specific ink metrics
-        // are deliberately not approximated from the font-size declaration.
-        check(near(cell.glyph.centerX, cell.centerX), `${label} column ${columnIndex} row ${rowIndex}: character X offset ${cell.glyph.centerX - cell.centerX}px`);
-        check(near(cell.glyph.centerY, cell.centerY), `${label} column ${columnIndex} row ${rowIndex}: character Y offset ${cell.glyph.centerY - cell.centerY}px`);
+        // Font ink need not share the CSS line-box center. Independent pixels
+        // in hanja-ink-alignment-ui.js prove visual centering; here protect the
+        // unchanged grid and a bounded, contained font-specific correction.
+        const opticalLimit = Math.min(12, cell.glyph.fontSize * 0.2, cell.height * 0.2) + 0.1;
+        check(Math.abs(cell.glyph.centerX - cell.centerX) <= opticalLimit, `${label} column ${columnIndex} row ${rowIndex}: excessive character X correction`);
+        check(Math.abs(cell.glyph.centerY - cell.centerY) <= opticalLimit, `${label} column ${columnIndex} row ${rowIndex}: excessive character Y correction`);
         check(cell.glyph.left >= cell.left - 1 && cell.glyph.right <= cell.right + 1 && cell.glyph.top >= cell.top - 1 && cell.glyph.bottom <= cell.bottom + 1,
           `${label} column ${columnIndex} row ${rowIndex}: character box exceeds cell`);
         check(cell.left >= -1 && cell.right <= state.viewport + 1, `${label}: natal cell exceeds viewport`);

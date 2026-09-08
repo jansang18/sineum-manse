@@ -22,6 +22,7 @@
         name: place.name.trim(),
         displayName: place.displayName.trim(),
         parcelAddress: validText(place.parcelAddress) ? place.parcelAddress.trim() : place.roadAddress.trim(),
+        ...(['exact', 'close', 'broad'].includes(place.confidence) ? { confidence: place.confidence } : {}),
       }));
   }
 
@@ -108,6 +109,8 @@
   let records = [];
   let selected = null;
   let applying = false;
+  let prepared = null;
+  const PREPARED_LIFETIME_MS = 30000;
 
   function inputSnapshot() {
     return [byId('inputName').value, byId('inBirth').value, byId('inTime').value,
@@ -119,6 +122,7 @@
     ++requestId;
     controller?.abort();
     controller = null;
+    discardPrepared();
     records = [];
     selected = null;
     places.replaceChildren();
@@ -128,6 +132,56 @@
     submit.disabled = false;
     submit.textContent = '조회';
     root.removeAttribute('aria-busy');
+  }
+
+  function discardPrepared() {
+    if (!prepared) return;
+    const previous = prepared;
+    prepared = null;
+    clearTimeout(previous.timer);
+    previous.controller.abort();
+    previous.preview.remove();
+  }
+
+  function placeKey(place) {
+    return JSON.stringify([place.parcelAddress, place.name]);
+  }
+
+  function prepareFirst(place, button) {
+    if (!place || !['exact', 'close'].includes(place.confidence)) return;
+    const preview = document.createElement('small');
+    preview.className = 'building-prepared';
+    preview.setAttribute('aria-live', 'polite');
+    preview.textContent = '사용승인일 확인 중…';
+    button.append(preview);
+    const entry = {
+      token: requestId, key: placeKey(place), controller: new AbortController(), preview,
+      beforeInput: inputSnapshot(), expiresAt: Date.now() + PREPARED_LIFETIME_MS,
+    };
+    prepared = entry;
+    entry.timer = setTimeout(() => {
+      if (prepared === entry) discardPrepared();
+    }, PREPARED_LIFETIME_MS);
+    const isCurrent = () => prepared === entry && entry.token === requestId &&
+      Date.now() < entry.expiresAt && root.open &&
+      byId('view-input').classList.contains('active') && entry.beforeInput === inputSnapshot();
+    // Keep one outcome only for this active search. Errors are consumed too,
+    // so selecting a rate-limited candidate does not issue a duplicate retry.
+    entry.promise = client.registry({ parcelAddress: place.parcelAddress, buildingName: place.name }, entry.controller.signal)
+      .then(value => {
+        if (isCurrent()) {
+          const dates = new Set(value.records.map(record => record.approvalDate));
+          preview.textContent = !value.records.length ? '사용승인일 정보 없음' : dates.size === 1
+            ? `사용승인일 ${value.records[0].approvalDate.replace(/-/g, '.')} · 건물·동 ${value.records.length}건`
+            : `건물·동 ${value.records.length}건 · 동별 사용승인일 확인`;
+        }
+        return { value };
+      }, error => {
+        if (isCurrent()) preview.textContent = error.code === 'rate-limited'
+          ? '조회가 몰렸습니다. 1분 뒤 다시 조회해주세요.'
+          : '조회 상태는 주소를 선택해 확인하세요.';
+        return { error };
+      });
   }
 
   function showRecord(index) {
@@ -196,6 +250,23 @@
   }
 
   function lookup(place) {
+    const entry = prepared;
+    if (entry && entry.token === requestId && entry.key === placeKey(place) &&
+      Date.now() < entry.expiresAt && entry.beforeInput === inputSnapshot()) {
+      // Detach before run/reset: transfer the same pending or completed work.
+      prepared = null;
+      clearTimeout(entry.timer);
+      entry.preview.remove();
+      return run(async signal => {
+        const cancel = () => entry.controller.abort();
+        signal.addEventListener('abort', cancel, { once: true });
+        try {
+          const outcome = await entry.promise;
+          if (outcome.error) throw outcome.error;
+          return outcome.value;
+        } finally { signal.removeEventListener('abort', cancel); }
+      }, showRecords, '건축물대장의 사용승인일을 확인하고 있습니다.');
+    }
     return run(signal => client.registry({ parcelAddress: place.parcelAddress, buildingName: place.name }, signal), showRecords, '건축물대장의 사용승인일을 확인하고 있습니다.');
   }
 
@@ -224,6 +295,7 @@
         button.addEventListener('click', () => lookup(place));
         places.append(button);
       }
+      prepareFirst(matches[0], places.firstElementChild);
     }, '주소와 건물명을 검색하고 있습니다.');
   });
 
@@ -241,9 +313,9 @@
   for (const id of ['inputName', 'inBirth', 'inTime']) byId(id).addEventListener('input', cancelManualChange);
   document.querySelectorAll('#segCal button, #segGender button').forEach(button => button.addEventListener('click', cancelManualChange));
   document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-    if (tab.dataset.tab !== 'input' && controller) cancelManualChange();
+    if (tab.dataset.tab !== 'input' && (controller || prepared)) cancelManualChange();
   }));
-  root.addEventListener('toggle', () => { if (!root.open && controller) cancelManualChange(); });
+  root.addEventListener('toggle', () => { if (!root.open && (controller || prepared)) cancelManualChange(); });
 
   window.jansangBuildingLookup = {
     getInputRecord() {

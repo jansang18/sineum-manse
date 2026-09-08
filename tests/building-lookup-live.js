@@ -165,10 +165,20 @@ async function createLocalServer() {
       }
     }
     assert.ok(matched, `live geocoding returns the requested building; UI: ${await page.$eval('#buildingStatus', element => element.textContent)}`);
+    let preparedPreview = null;
+    if (process.env.BUILDING_WAIT_PREPARED === '1') {
+      await page.waitForFunction(() => document.querySelector('#buildingPlaces .building-prepared')?.textContent.includes('2006.01.27'));
+      preparedPreview = await page.$eval('#buildingPlaces .building-prepared', element => element.textContent);
+      assert.equal(await page.$eval('.tab.active', element => element.dataset.tab), 'input', 'a prepared date never opens an unselected chart');
+      assert.equal(await page.$eval('#inBirth', element => element.value), '', 'a prepared date never overwrites the birth input');
+      stage(`prepared before selection: ${preparedPreview}`);
+    }
     const matchedAddress = await matched.evaluate(element => element.textContent.trim());
     stage(`select address ${matchedAddress}`);
+    const selectedAt = Date.now();
     await matched.click();
     await page.waitForFunction(() => !document.getElementById('buildingSearchBtn').disabled);
+    const selectionWaitMs = Date.now() - selectedAt;
     const options = await page.$eval('#buildingRecords', element => [...element.options]
       .filter(option => option.value !== '')
       .map(option => ({ value: option.value, label: option.textContent })));
@@ -214,6 +224,7 @@ async function createLocalServer() {
     await bounded(Promise.allSettled(responseChecks), 6000, null);
     assert.ok(gatewayResponses.some(response => response.action === 'search' && response.status === 200));
     assert.ok(gatewayResponses.some(response => response.action === 'registry' && response.status === 200));
+    assert.equal(gatewayResponses.filter(response => response.action === 'registry').length, 1, 'prepared selection must not duplicate the official registry request');
     assert.deepEqual(pageErrors, [], 'live browser has no page errors');
     console.log(JSON.stringify({
       result: 'Building lookup LIVE PASS 390px',
@@ -221,6 +232,8 @@ async function createLocalServer() {
       matchedAddress,
       selectedDong: chart.registry.dongName,
       approvalDate: chart.registry.approvalDate,
+      preparedPreview,
+      selectionWaitMs,
       gatewayResponses,
       screenshot: path.join(output, 'live-390.png'),
     }, null, 2));
