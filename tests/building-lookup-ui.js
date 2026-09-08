@@ -49,6 +49,16 @@ async function inspectLayout(page, width, state) {
   const result = await page.evaluate(() => {
     const root = document.getElementById('buildingLookup');
     const rect = root.getBoundingClientRect();
+    const summary = root.querySelector('summary');
+    const summaryBox = summary.getBoundingClientRect();
+    const textBoxes = [...summary.querySelectorAll('span')].map(element => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    });
+    const textLeft = Math.min(...textBoxes.map(box => box.left));
+    const textRight = Math.max(...textBoxes.map(box => box.right));
+    const marker = getComputedStyle(summary, '::after');
     const controls = [...root.querySelectorAll('summary, button, input, select')]
       .filter(element => !element.hidden && element.getClientRects().length)
       .map(element => {
@@ -59,10 +69,18 @@ async function inspectLayout(page, width, state) {
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: window.innerWidth,
       left: rect.left, right: rect.right, height: rect.height, controls,
+      summary: {
+        centerError: Math.abs((textLeft + textRight - summaryBox.left - summaryBox.right) / 2),
+        textRight, markerLeft: summaryBox.right - parseFloat(marker.right) - parseFloat(marker.width),
+        marker: marker.content, open: root.open,
+      },
     };
   });
   assert.ok(result.documentWidth <= result.viewportWidth + 1, `${width} ${state}: page horizontal overflow`);
   assert.ok(result.left >= -1 && result.right <= width + 1, `${width} ${state}: lookup exceeds viewport`);
+  assert.ok(result.summary.centerError <= 1, `${width} ${state}: summary text is ${result.summary.centerError}px away from the box center`);
+  assert.ok(result.summary.markerLeft - result.summary.textRight >= 8, `${width} ${state}: summary text overlaps the expand marker`);
+  assert.ok(result.summary.marker.includes(result.summary.open ? '−' : '+'), `${width} ${state}: expand/collapse marker is incorrect`);
   for (const control of result.controls) {
     assert.ok(control.height >= 44, `${width} ${state}: ${control.id} is below 44px (${control.height})`);
     assert.ok(control.left >= -1 && control.right <= width + 1, `${width} ${state}: ${control.id} exceeds viewport`);

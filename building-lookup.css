@@ -13,12 +13,15 @@
   overflow-wrap: anywhere;
 }
 .building-lookup > summary {
+  position: relative;
   min-height: var(--app-control-height, 52px);
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 4px 12px;
-  padding: 12px 16px;
+  padding: 12px 40px;
+  text-align: center;
   cursor: pointer;
   font-size: var(--app-font-body, 1rem);
   font-weight: 600;
@@ -29,7 +32,17 @@
 .building-lookup[open] { background: var(--apple-surface); }
 .building-lookup > summary:active { background: var(--apple-inset, var(--apple-surface-2)); }
 .building-lookup > summary::-webkit-details-marker { display: none; }
-.building-lookup > summary::after { content: '+'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--apple-accent); }
+.building-lookup > summary::after {
+  content: '+';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  width: 20px;
+  transform: translateY(-50%);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--apple-accent);
+}
 .building-lookup[open] > summary::after { content: '−'; }
 .building-summary-note { font-size: 12px; font-weight: 500; color: var(--apple-secondary); }
 .building-lookup-body { padding: 4px 16px 16px; }
@@ -102,7 +115,7 @@
 .oguk-card .building-chart-head .building-chart-source { font-size: 12px; line-height: 1.65; }
 .building-lookup :is(summary, input, button, select):focus-visible { outline: 2px solid var(--apple-accent); outline-offset: 3px; }
 @media (max-width: 360px) {
-  .building-lookup > summary { gap: 2px 8px; padding-inline: 12px; }
+  .building-lookup > summary { gap: 2px 8px; }
   .building-summary-note { font-size: 11px; }
   .building-lookup-body { padding-inline: 12px; }
   .building-lookup .building-button { padding-inline: 12px; }
