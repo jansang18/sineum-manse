@@ -2694,10 +2694,12 @@ async function inspectAppleDesign(page, width) {
     assert.equal(activeTab.base.values.color, expectedColor, `${width}px ${theme} active tab text color`);
     assertCssColorClose(
       activeTab.base.values.backgroundColor,
-      theme === 'dark' ? 'rgba(197, 167, 111, .12)' : 'rgba(121, 93, 49, .12)',
-      `${width}px ${theme} active tab must use the restrained accent fill`
+      'rgba(0, 0, 0, 0)',
+      `${width}px ${theme} active tab must not create an oversized filled button`
     );
-    assert.equal(activeTab.base.values.boxShadow, 'none', `${width}px ${theme} active tab must not add a competing decorative underline or glow`);
+    assert.ok(activeTab.after.rendered, `${width}px ${theme} active tab needs a visible non-color-only marker`);
+    assert.equal(activeTab.after.values.backgroundColor, expectedColor, `${width}px ${theme} active marker must use the shared accent`);
+    assert.equal(activeTab.base.values.boxShadow, 'none', `${width}px ${theme} active tab must not add a competing glow`);
 
     for (const [group, blocks] of Object.entries({
       pillarBlocks: inspection.geometry.pillarBlocks,

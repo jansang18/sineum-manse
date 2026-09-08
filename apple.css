@@ -136,17 +136,19 @@ body.dark .top-bar .title .logo-img {
   text-shadow: none !important;
 }
 
-/* Navigation chrome is the only blurred, translucent layer. */
+/* One calm navigation surface, aligned with the content beneath it. */
 .top-bar {
   position: relative !important;
   top: auto !important;
   min-height: 60px;
   padding: 8px 16px;
-  background: color-mix(in srgb, var(--apple-surface) 78%, transparent) !important;
-  border-bottom: 1px solid var(--apple-separator) !important;
+  background: var(--apple-surface) !important;
+  border: 1px solid var(--apple-separator) !important;
+  border-bottom: 0 !important;
+  border-radius: var(--apple-radius-card) var(--apple-radius-card) 0 0;
   box-shadow: none !important;
-  backdrop-filter: saturate(180%) blur(20px) !important;
-  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   padding-top: calc(8px + var(--app-safe-top));
 }
 
@@ -183,17 +185,20 @@ body.dark .top-bar .title .logo-img {
   position: relative !important;
   top: auto !important;
   gap: 2px;
-  padding: 6px 8px;
-  background: color-mix(in srgb, var(--apple-surface) 78%, transparent) !important;
-  border-bottom: 1px solid var(--apple-separator) !important;
-  backdrop-filter: saturate(180%) blur(20px) !important;
-  -webkit-backdrop-filter: saturate(180%) blur(20px) !important;
+  padding: 0 4px;
+  margin-bottom: 16px;
+  background: var(--apple-surface) !important;
+  border: 1px solid var(--apple-separator) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 var(--apple-radius-card) var(--apple-radius-card);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .tab {
   min-height: 36px;
   padding: 8px 2px;
-  border-radius: var(--apple-radius-control);
+  border-radius: 0;
   color: var(--apple-secondary);
   font-family: inherit;
   font-size: 12px;
@@ -204,14 +209,24 @@ body.dark .top-bar .title .logo-img {
 
 .tab.active {
   color: var(--apple-accent) !important;
-  background: color-mix(in srgb, var(--apple-accent) 12%, transparent) !important;
+  background: transparent !important;
   box-shadow: none !important;
   text-shadow: none !important;
 }
 
-body.dark .tab.active { background: color-mix(in srgb, var(--apple-accent) 12%, transparent) !important; }
-
-.tab.active::after { display: none !important; }
+.tab.active::after {
+  display: block !important;
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 2px !important;
+  left: 50%;
+  right: auto;
+  bottom: 4px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+  background: var(--apple-accent) !important;
+}
 
 /* Neutralize the inherited metallic primary action without restyling forms. */
 .primary-btn {
@@ -237,11 +252,6 @@ body.dark .tab.active { background: color-mix(in srgb, var(--apple-accent) 12%, 
 :focus-visible {
   outline: 2px solid var(--apple-focus);
   outline-offset: 2px;
-}
-
-@media (min-width: 768px) {
-  .top-bar { min-height: 68px; padding: calc(12px + var(--app-safe-top)) 32px 12px; }
-  .tabs { top: 68px; padding-inline: 32px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1961,6 +1971,7 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 /* Unified responsive shell: one rectangle for every live surface. */
 :root {
   --app-shell-gutter: clamp(5px, 2.4vw, 24px);
+  --app-content-inset: clamp(10px, 2.4vw, 32px);
   --app-shell-max: 1180px;
   --app-shell-width: min(
     calc(100vw - var(--app-shell-gutter) - var(--app-shell-gutter)),
@@ -1981,7 +1992,9 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   box-sizing: border-box;
 }
 
-.app { padding-inline: 0 !important; }
+/* Own the inset here, rather than only inside views, so navigation and
+   every view share the same visible left/right edges without moving content. */
+.app { padding: 12px var(--app-content-inset) 0 !important; }
 
 .app > .top-bar,
 .app > .tabs,
@@ -2002,19 +2015,19 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   width: 100% !important;
   max-width: none !important;
   margin-inline: auto !important;
-  padding: 0 clamp(10px, 2.4vw, 32px) 32px !important;
+  padding: 0 0 32px !important;
 }
 
 .tabs {
   display: grid !important;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px !important;
-  padding-inline: clamp(2px, 1vw, 10px) !important;
+  padding-inline: 4px !important;
 }
 
 .tabs .tab {
   min-width: 0;
-  min-height: 48px;
+  min-height: 44px;
   padding-inline: 2px !important;
   white-space: nowrap;
   font-size: clamp(13px, 2.7vw, 14px) !important;
@@ -2158,12 +2171,7 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 }
 
 @media (max-width: 390px) {
-  .view,
-  #view-input,
-  #view-result,
-  #view-fortune,
-  #view-calendar,
-  #view-saved { padding-inline: 8px !important; }
+  :root { --app-content-inset: 8px; }
   .fortune-head-summary { gap: 8px; }
   .fortune-head .ganji-big small { display: none; }
 }
