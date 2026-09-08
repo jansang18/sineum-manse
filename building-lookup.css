@@ -4,25 +4,30 @@
   min-width: 0;
   margin: 0 0 16px;
   border: 1px solid var(--apple-separator);
-  border-radius: 12px;
-  background: var(--apple-surface);
+  border-radius: var(--apple-radius-control, 10px);
+  background: var(--apple-inset, var(--apple-surface));
   color: var(--apple-label);
+  font-family: var(--app-font-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif);
   font-size: 14px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
 .building-lookup > summary {
-  min-height: 52px;
+  min-height: var(--app-control-height, 52px);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 12px;
   padding: 12px 16px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 600;
+  line-height: 1.5;
   list-style: none;
+  touch-action: manipulation;
 }
+.building-lookup[open] { background: var(--apple-surface); }
+.building-lookup > summary:active { background: var(--apple-inset, var(--apple-surface-2)); }
 .building-lookup > summary::-webkit-details-marker { display: none; }
 .building-lookup > summary::after { content: '+'; margin-left: auto; font-size: 20px; line-height: 1; color: var(--apple-accent); }
 .building-lookup[open] > summary::after { content: '−'; }
@@ -30,60 +35,69 @@
 .building-lookup-body { padding: 4px 16px 16px; }
 .building-lookup label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
 .building-search-row { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
-.building-lookup .input { min-width: 0; width: 100%; min-height: 46px; font-size: 16px; }
+.building-lookup .input {
+  min-width: 0;
+  width: 100%;
+  min-height: var(--app-control-height, 52px);
+  border-radius: var(--apple-radius-control, 10px);
+  font-family: var(--app-font-ui, inherit);
+  font-size: var(--app-font-body, 1rem);
+}
 .building-search-row .input { flex: 1; }
 .building-lookup .building-button {
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  min-height: 46px;
+  min-height: var(--app-control-height, 52px);
   padding: 10px 16px;
   border: 1px solid var(--apple-separator);
-  border-radius: 9px;
-  background: var(--apple-surface-2);
+  border-radius: var(--apple-radius-control, 10px);
+  background: var(--apple-inset, var(--apple-surface-2));
   color: var(--apple-label);
   font: inherit;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
   white-space: nowrap;
 }
 .building-button:disabled { opacity: .6; cursor: progress; }
 .building-button:active, .building-place:active { filter: brightness(.9); }
-.building-status { margin: 10px 0 0; font-size: 13px; color: var(--apple-secondary); }
-.building-places:not(:empty) { display: grid; gap: 6px; margin-top: 12px; }
+.building-status { margin: 12px 0 0; font-size: 13px; color: var(--apple-secondary); }
+.building-places:not(:empty) { display: grid; gap: 8px; margin-top: 12px; }
 .building-place {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  gap: 3px;
+  gap: 4px;
   width: 100%;
   min-width: 0;
-  min-height: 48px;
+  min-height: var(--app-control-height, 52px);
   padding: 10px 12px;
   text-align: left;
   border: 1px solid var(--apple-separator);
-  border-radius: 8px;
-  background: var(--apple-surface-2);
+  border-radius: var(--apple-radius-control, 10px);
+  background: var(--apple-inset, var(--apple-surface-2));
   color: var(--apple-label);
   font: inherit;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .building-place small { font-size: 12px; color: var(--apple-secondary); }
-#buildingRecordField { margin-top: 14px; }
-.building-result { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--apple-separator); }
+#buildingRecordField { margin-top: 16px; }
+.building-result { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--apple-separator); }
 .building-result p { margin: 0; }
-.building-result-name { font-weight: 700; font-size: 15px; }
+.building-result-name { font-weight: 650; font-size: var(--app-font-body, 1rem); }
 .building-result-address { margin-top: 4px !important; font-size: 13px; color: var(--apple-secondary); }
-.building-result dl { margin: 14px 0 10px; }
-.building-result dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.building-result dl { margin: 16px 0 12px; }
+.building-result dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .building-result dt { font-size: 13px; color: var(--apple-secondary); }
-.building-result dd { margin: 0; font-size: 19px; line-height: 1.3; font-weight: 700; font-variant-numeric: tabular-nums; }
+.building-result dd { margin: 0; font-size: var(--app-section-title-size, clamp(18px, 2vw, 20px)); line-height: 1.4; font-weight: 650; font-variant-numeric: tabular-nums; }
 .building-source, .building-date-note { font-size: 12px; line-height: 1.6; color: var(--apple-secondary); }
-.building-date-note { margin-top: 5px !important; }
-.building-lookup .building-apply { width: 100%; margin-top: 14px; background: var(--apple-accent); color: var(--apple-bg); }
+.building-date-note { margin-top: 4px !important; }
+.building-lookup .building-apply { width: 100%; margin-top: 16px; background: var(--apple-accent); color: var(--apple-bg); }
 .building-lookup [hidden] { display: none !important; }
-.building-chart-source { margin: 10px 0 0; font-size: 12px; line-height: 1.65; font-weight: 500; color: var(--apple-secondary); overflow-wrap: anywhere; }
+.building-chart-source { margin: 12px 0 0; font-size: 12px; line-height: 1.65; font-weight: 400; color: var(--apple-secondary); overflow-wrap: anywhere; }
 .oguk-card .result-head.view-head.building-chart-head { height: auto; min-height: 96px; justify-content: flex-start; padding-block: 12px !important; }
 .oguk-card .building-chart-head .building-chart-source { font-size: 12px; line-height: 1.65; }
 .building-lookup :is(summary, input, button, select):focus-visible { outline: 2px solid var(--apple-accent); outline-offset: 3px; }

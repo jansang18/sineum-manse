@@ -207,7 +207,7 @@
       : '생조하는 힘이 ' + support + ', 소모시키는 힘이 ' + drain + '로 바깥의 요구가 본체보다 크게 잡힙니다. 약하다는 낙인이 아니라 감당력의 배분 문제입니다. 환경·사람·일을 제대로 고르면 놀랄 만큼 오래 가지만, 맞지 않는 판에서는 의지보다 회복 비용이 먼저 커집니다.';
 
     return {
-      eyebrow: 'DEEP INSPECTION / 장문 정밀 판독',
+      eyebrow: '명식 정밀 풀이',
       title: name + '의 명식은 한 문장으로 끝나지 않습니다.',
       deck: '좋은 말과 나쁜 말을 나누기 전에, 이 사람이 어떤 방식으로 버티고 욕망하고 무너졌다가 다시 일어서는지부터 읽습니다. 아래 판독은 원국의 실제 구조와 ' + year + '년의 흐름을 겹쳐 쓴 기록입니다.',
       evidence: [day.name + ' 일간', dominant.name + ' ' + elements[dominantIndex] + '/' + totalElements, strong ? '신강 쪽' : '신약 쪽', '용신 ' + yongsin],

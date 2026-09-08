@@ -6,7 +6,7 @@
   max-width: 100%;
   min-width: 0;
   color: var(--apple-label, var(--text));
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  font-family: var(--app-font-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif);
 }
 
 .unified-reading * {
@@ -16,18 +16,19 @@
 
 .fortune-year-nav {
   width: min(100%, 430px);
-  margin: 20px auto 0;
+  margin: 16px auto 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   overflow: hidden;
   border: 1px solid var(--apple-separator, var(--line));
-  border-radius: 14px;
+  border-radius: var(--apple-radius-control, 10px);
   background: var(--apple-surface, var(--bg-soft));
+  font-family: var(--app-font-ui, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif);
 }
 
 .fortune-year-nav button {
   min-width: 0;
-  min-height: 48px;
+  min-height: var(--app-control-height, 52px);
   padding: 7px clamp(5px, 2vw, 12px);
   display: grid;
   grid-template-columns: auto auto;
@@ -40,16 +41,18 @@
   color: var(--apple-label, var(--text));
   font: inherit;
   font-size: 13px;
-  font-weight: 760;
+  font-weight: 600;
   line-height: 1.25;
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .fortune-year-nav button:last-child { border-right: 0; }
 .fortune-year-nav button small {
   grid-column: 1 / -1;
   color: var(--apple-tertiary, var(--text-light));
-  font-size: 10px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 500;
 }
 .fortune-year-nav button:hover,
 .fortune-year-nav button:focus-visible { background: var(--apple-surface-2, var(--bg-elev)); }
@@ -59,12 +62,15 @@
   outline: 2px solid var(--apple-accent, var(--accent));
   outline-offset: -3px;
 }
+.fortune-year-nav button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--apple-inset, var(--bg-elev));
+}
 .fortune-year-nav button:disabled,
 .fortune-year-nav button[aria-disabled="true"] { opacity: .46; cursor: default; }
 
 .reading-section {
   width: 100%;
-  padding-block: clamp(30px, 5vw, 58px);
+  padding-block: 32px;
   border-top: 1px solid var(--apple-separator, var(--line));
 }
 
@@ -76,25 +82,26 @@
 .reading-prose,
 .reading-evidence,
 .reading-rules {
-  width: min(100%, 72ch);
+  width: min(100%, var(--app-reading-measure, 72ch));
   margin-inline: auto;
 }
 
 .reading-section__head > span {
   display: block;
-  margin-bottom: 9px;
+  margin-bottom: 8px;
   color: var(--apple-accent, var(--accent));
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
 }
 
 .reading-section__head h2 {
   margin: 0;
   color: var(--apple-label, var(--text));
-  font-size: clamp(22px, 3.1vw, 30px);
-  font-weight: 820;
-  line-height: 1.32;
+  font-family: var(--app-font-ui, inherit);
+  font-size: var(--app-title-size, clamp(20px, 2.5vw, 24px));
+  font-weight: 700;
+  line-height: 1.4;
   letter-spacing: -.025em;
   word-break: keep-all;
 }
@@ -102,15 +109,16 @@
 .reading-section__head > p {
   margin: 12px 0 0;
   color: var(--apple-secondary, var(--text-sub));
-  font-size: clamp(14px, 1.5vw, 16px);
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 400;
   line-height: 1.72;
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
 
 .reading-deep-intro {
-  margin-top: clamp(24px, 4vw, 36px);
-  padding: 18px 0;
+  margin-top: 24px;
+  padding: 16px 0;
   border-block: 1px solid var(--apple-separator, var(--line));
 }
 
@@ -118,15 +126,16 @@
 .reading-chapter__head > span {
   display: block;
   color: var(--apple-accent, var(--accent));
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
 }
 
 .reading-deep-intro h3 {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   color: var(--apple-label, var(--text));
-  font-size: clamp(17px, 2vw, 20px);
+  font-size: var(--app-section-title-size, clamp(18px, 2vw, 20px));
+  font-weight: 650;
   line-height: 1.42;
   letter-spacing: -.015em;
 }
@@ -134,42 +143,43 @@
 .reading-deep-intro p {
   margin: 8px 0 0;
   color: var(--apple-secondary, var(--text-sub));
-  font-size: 14px;
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 400;
   line-height: 1.72;
   word-break: keep-all;
 }
 
-.reading-year-group { margin-top: clamp(32px, 5vw, 54px); }
-.reading-year-group + .reading-year-group { margin-top: clamp(34px, 5.5vw, 58px); }
+.reading-year-group { margin-top: 32px; }
+.reading-year-group + .reading-year-group { margin-top: 32px; }
 
 .reading-year-group h3 {
   margin: 0 0 16px;
-  padding-bottom: 11px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--apple-separator, var(--line));
   color: var(--apple-label, var(--text));
-  font-size: clamp(17px, 2vw, 20px);
-  font-weight: 800;
+  font-size: var(--app-section-title-size, clamp(18px, 2vw, 20px));
+  font-weight: 650;
   line-height: 1.4;
   letter-spacing: -.015em;
 }
 
-.reading-chapter + .reading-chapter { margin-top: clamp(28px, 4vw, 40px); }
+.reading-chapter + .reading-chapter { margin-top: 24px; }
 
 .reading-chapter__head h4 {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--apple-label, var(--text));
-  font-size: clamp(16px, 1.8vw, 18px);
-  font-weight: 780;
+  font-size: clamp(1rem, 1.8vw, 1.125rem);
+  font-weight: 650;
   line-height: 1.48;
   letter-spacing: -.012em;
   word-break: keep-all;
 }
 
 .reading-chapter__lead {
-  margin: 11px 0 0;
+  margin: 12px 0 0;
   color: var(--apple-secondary, var(--text-sub));
-  font-size: clamp(14px, 1.45vw, 16px);
-  font-weight: 650;
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 500;
   line-height: 1.78;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -178,7 +188,8 @@
 .reading-chapter .reading-prose { margin-top: 12px; }
 
 .reading-prose {
-  font-size: clamp(15px, 1.6vw, 17px);
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 400;
   line-height: 1.82;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -190,27 +201,29 @@
 .reading-evidence {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 18px;
+  gap: 8px;
+  margin-top: 16px;
   padding: 0;
   list-style: none;
 }
 
 .reading-evidence li {
-  padding: 5px 9px;
+  padding: 4px 8px;
   border: 1px solid var(--apple-separator, var(--line));
-  border-radius: 999px;
+  border-radius: var(--apple-radius-control, 10px);
   color: var(--apple-secondary, var(--text-sub));
-  font-size: 11px;
-  line-height: 1.35;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .reading-rules {
-  margin-top: clamp(34px, 5vw, 52px);
-  padding: 20px 0 0 1.45em;
+  margin-top: 32px;
+  padding: 16px 0 0 1.45em;
   border-top: 1px solid var(--apple-separator, var(--line));
   color: var(--apple-secondary, var(--text-sub));
-  font-size: 14px;
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 400;
   line-height: 1.7;
 }
 .reading-rules li + li { margin-top: 8px; }
@@ -218,7 +231,7 @@
 .reading-month-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  margin-top: clamp(26px, 4vw, 40px);
+  margin-top: 24px;
   padding: 0;
   list-style: none;
   border-bottom: 1px solid var(--apple-separator, var(--line));
@@ -226,38 +239,40 @@
 
 .reading-month {
   display: grid;
-  grid-template-columns: minmax(110px, .25fr) minmax(0, 1fr);
-  gap: clamp(18px, 4vw, 38px);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
   width: 100%;
-  padding-block: 21px;
+  padding-block: 24px;
   border-top: 1px solid var(--apple-separator, var(--line));
 }
 
 .reading-month > div {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
 }
 
 .reading-month__label {
   color: var(--apple-label, var(--text));
-  font-size: 16px;
-  line-height: 1.35;
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 650;
+  line-height: 1.5;
 }
 
 .reading-month > div span {
   color: var(--apple-accent, var(--accent));
-  font-family: "Noto Serif KR", "Batang", serif;
-  font-size: 12px;
-  font-weight: 750;
-  line-height: 1.45;
+  font-family: var(--app-font-display, "Noto Serif KR", "Batang", serif);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .reading-month > p {
   margin: 0;
   color: var(--apple-label, var(--text));
-  font-size: clamp(14px, 1.5vw, 16px);
+  font-size: var(--app-font-body, 1rem);
+  font-weight: 400;
   line-height: 1.78;
   word-break: keep-all;
   overflow-wrap: anywhere;
@@ -266,29 +281,25 @@
 .reading-method-note {
   margin-top: 16px;
   color: var(--apple-tertiary, var(--text-light));
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
-.reading-daeun .reading-prose { margin-top: clamp(24px, 4vw, 38px); }
+.reading-daeun .reading-prose { margin-top: 24px; }
 
 .reading-disclaimer {
-  width: min(100%, 72ch);
-  margin: 0 auto clamp(32px, 6vw, 70px);
-  padding: 18px 0 0;
+  width: min(100%, var(--app-reading-measure, 72ch));
+  margin: 0 auto 32px;
+  padding: 16px 0 0;
   border-top: 1px solid var(--apple-separator, var(--line));
   color: var(--apple-tertiary, var(--text-light));
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.7;
   word-break: keep-all;
 }
 
 @media (max-width: 520px) {
-  .fortune-year-nav button { font-size: 12px; }
-  .fortune-year-nav button small { font-size: 9px; }
-  .reading-month { grid-template-columns: 1fr; gap: 9px; }
-  .reading-month > div { flex-direction: row; align-items: baseline; gap: 10px; }
-  .reading-evidence { gap: 5px; }
+  .reading-evidence { gap: 6px; }
 }
 
 @media (prefers-contrast: more) {

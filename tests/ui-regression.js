@@ -22,7 +22,9 @@ const UI_ROOT = process.env.UI_ROOT
   : path.join(APP_ROOT, 'www');
 const URL = process.env.TEST_URL || pathToFileURL(path.join(UI_ROOT, 'index.html')).href;
 const TEST_GROUP = process.env.TEST_GROUP || '';
-const widths = TEST_GROUP === 'annual-year-reading' || TEST_GROUP === 'unified-reading'
+const widths = TEST_GROUP === 'android-safe-area'
+  ? [390, 768, 884, 1024]
+  : TEST_GROUP === 'annual-year-reading' || TEST_GROUP === 'unified-reading'
   ? [390, 768, 1280]
   : TEST_GROUP === 'unified-surface'
   ? [320, 360, 390, 412, 520, 600, 720, 768, 884, 1024, 1280, 1440]
@@ -1072,13 +1074,43 @@ function inspectAndroidSafeAreaContract() {
     /\.top-bar\s*\{[\s\S]*?padding-top:\s*calc\(8px\s*\+\s*var\(--app-safe-top\)\)/,
     'the title bar must reserve space for the Android status bar'
   );
-  assert.match(
-    appleCss,
-    /\.tabs\s*\{[\s\S]*?top:\s*calc\(76px\s*\+\s*var\(--app-safe-top\)\)/,
-    'the tab rail must begin below the status-bar-safe title bar'
-  );
   assert.equal(capacitorConfig.plugins?.SystemBars?.style, 'DARK', 'dark app must request light status-bar icons');
   assert.equal(capacitorConfig.plugins?.SystemBars?.insetsHandling, 'css', 'Capacitor must expose Android safe-area insets to CSS');
+}
+
+async function inspectAndroidSafeAreaGeometry(page, width) {
+  if (!runsAndroidSafeArea()) return;
+  const states = await page.evaluate(() => {
+    const root = document.documentElement;
+    const previous = root.style.getPropertyValue('--safe-area-inset-top');
+    const priority = root.style.getPropertyPriority('--safe-area-inset-top');
+    const bounds = element => {
+      const rect = element.getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, height: rect.height };
+    };
+    try {
+      return [0, 24].map(inset => {
+        root.style.setProperty('--safe-area-inset-top', `${inset}px`);
+        const header = document.querySelector('.top-bar');
+        return {
+          inset,
+          header: bounds(header),
+          title: bounds(header.querySelector('.title')),
+          tabs: bounds(document.querySelector('.tabs')),
+          paddingTop: parseFloat(getComputedStyle(header).paddingTop)
+        };
+      });
+    } finally {
+      if (previous) root.style.setProperty('--safe-area-inset-top', previous, priority);
+      else root.style.removeProperty('--safe-area-inset-top');
+    }
+  });
+  for (const state of states) {
+    assert.ok(state.paddingTop >= state.inset, `${width}px header must reserve the injected ${state.inset}px status-bar inset`);
+    assert.ok(state.title.top >= state.header.top + state.inset - 1, `${width}px title must remain below the status-bar inset`);
+    assert.ok(state.tabs.top >= state.header.bottom - 1, `${width}px normal-flow tabs must begin below the safe-area title bar`);
+  }
+  assert.ok(states[1].header.height >= states[0].header.height + 23, `${width}px header must grow when the Android status-bar inset grows`);
 }
 
 function inspectResultHeaderCompactContract() {
@@ -1361,9 +1393,9 @@ async function inspectCalendarCurrentYear(page, width) {
   assert.equal(state.initial.ariaCurrent, 'date', `${width}px current calendar year must expose aria-current`);
   assert.equal(state.initial.selectedClass, true, `${width}px current calendar year must be visibly selected`);
   assert.equal(state.initial.badge, '올해', `${width}px current calendar year badge`);
-  assertCssColorClose(state.initial.color, 'rgb(113, 82, 52)', `${width}px light current calendar year Priestess accent`);
+  assertCssColorClose(state.initial.color, 'rgb(121, 93, 49)', `${width}px light current calendar year ink-and-gold accent`);
   assert.ok(parseCssColor(state.initial.background).a > 0, `${width}px light current calendar year selection needs a visible fill`);
-  assertCssColorClose(state.forcedDark.color, 'rgb(197, 167, 111)', `${width}px dark current calendar year Priestess accent`);
+  assertCssColorClose(state.forcedDark.color, 'rgb(197, 167, 111)', `${width}px dark current calendar year ink-and-gold accent`);
   assert.ok(parseCssColor(state.forcedDark.background).a > 0, `${width}px dark current calendar year selection needs a visible fill`);
   assert.deepEqual(
     { year: state.reopened.year, month: state.reopened.month },
@@ -1630,6 +1662,9 @@ async function inspectUnifiedSurface(page, width) {
         name,
         view: bounds(view),
         head: head ? bounds(head) : null,
+        headContent: head ? [...head.children]
+          .filter(element => !element.matches('.sr-only, [hidden]') && element.getBoundingClientRect().height > 0)
+          .map(bounds) : [],
         scrollWidth: view.scrollWidth,
         clientWidth: view.clientWidth
       });
@@ -1660,7 +1695,14 @@ async function inspectUnifiedSurface(page, width) {
   const reference = state.rows[0].view;
   for (const row of state.rows) {
     assert.ok(row.head, `${width}px ${row.name} is missing the common view header`);
-    assert.ok(row.head.height >= 72 && row.head.height <= 132, `${width}px ${row.name} header is ${row.head.height}px tall`);
+    const headerLimit = row.name === 'fortune' ? 176 : 132;
+    assert.ok(row.head.height >= 72 && row.head.height <= headerLimit, `${width}px ${row.name} header is ${row.head.height}px tall`);
+    for (const child of row.headContent) {
+      assert.ok(child.top >= row.head.top - 1 && child.top + child.height <= row.head.top + row.head.height + 1,
+        `${width}px ${row.name} header clips its content vertically`);
+      assert.ok(child.left >= row.head.left - 1 && child.right <= row.head.right + 1,
+        `${width}px ${row.name} header clips its content horizontally`);
+    }
     assert.ok(Math.abs(row.view.left - reference.left) <= 1, `${width}px ${row.name} view left differs`);
     assert.ok(Math.abs(row.view.right - reference.right) <= 1, `${width}px ${row.name} view right differs`);
     assert.ok(Math.abs(row.view.width - reference.width) <= 1, `${width}px ${row.name} view width differs`);
@@ -2507,30 +2549,30 @@ async function collectLuckFlowReachability(page) {
 }
 
 async function inspectAppleDesign(page, width) {
-  const expectedAccents = { light: '#715234', dark: '#c5a76f' };
+  const expectedAccents = { light: '#795d31', dark: '#c5a76f' };
   const expectedAccentColors = {
-    light: 'rgb(113, 82, 52)',
+    light: 'rgb(121, 93, 49)',
     dark: 'rgb(197, 167, 111)'
   };
   const expectedPastels = {
     light: {
-      wood: ['rgb(216, 223, 212)', 'rgb(63, 98, 78)'],
-      fire: ['rgb(228, 201, 191)', 'rgb(140, 69, 54)'],
-      earth: ['rgb(223, 210, 174)', 'rgb(119, 96, 48)'],
-      metal: ['rgb(216, 215, 210)', 'rgb(80, 86, 90)'],
-      water: ['rgb(207, 215, 221)', 'rgb(64, 85, 105)']
+      wood: ['rgb(226, 238, 229)', 'rgb(42, 98, 67)'],
+      fire: ['rgb(243, 227, 219)', 'rgb(152, 74, 54)'],
+      earth: ['rgb(242, 234, 209)', 'rgb(118, 96, 32)'],
+      metal: ['rgb(232, 235, 231)', 'rgb(78, 91, 88)'],
+      water: ['rgb(225, 233, 239)', 'rgb(61, 95, 119)']
     },
     dark: {
-      wood: ['rgb(22, 49, 38)', 'rgb(121, 160, 135)'],
-      fire: ['rgb(68, 37, 31)', 'rgb(201, 120, 100)'],
-      earth: ['rgb(62, 52, 32)', 'rgb(197, 164, 93)'],
-      metal: ['rgb(41, 47, 52)', 'rgb(184, 186, 183)'],
-      water: ['rgb(32, 43, 54)', 'rgb(141, 160, 176)']
+      wood: ['rgb(27, 57, 46)', 'rgb(152, 198, 170)'],
+      fire: ['rgb(72, 42, 35)', 'rgb(229, 161, 139)'],
+      earth: ['rgb(68, 58, 35)', 'rgb(219, 196, 126)'],
+      metal: ['rgb(48, 57, 59)', 'rgb(212, 216, 213)'],
+      water: ['rgb(38, 59, 73)', 'rgb(179, 200, 217)']
     }
   };
   const expectedRadii = {
-    light: { input: '7px', segmented: '8px', card: '8px 8px 22px 22px' },
-    dark: { input: '7px', segmented: '8px', card: '18px' }
+    light: { input: '10px', segmented: '10px', card: '16px' },
+    dark: { input: '10px', segmented: '10px', card: '16px' }
   };
   const legacyGold = /#(?:d8b56a|f0d69a|a97732)\b|rgba?\(\s*(?:216\s*,\s*181\s*,\s*106|240\s*,\s*214\s*,\s*154|169\s*,\s*119\s*,\s*50)\b/i;
   const inputSelectors = {
@@ -2585,7 +2627,7 @@ async function inspectAppleDesign(page, width) {
     assert.equal(inspection.accent, accent, `${width}px ${theme} --apple-accent`);
     assert.ok(inspection.overflow <= 1, `${width}px ${theme} horizontal overflow: ${inspection.overflow}px`);
     assert.ok(Math.abs(componentInspection.geometry.input.height - 52) <= 1, `${width}px ${theme} input height must be 52px`);
-    assert.ok(Math.abs(componentInspection.geometry.primary.height - 54) <= 1, `${width}px ${theme} primary button height must be 54px`);
+    assert.ok(Math.abs(componentInspection.geometry.primary.height - 52) <= 1, `${width}px ${theme} primary button must use the common 52px control height`);
     assert.ok(componentInspection.geometry.primary.height >= 44, `${width}px ${theme} primary target is below 44px`);
     assert.ok(componentInspection.geometry.tabs.length > 0, `${width}px ${theme} tab target collection is empty`);
     for (const { width: targetWidth, height } of componentInspection.geometry.tabs) {
@@ -2602,7 +2644,7 @@ async function inspectAppleDesign(page, width) {
     assert.deepEqual(
       componentInspection.radii,
       expectedRadii[theme],
-      `${width}px ${theme} Priestess component radii`
+      `${width}px ${theme} unified component radii`
     );
     assert.equal(componentInspection.primaryAfter.content, 'none', `${width}px ${theme} primary button must not render decorative pseudo-content`);
     const focusOutline = parseCssColor(componentInspection.focusedInput.outlineColor);
@@ -2612,7 +2654,7 @@ async function inspectAppleDesign(page, width) {
     assertCssColorClose(
       componentInspection.focusedInput.outlineColor,
       expectedAccentColors[theme],
-      `${width}px ${theme} focused input outline must use the Priestess accent`
+      `${width}px ${theme} focused input outline must use the ink-and-gold accent`
     );
     assert.ok(
       componentInspection.disabledPrimary.pointerEvents === 'none' &&
@@ -2648,16 +2690,12 @@ async function inspectAppleDesign(page, width) {
     const activeTab = inspection.styles.activeTab[0];
     const expectedColor = expectedAccentColors[theme];
     assert.equal(activeTab.base.values.color, expectedColor, `${width}px ${theme} active tab text color`);
-    assert.equal(parseCssColor(activeTab.base.values.backgroundColor).a, 0, `${width}px ${theme} active tab must use the Priestess transparent surface`);
-    assert.match(
-      activeTab.base.values.boxShadow,
-      /inset/,
-      `${width}px ${theme} active tab must keep its inset underline`
+    assertCssColorClose(
+      activeTab.base.values.backgroundColor,
+      theme === 'dark' ? 'rgba(197, 167, 111, .12)' : 'rgba(121, 93, 49, .12)',
+      `${width}px ${theme} active tab must use the restrained accent fill`
     );
-    assert.ok(
-      activeTab.base.values.boxShadow.includes(expectedColor),
-      `${width}px ${theme} active tab underline must use the theme accent`
-    );
+    assert.equal(activeTab.base.values.boxShadow, 'none', `${width}px ${theme} active tab must not add a competing decorative underline or glow`);
 
     for (const [group, blocks] of Object.entries({
       pillarBlocks: inspection.geometry.pillarBlocks,
@@ -2689,7 +2727,7 @@ async function inspectAppleDesign(page, width) {
 
     for (const [group, blocks] of Object.entries(hanjaGeometry)) {
       assert.ok(blocks.length > 0, `${width}px ${theme} ${group} geometry missing`);
-      const transforms = new Set();
+      const transforms = [];
       const rows = [];
       for (const block of blocks) {
         assert.ok(
@@ -2698,15 +2736,13 @@ async function inspectAppleDesign(page, width) {
         );
         assert.ok(!block.inlineHack, `${width}px ${theme} ${group} uses an inline alignment correction`);
         if (block.center) {
-          const verticallyAligned = group === 'pillars'
-            ? block.center.signedY >= -4 && block.center.signedY <= -2.5
-            : block.center.y <= 2;
+          const verticallyAligned = block.center.y <= 2;
           assert.ok(
             block.center.x <= 2 && verticallyAligned,
             `${width}px ${theme} ${group} Hanja is off-center: ${block.center.x}x${block.center.y} (signedY ${block.center.signedY})`
           );
         }
-        if (group !== 'ilun') transforms.add(block.transform);
+        if (group !== 'ilun') transforms.push(block.transform);
         const row = rows.find(candidate => Math.abs(candidate.top - block.rect.top) <= 1);
         (row || rows[rows.push({ top: block.rect.top, heights: [] }) - 1]).heights.push(block.rect.height);
       }
@@ -2717,7 +2753,16 @@ async function inspectAppleDesign(page, width) {
         );
       }
       if (group !== 'ilun') {
-        assert.equal(transforms.size, 1, `${width}px ${theme} ${group} uses differing CJK transforms: ${[...transforms]}`);
+        const components = value => value === 'none'
+          ? [1, 0, 0, 1, 0, 0]
+          : value.slice(value.indexOf('(') + 1, -1).split(',').map(Number);
+        const baseline = components(transforms[0]);
+        for (const transform of transforms) {
+          const values = components(transform);
+          // Fluid equal-width cells may differ by less than one layout subpixel.
+          assert.ok(values.length === baseline.length && values.every((value, index) => Math.abs(value - baseline[index]) <= .001),
+            `${width}px ${theme} ${group} uses differing CJK transforms: ${transforms.join(', ')}`);
+        }
       }
     }
 
@@ -2931,21 +2976,21 @@ async function inspectAppleSecondaryScreens(page, width) {
       return result;
     }, { theme, width });
 
-    const priestessSurface = theme === 'dark'
-      ? 'rgba(17, 24, 30, .95)'
-      : 'rgba(244, 236, 220, .94)';
+    const canonicalSurface = theme === 'dark'
+      ? 'rgb(17, 26, 32)'
+      : 'rgb(255, 253, 248)';
     for (const [name, surface] of Object.entries({
       savedCard: state.savedCard
     })) {
-      assertCssColorClose(surface.background, priestessSurface, `${width}px ${theme} ${name} Priestess surface`);
+      assertCssColorClose(surface.background, canonicalSurface, `${width}px ${theme} ${name} canonical surface`);
     }
     assert.equal(state.fortuneReport.boxShadow, 'none', `${width}px ${theme} continuous reading must not become a card`);
     assert.match(state.savedContent, new RegExp(`실제저장-${theme}`), `${width}px ${theme} actual saved record was not rendered`);
     assert.equal(state.fortuneReportCount, 1, `${width}px ${theme} unified fortune report was not rendered exactly once`);
     assertCssColorClose(
       state.calendarSelected.borderTop.toLowerCase(),
-      theme === 'dark' ? 'rgb(197, 167, 111)' : 'rgb(113, 82, 52)',
-      `${width}px ${theme} selected calendar day Priestess accent`
+      theme === 'dark' ? 'rgb(197, 167, 111)' : 'rgb(121, 93, 49)',
+      `${width}px ${theme} selected calendar day ink-and-gold accent`
     );
     for (const value of [state.calendarSelected.outlineColor, state.calendarSelected.boxShadow]) {
       assert.ok(!legacyGold.test(value), `${width}px ${theme} selected calendar retains legacy gold: ${value}`);
@@ -2968,7 +3013,7 @@ async function inspectAppleSecondaryScreens(page, width) {
       assert.ok(control.width >= 43.5 && control.height >= 43.5, `${width}px ${theme} ${name} is below 44x44px: ${control.width}x${control.height}`);
     }
     for (const modal of state.modalStates) {
-      assertCssColorClose(modal.panel.background, priestessSurface, `${width}px ${theme} ${modal.id} Priestess panel surface`);
+      assertCssColorClose(modal.panel.background, canonicalSurface, `${width}px ${theme} ${modal.id} canonical panel surface`);
       assert.ok(modal.focusedInside, `${width}px ${theme} ${modal.id} must receive focus`);
       assert.deepEqual(
         { width: modal.grabber.width, height: modal.grabber.height },
@@ -3044,10 +3089,7 @@ async function inspectAppleSecondaryScreens(page, width) {
       return { modalState, shareState };
     });
     for (const [name, overlay] of Object.entries(reducedTransparency)) {
-      const expectedSurface = name === 'shareState'
-        ? 'rgb(17, 24, 30)'
-        : 'rgba(17, 24, 30, .95)';
-      assertCssColorClose(overlay.sheet.background, expectedSurface, `${name} reduced-transparency Priestess sheet surface`);
+      assertCssColorClose(overlay.sheet.background, 'rgb(17, 26, 32)', `${name} reduced-transparency canonical sheet surface`);
       assert.equal(overlay.sheet.backdropFilter, 'none', `${name} reduced-transparency sheet must remove blur`);
       assert.equal(overlay.backdrop.backdropFilter, 'none', `${name} reduced-transparency backdrop must remove blur`);
     }
@@ -3272,6 +3314,12 @@ async function inspectWidth(browser, width) {
   await page.goto(URL, { waitUntil: 'networkidle0' });
   console.log(`[ui] ${width}px: loaded`);
   await page.evaluate(() => document.body.classList.add('dark'));
+
+  await inspectAndroidSafeAreaGeometry(page, width);
+  if (TEST_GROUP === 'android-safe-area') {
+    await page.close();
+    return;
+  }
 
   if (TEST_GROUP === 'frontend-quality') {
     await inspectFrontendQuality(page, width);
@@ -3556,8 +3604,8 @@ async function inspectWidth(browser, width) {
       }
       assert.equal(transparencyStyles.mediaMatches, true, 'reduced-transparency media emulation must match');
       for (const [theme, expectedBackground] of [
-        ['light', 'rgb(244, 236, 220)'],
-        ['dark', 'rgb(17, 24, 30)']
+        ['light', 'rgb(255, 253, 248)'],
+        ['dark', 'rgb(17, 26, 32)']
       ]) {
         const transparencyStyle = transparencyStyles[theme];
         const transparencyContrast = contrastRatio(
@@ -3568,7 +3616,7 @@ async function inspectWidth(browser, width) {
         assertCssColorClose(
           transparencyStyle.background,
           expectedBackground,
-          `reduced-transparency ${theme} toast must use the solid Priestess surface`
+          `reduced-transparency ${theme} toast must use the solid canonical surface`
         );
         assert.equal(parseCssColor(transparencyStyle.background).a, 1, `reduced-transparency ${theme} toast background must be solid`);
         assert.equal(transparencyStyle.backdropFilter, 'none', `reduced-transparency ${theme} toast must disable backdrop blur`);
@@ -3836,18 +3884,24 @@ async function inspectWidth(browser, width) {
 
   }
 
-  assert.equal(await page.$eval('link[href="luxury.css"]', () => true), true);
-  const bg = await page.evaluate(() => getComputedStyle(document.body).getPropertyValue('--obsidian-bg').trim());
-  assert.equal(bg, '#07080d');
+  const themeFoundation = await page.evaluate(() => ({
+    links: [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .map(link => new URL(link.href).pathname.split('/').pop())
+      .filter(name => /^(?:apple|polish|luxury|priestess)\.css$/.test(name)),
+    background: getComputedStyle(document.body).backgroundColor
+  }));
+  assert.deepEqual(themeFoundation.links, ['apple.css'], `${width}px one canonical theme must load without competing legacy layers`);
+  assertCssColorClose(themeFoundation.background, 'rgb(11, 17, 21)', `${width}px canonical ink canvas`);
   assert.equal(await page.$('.input-intro'), null, `${width}px oversized input intro must be removed`);
   assert.equal(await page.$('.manse-art'), null, `${width}px manseryeok hero art must be removed`);
   assert.equal(await page.$('.manse-calligraphy'), null, `${width}px hero calligraphy must be removed`);
   assert.equal(await page.$('.intro-logo-img'), null, `${width}px decorative Hanja logo must be removed`);
   const inputPolish = await page.evaluate(() => ({
     cardBorder: getComputedStyle(document.querySelector('.input-card')).borderTopColor,
+    separator: getComputedStyle(document.body).getPropertyValue('--apple-separator').trim(),
     collapsedErrorBorder: getComputedStyle(document.getElementById('inErr')).borderTopColor
   }));
-  assertCssColorClose(inputPolish.cardBorder, 'rgba(255, 255, 255, 0.08)', `${width}px input card border`);
+  assertCssColorClose(inputPolish.cardBorder, inputPolish.separator, `${width}px input card must use the shared separator`);
   assert.equal(parseCssColor(inputPolish.collapsedErrorBorder).a, 0, `${width}px collapsed error line must be transparent`);
 
   if (runsShellWidth()) {
@@ -4073,22 +4127,20 @@ async function inspectWidth(browser, width) {
   if (runsResultHeaderCompact()) inspectResultHeaderCompactContract();
   if (TEST_GROUP === 'release-contract') inspectReleaseContract();
   if (process.env.SKIP_SOURCE_CONTRACTS !== '1' && runsGroup('final-security')) inspectFinalSecuritySourceContracts();
-  if (TEST_GROUP === 'android-backup' || TEST_GROUP === 'android-cache-policy' || TEST_GROUP === 'android-safe-area' || TEST_GROUP === 'result-header-compact' || TEST_GROUP === 'release-contract') {
+  if (TEST_GROUP === 'android-backup' || TEST_GROUP === 'android-cache-policy' || TEST_GROUP === 'result-header-compact' || TEST_GROUP === 'release-contract') {
     console.log(`${TEST_GROUP} regression PASS`);
     return;
   }
 
   if (runsGroup('apple-design')) {
     const appleCss = fs.readFileSync(path.join(UI_ROOT, 'apple.css'), 'utf8');
-    const priestessCss = fs.readFileSync(path.join(UI_ROOT, 'priestess.css'), 'utf8');
     const indexHtml = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
     const webManifest = JSON.parse(fs.readFileSync(path.join(WEB_ROOT, 'manifest.webmanifest'), 'utf8'));
-    assert.match(appleCss, /--apple-accent:\s*#007aff/i);
-    assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#0a84ff/i);
+    assert.match(appleCss, /--apple-accent:\s*#795d31/i);
+    assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#c5a76f/i);
     assert.doesNotMatch(appleCss, /#d8b56a|#f0d69a|#a97732/i);
-    assert.match(priestessCss, /--apple-accent:\s*#715234/i);
-    assert.match(priestessCss, /--priestess-gold-bright:\s*#c5a76f/i);
-    assert.match(priestessCss, /body\.dark[\s\S]*--apple-accent:\s*var\(--priestess-gold-bright\)/i);
+    assert.match(indexHtml, /<link[^>]+href="apple\.css(?:\?[^"]*)?"/i, 'the canonical theme must be loaded');
+    assert.doesNotMatch(indexHtml, /<link[^>]+href="(?:polish|luxury|priestess)\.css(?:\?[^"]*)?"/i, 'archived competing themes must not be loaded');
     assert.match(indexHtml, /<title>잔상 만세력<\/title>/, 'document title must use the current product name');
     assert.match(indexHtml, /<meta name="apple-mobile-web-app-title" content="잔상 만세력">/, 'Apple web app title must use the current product name');
     assert.deepEqual(
@@ -4098,9 +4150,9 @@ async function inspectWidth(browser, width) {
     );
   }
 
-  const luxuryCss = fs.readFileSync(path.join(UI_ROOT, 'luxury.css'), 'utf8');
-  assert.match(luxuryCss, /prefers-reduced-transparency:\s*reduce/);
-  assert.match(luxuryCss, /prefers-contrast:\s*more/);
+  const canonicalCss = fs.readFileSync(path.join(UI_ROOT, 'apple.css'), 'utf8');
+  assert.match(canonicalCss, /prefers-reduced-transparency:\s*reduce/);
+  assert.match(canonicalCss, /prefers-contrast:\s*more/);
 
   const serviceWorker = fs.readFileSync(path.join(WEB_ROOT, 'sw.js'), 'utf8');
   if (runsGroup('service-worker')) {

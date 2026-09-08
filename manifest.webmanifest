@@ -1,14 +1,14 @@
 {
   "name": "잔상 만세력",
   "short_name": "잔상 만세력",
-  "description": "잔상 만세력 · 자평명리학 · 1000년 만세력 · 운세풀이 · 궁합",
+  "description": "잔상 만세력 · 자평명리학 · 1000년 만세력 · 연도별 운세풀이 · 건물 날짜 조회",
   "lang": "ko",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#E9DFCC",
-  "theme_color": "#18222A",
+  "background_color": "#f4f1e9",
+  "theme_color": "#111a20",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
