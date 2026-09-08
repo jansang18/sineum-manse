@@ -1658,7 +1658,7 @@
     #view-result { max-width: 1280px; }
   }
 </style>
-  <link rel="stylesheet" href="apple.css?v=2.3-design-system">
+  <link rel="stylesheet" href="apple.css?v=2.3.1-natal-align">
   <link rel="stylesheet" href="reading.css?v=2.3-design-system">
   <link rel="stylesheet" href="building-lookup.css?v=2.3-design-system">
 </head>
@@ -12848,12 +12848,15 @@ function renderCol(title, sipT, stem, branch, sipB, unknown, isDay, isHour, hap,
         ${stemHap.chung ? `<span class="he-tag he-chung">${stemHap.chung}</span>` : ''}
       </div>`
     : `<div class="he-row he-row-top"></div>`;
-  if (unknown) return `<div class="pillar-col ${isHour?'hour-col clickable':''}" ${isHour?'id="hourPillar"':''}>
+  if (unknown) return `<div class="pillar-col calli-mode ${isHour?'hour-col clickable':''}" ${isHour?'id="hourPillar"':''}>
     <div class="pillar-title">${title}${isHour?' <span class="tap-hint">↻</span>':''}</div>
     <div class="pillar-sipsin-top">—</div>
     <div class="he-row he-row-top"></div>
-    <div class="pillar-block empty"><div class="han">?</div></div>
-    <div class="pillar-block empty"><div class="han">?</div></div>
+    <div class="pillar-block stem-block empty"><div class="han">?</div></div>
+    <div class="calli-kor" aria-hidden="true"></div>
+    <div class="pillar-block branch-block empty"><div class="han">?</div></div>
+    <div class="calli-kor" aria-hidden="true"></div>
+    <div class="jijanggan" aria-hidden="true"></div>
     <div class="he-row"></div>
     <div class="pillar-sipsin-bot">—</div>
   </div>`;

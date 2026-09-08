@@ -1704,7 +1704,7 @@ html {
   line-height: 1 !important;
   font-family: var(--app-font-display) !important;
   font-weight: 700 !important;
-  transform: translateY(var(--apple-cjk-offset)) !important;
+  transform: none !important;
   transform-origin: center !important;
 }
 
@@ -1716,7 +1716,10 @@ html {
 .pillar-col {
   min-width: 0;
   display: grid;
-  grid-template-rows: auto 18px 38px auto auto auto auto 18px;
+  grid-template-columns: minmax(0, 1fr);
+  /* Identical slots keep an unknown hour aligned with populated pillars. */
+  grid-template-rows: 24px 26px 44px auto 20px auto 20px 28px 44px 28px;
+  align-content: start;
   justify-items: stretch;
   text-align: center;
 }
