@@ -1909,11 +1909,14 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 }
 
 /* Calendar cells: date, Hanja pair, then two adjacent ten-god labels. */
+.day-calendar { container-type: inline-size; }
+
 .day-grid {
-  --day-text-inset: clamp(5px, 0.7vw, 10px);
-  grid-template-columns: repeat(7, minmax(72px, 1fr)) !important;
-  width: min(100%, 960px);
-  gap: 8px;
+  --day-text-inset: clamp(3.5px, 0.49vw, 7px);
+  grid-template-columns: repeat(7, minmax(50.4px, 1fr)) !important;
+  /* 70% of the previous calendar; keep the phone viewport wide enough to scroll. */
+  width: min(100%, max(386.4px, min(70%, 672px)));
+  gap: 5.6px;
   margin-inline: auto;
   align-items: start;
   overflow-x: auto;
@@ -1927,8 +1930,8 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 }
 
 .day-wd {
-  padding-block: 8px;
-  font-size: 14px;
+  padding-block: 5.6px;
+  font-size: 9.8px;
 }
 
 .day-scroll-hint {
@@ -1940,7 +1943,7 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   line-height: 1.5;
 }
 
-@media (max-width: 650px) {
+@container (max-width: 386px) {
   .day-scroll-hint { display: block; }
 }
 
@@ -1950,7 +1953,8 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   height: auto !important;
   min-height: 0 !important;
   aspect-ratio: 1 / 1;
-  padding: 2px 1px !important;
+  padding: 1.4px 0.7px !important;
+  border-radius: 7px;
 }
 
 .day-item:not(.empty) {
@@ -1990,10 +1994,10 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 .day-item .d-kor-t { bottom: var(--day-text-inset); left: 0; width: 50%; }
 .day-item .d-kor { bottom: var(--day-text-inset); left: 50%; width: 50%; }
 
-.day-item .d-num { font-size: clamp(14px, 1.3vw, 16px) !important; }
-.day-item .d-han { font-size: clamp(24px, 2.5vw, 32px) !important; font-family: var(--app-font-display); }
+.day-item .d-num { font-size: clamp(9.8px, 0.91vw, 11.2px) !important; }
+.day-item .d-han { font-size: clamp(16.8px, 1.75vw, 22.4px) !important; font-family: var(--app-font-display); }
 .day-item .d-kor,
-.day-item .d-kor-t { font-size: clamp(12px, 1.1vw, 14px) !important; }
+.day-item .d-kor-t { font-size: clamp(8.4px, 0.77vw, 9.8px) !important; }
 
 /* Unified responsive shell: one rectangle for every live surface. */
 :root {

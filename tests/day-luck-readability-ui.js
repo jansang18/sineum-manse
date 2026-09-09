@@ -1,4 +1,4 @@
-// Prevent the daily calendar shrinking to unreadable text while preserving its
+// Preserve the approved 30% reduction from the 00f3b01 daily calendar, its
 // seven weekday columns, square cells, and independently scrollable phone view.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -25,7 +25,7 @@ async function inspect(page, label, fixture) {
     const days = [...grid.querySelectorAll('.day-item:not(.empty)')];
     const weekdays = [...grid.querySelectorAll('.day-wd')];
     return {
-      grid: bounds(grid), parent: bounds(grid.parentElement), scrollWidth: grid.scrollWidth,
+      grid: bounds(grid), parent: bounds(grid.parentElement), scrollWidth: grid.scrollWidth, viewport: innerWidth,
       role: grid.getAttribute('role'), name: grid.getAttribute('aria-label'), tabIndex: grid.tabIndex,
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
       weekdays: weekdays.map(element => ({ ...bounds(element), text: element.textContent, font: parseFloat(getComputedStyle(element).fontSize) })),
@@ -40,19 +40,28 @@ async function inspect(page, label, fixture) {
   });
   check(state.pageOverflow <= 1, `${label}: page overflows by ${state.pageOverflow}px`);
   check(state.role === 'region' && state.tabIndex === 0 && state.name?.includes('일운'), `${label}: calendar needs a named keyboard-scrollable region`);
-  check(state.grid.width >= Math.min(900, state.parent.width - 2), `${label}: calendar still wastes available width (${state.grid.width}/${state.parent.width})`);
+  // The previous release used a 960px cap, 72px minimum cells and six 8px gaps.
+  // Compare rendered geometry with that independent baseline, not new CSS tokens.
+  const previousCell = Math.max(72, (Math.min(960, state.parent.width) - 48) / 7);
+  const expectedCell = previousCell * 0.7;
+  check(Math.abs(state.grid.width - Math.min(state.parent.width, expectedCell * 7 + 33.6)) <= 1,
+    `${label}: reduced calendar wastes space or exceeds its intended width`);
   check(state.weekdays.map(day => day.text).join('') === '일월화수목금토', `${label}: weekday order changed`);
-  check(state.weekdays.every(day => day.font >= 14), `${label}: weekday labels are too small`);
+  check(state.weekdays.every(day => Math.abs(day.font - 9.8) < 0.05), `${label}: weekday labels were not reduced by 30%`);
   check(state.blanks === fixture.start && state.days.length === fixture.count, `${label}: month length/weekday placeholders changed`);
   for (const [index, day] of state.days.entries()) {
     check(day.day === index + 1, `${label}: date order changed`);
-    check(day.width >= 71.5 && Math.abs(day.width - day.height) <= 1, `${label}: day ${day.day} needs a >=72px square (${day.width}x${day.height})`);
+    check(Math.abs(day.width - expectedCell) <= 0.15 && Math.abs(day.width - day.height) <= 1,
+      `${label}: day ${day.day} must be a 30% smaller square (${day.width}x${day.height}, expected ${expectedCell})`);
     check(Math.abs(day.width - state.days[0].width) <= 1, `${label}: unequal daily boxes`);
     const weekday = state.weekdays[(fixture.start + index) % 7];
     check(Math.abs(day.left - weekday.left) <= 1 && Math.abs(day.width - weekday.width) <= 1, `${label}: day ${day.day} moved out of its weekday column`);
     for (const [i, text] of day.text.entries()) {
-      const minimum = text.name === 'd-han' ? 24 : text.name === 'd-num' ? 14 : 12;
-      check(text.font >= minimum, `${label}: ${text.name} ${text.font}px is below ${minimum}px`);
+      const previousFont = text.name === 'd-han' ? Math.min(32, Math.max(24, state.viewport * 0.025))
+        : text.name === 'd-num' ? Math.min(16, Math.max(14, state.viewport * 0.013))
+          : Math.min(14, Math.max(12, state.viewport * 0.011));
+      check(Math.abs(text.font - previousFont * 0.7) <= 0.05,
+        `${label}: ${text.name} ${text.font}px must be 30% smaller than ${previousFont}px`);
       check(text.text.length > 0 && text.innerOverflow <= 1, `${label}: day ${day.day} text is missing or clipped`);
       check(Math.max(day.left - text.left, text.right - day.right, day.top - text.top, text.bottom - day.bottom) <= 1,
         `${label}: day ${day.day} ${text.name} exceeds its box`);
