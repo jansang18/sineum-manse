@@ -2520,18 +2520,57 @@ async function collectLuckFlowReachability(page) {
       const container = document.querySelector(containerSelector);
       const items = container ? [...container.querySelectorAll(itemSelector)] : [];
       if (!container || items.length === 0) return [name, null];
+      const originalScrollLeft = container.scrollLeft;
+      if (name === 'ilun') container.scrollLeft = 0;
       const containerRect = bounds(container);
-      const first = items[0];
-      const last = items.at(-1);
+      // A calendar's last date is not necessarily in its rightmost column.
+      // Other luck flows remain chronological single rows with DOM endpoints.
+      const first = name === 'ilun'
+        ? items.reduce((leftmost, item) => bounds(item).left < bounds(leftmost).left ? item : leftmost)
+        : items[0];
+      const last = name === 'ilun'
+        ? items.reduce((rightmost, item) => bounds(item).right > bounds(rightmost).right ? item : rightmost)
+        : items.at(-1);
       const initialFirst = bounds(first);
       const initialLast = bounds(last);
       const initialScrollLeft = container.scrollLeft;
+      let calendar = null;
+      if (name === 'ilun') {
+        const weekdays = [...container.querySelectorAll('.day-wd')];
+        const columns = weekdays.map(element => {
+          const rect = bounds(element);
+          return { label: element.textContent.trim(), center: (rect.left + rect.right) / 2 };
+        });
+        const leadingEmpty = items.findIndex(item => !item.classList.contains('empty'));
+        const dates = items.filter(item => !item.classList.contains('empty'));
+        calendar = {
+          weekdays: columns.map(column => column.label),
+          increasingColumns: columns.every((column, index) => index === 0 || column.center > columns[index - 1].center + tolerance),
+          misplacedDates: dates.flatMap((item, index) => {
+            const rect = bounds(item);
+            const column = columns[(leadingEmpty + index) % 7];
+            return column && Math.abs((rect.left + rect.right) / 2 - column.center) <= tolerance
+              ? [] : [item.querySelector('.d-num')?.textContent.trim()];
+          }),
+          dates: []
+        };
+      }
       const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth);
       container.scrollLeft = maxScrollLeft;
       const endFirst = bounds(first);
       const endLast = bounds(last);
       const reachedEnd = Math.abs(container.scrollLeft - maxScrollLeft) <= tolerance;
-      container.scrollLeft = initialScrollLeft;
+      if (calendar) {
+        for (const item of items.filter(item => !item.classList.contains('empty'))) {
+          const before = bounds(item);
+          const centered = container.scrollLeft + (before.left + before.right - containerRect.left - containerRect.right) / 2;
+          container.scrollLeft = Math.max(0, Math.min(maxScrollLeft, centered));
+          const rect = bounds(item);
+          calendar.dates.push({ date: item.querySelector('.d-num')?.textContent.trim(),
+            reachable: rect.left >= containerRect.left - tolerance && rect.right <= containerRect.right + tolerance });
+        }
+      }
+      container.scrollLeft = name === 'ilun' ? originalScrollLeft : initialScrollLeft;
       const itemWidths = items.map(item => item.getBoundingClientRect().width);
       return [name, {
         clientWidth: container.clientWidth,
@@ -2544,7 +2583,8 @@ async function collectLuckFlowReachability(page) {
         endLast,
         containerRect,
         maxScrollLeft,
-        reachedEnd
+        reachedEnd,
+        calendar
       }];
     }));
   });
@@ -2769,6 +2809,13 @@ async function inspectAppleDesign(page, width) {
 
     for (const [group, flow] of Object.entries(flowReachability)) {
       assert.ok(flow, `${width}px ${theme} ${group} flow container missing`);
+      if (group === 'ilun') {
+        assert.deepEqual(flow.calendar.weekdays, ['일', '월', '화', '수', '목', '금', '토'], `${width}px ${theme} daily weekdays must remain seven ordered columns`);
+        assert.ok(flow.calendar.increasingColumns, `${width}px ${theme} weekday columns must not wrap or reorder`);
+        assert.deepEqual(flow.calendar.misplacedDates, [], `${width}px ${theme} daily dates must stay under their weekday columns`);
+        assert.ok(flow.calendar.dates.length >= 28 && flow.calendar.dates.length <= 31, `${width}px ${theme} daily reachability must cover every date`);
+        assert.deepEqual(flow.calendar.dates.filter(item => !item.reachable), [], `${width}px ${theme} daily dates must each scroll fully into view`);
+      }
       const hasOverflow = flow.scrollWidth - flow.clientWidth > 1;
       assert.ok(
         flow.initialFirst.left >= flow.containerRect.left - 1 &&

@@ -1910,11 +1910,38 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 /* Calendar cells: date, Hanja pair, then two adjacent ten-god labels. */
 .day-grid {
-  grid-template-columns: repeat(7, minmax(44px, 1fr)) !important;
-  width: min(100%, 504px);
+  --day-text-inset: clamp(5px, 0.7vw, 10px);
+  grid-template-columns: repeat(7, minmax(72px, 1fr)) !important;
+  width: min(100%, 960px);
+  gap: 8px;
   margin-inline: auto;
   align-items: start;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+.day-grid:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.day-wd {
+  padding-block: 8px;
+  font-size: 14px;
+}
+
+.day-scroll-hint {
+  display: none;
+  margin: 8px 0 0;
+  color: var(--text-sub);
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 650px) {
+  .day-scroll-hint { display: block; }
 }
 
 .day-item,
@@ -1959,14 +1986,14 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   left: 0;
 }
 
-.day-item .d-num { top: 2px; }
-.day-item .d-kor-t { bottom: 2px; left: 0; width: 50%; }
-.day-item .d-kor { bottom: 2px; left: 50%; width: 50%; }
+.day-item .d-num { top: var(--day-text-inset); }
+.day-item .d-kor-t { bottom: var(--day-text-inset); left: 0; width: 50%; }
+.day-item .d-kor { bottom: var(--day-text-inset); left: 50%; width: 50%; }
 
-.day-item .d-num { font-size: 10px !important; }
-.day-item .d-han { font-size: 14px !important; font-family: var(--app-font-display); }
+.day-item .d-num { font-size: clamp(14px, 1.3vw, 16px) !important; }
+.day-item .d-han { font-size: clamp(24px, 2.5vw, 32px) !important; font-family: var(--app-font-display); }
 .day-item .d-kor,
-.day-item .d-kor-t { font-size: 9px !important; }
+.day-item .d-kor-t { font-size: clamp(12px, 1.1vw, 14px) !important; }
 
 /* Unified responsive shell: one rectangle for every live surface. */
 :root {
