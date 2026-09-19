@@ -1658,7 +1658,7 @@
     #view-result { max-width: 1280px; }
   }
 </style>
-  <link rel="stylesheet" href="apple.css?v=2.5-day-compact">
+  <link rel="stylesheet" href="apple.css?v=20260919-people-sources">
   <link rel="stylesheet" href="reading.css?v=2.3-design-system">
   <link rel="stylesheet" href="building-lookup.css?v=2.3.4-summary-center">
 </head>
@@ -11896,6 +11896,7 @@ Sigrid Niehaus|19641229|F|
 <script src="reading.js?v=2.3-design-system"></script>
 <script src="annual-reading.js"></script>
 <script src="unified-reading.js"></script>
+<script src="people-supplement.js?v=20260919"></script>
 <script>
 /* 전역 에러 핸들러 — 콘솔에만 기록 (화면 오버레이는 iOS에서 인터랙션을 막을 수 있어 제거) */
 window.addEventListener('error', function(e) {
@@ -12358,7 +12359,7 @@ function renderSamePillars60(saju, existingReport) {
       <section class="cycle-people" id="samePillarPeople" aria-labelledby="samePillarPeopleTitle">
         <div class="cycle-people-heading">
           <div>
-            <span class="cycle-people-kicker">위키백과 · 생년월일 기준</span>
+            <span class="cycle-people-kicker">공개 인물 · 생년월일 기준</span>
             <h3 id="samePillarPeopleTitle">같은 세 기둥으로 태어난 인물</h3>
           </div>
           <span class="cycle-people-source">자동 검색</span>
@@ -12373,10 +12374,10 @@ function renderSamePillars60(saju, existingReport) {
       <section class="cycle-people birthday-people" id="sameBirthdayPeople" aria-labelledby="sameBirthdayPeopleTitle" aria-busy="true">
         <div class="cycle-people-heading">
           <div>
-            <span class="cycle-people-kicker">위키백과 · 같은 생년월일</span>
+            <span class="cycle-people-kicker">공개 인물 · 같은 생년월일</span>
             <h3 id="sameBirthdayPeopleTitle">같은 생년월일 유명인</h3>
           </div>
-          <span class="cycle-people-source">최근 인기순</span>
+          <span class="cycle-people-source">생년월일 기준</span>
         </div>
         <p class="birthday-calendar-note">${birthdayComparison.label}</p>
         <div class="cycle-people-body" role="status" aria-live="polite">
@@ -15029,7 +15030,7 @@ function renderSamePillarPeople(root, people, dates) {
   if (!people.length) {
     const empty = document.createElement('p');
     empty.className = 'cycle-people-empty';
-    empty.textContent = `${dates.map(formatPillarDate).join(', ')} 출생으로 한국어 위키백과에 등재된 인물을 찾지 못했습니다.`;
+    empty.textContent = `${dates.map(formatPillarDate).join(', ')} 출생 인물을 위키백과와 검증된 보강 목록에서 찾지 못했습니다.`;
     body.appendChild(empty);
     return;
   }
@@ -15052,7 +15053,7 @@ function renderSamePillarPeople(root, people, dates) {
     const name = document.createElement('strong');
     name.textContent = person.name;
     const detail = document.createElement('small');
-    detail.textContent = `${formatPillarDate(person.date)} 출생 · ${person.description || '한국어 위키백과'}`;
+    detail.textContent = `${formatPillarDate(person.date)} 출생 · ${person.description || '한국어 위키백과'}${person.curated ? ' · 공식 프로필 확인' : ''}`;
     copy.append(name, detail);
 
     const arrow = document.createElement('span');
@@ -15066,7 +15067,9 @@ function renderSamePillarPeople(root, people, dates) {
 
   const note = document.createElement('p');
   note.className = 'cycle-people-note';
-  note.textContent = 'Wikidata 후보를 한국어 위키백과 본문의 생년월일과 교차 확인한 결과입니다.';
+  note.textContent = people.some(person => person.curated)
+    ? '위키백과 결과와 나무위키·공식 프로필의 생년월일을 교차 확인한 보강 목록입니다. 보강 인물 링크는 공식 출처로 연결됩니다.'
+    : 'Wikidata 후보를 한국어 위키백과 본문의 생년월일과 교차 확인한 결과입니다.';
   body.appendChild(note);
 }
 
@@ -15074,6 +15077,7 @@ async function loadSamePillarPeople(report, forceRefresh) {
   const root = document.getElementById('samePillarPeople');
   if (!root || !report || !Array.isArray(report.exactMatches) || !report.exactMatches.length) return;
   const dates = report.exactMatches;
+  const localPeople = dates.flatMap(date => window.MansePeopleSupplement?.forDate(date) || []);
   const requestKey = dates.map(samePillarPeopleDateKey).join('|');
   root.dataset.requestKey = requestKey;
   root.setAttribute('aria-busy', 'true');
@@ -15085,8 +15089,12 @@ async function loadSamePillarPeople(report, forceRefresh) {
     loading.textContent = '위키백과 등재 인물을 다시 찾고 있습니다';
     body.appendChild(loading);
   }
+  if (localPeople.length) renderSamePillarPeople(root, localPeople, dates);
   try {
-    const groups = await Promise.all(dates.map(date => queryWikipediaBirthdays(date, forceRefresh)));
+    const groups = await Promise.all(dates.map(async date => {
+      const online = await queryWikipediaBirthdays(date, forceRefresh);
+      return window.MansePeopleSupplement?.mergeCandidates(online, date) || online;
+    }));
     const currentRoot = document.getElementById('samePillarPeople');
     if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
     const seen = new Set();
@@ -15100,6 +15108,12 @@ async function loadSamePillarPeople(report, forceRefresh) {
     console.warn('같은 기둥 인물 검색 실패', error);
     const currentRoot = document.getElementById('samePillarPeople');
     if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    if (localPeople.length) {
+      renderSamePillarPeople(currentRoot, localPeople, dates);
+      const note = currentRoot.querySelector('.cycle-people-note');
+      if (note) note.textContent += ' 온라인 조회가 불가능해 내장 보강 목록만 표시합니다.';
+      return;
+    }
     currentRoot.setAttribute('aria-busy', 'false');
     const currentBody = currentRoot.querySelector('.cycle-people-body');
     if (!currentBody) return;
@@ -15223,7 +15237,8 @@ function parseWikipediaSameBirthdayBirths(data, date) {
     if (!title || !name || name.length > 80 || seen.has(title) ||
         article.hostname !== 'ko.wikipedia.org' || !article.pathname.startsWith('/wiki/')) return;
     seen.add(title);
-    people.push({ title, name, birthYear, article: article.toString() });
+    people.push({ title, name, birthYear, article: article.toString(),
+      date: { year: birthYear, month: Number(date.month), day: Number(date.day) } });
   };
 
   for (const list of sectionLists) {
@@ -15346,28 +15361,37 @@ function renderSameBirthdayPeople(root, people, date) {
   if (!body) return;
   body.replaceChildren();
   root.setAttribute('aria-busy', 'false');
+  // The popularity cap applies only to measured online results. Curated
+  // additions have no rank and must not vanish behind those eight results.
+  const visiblePeople = people.filter(person => !person.curated).slice(0, 8)
+    .concat(people.filter(person => person.curated));
+  const source = root.querySelector('.cycle-people-source');
+  if (source) source.textContent = visiblePeople.some(person => person.curated)
+    ? '공식 출처 보강' : visiblePeople.length ? '최근 인기순' : '생년월일 기준';
   if (!people.length) {
     const empty = document.createElement('p');
     empty.className = 'cycle-people-empty';
-    empty.textContent = `양력 ${Number(date.year)}년 ${Number(date.month)}월 ${Number(date.day)}일 출생 인물을 한국어 위키백과에서 찾지 못했습니다.`;
+    empty.textContent = `양력 ${Number(date.year)}년 ${Number(date.month)}월 ${Number(date.day)}일 출생 인물을 위키백과와 검증된 보강 목록에서 찾지 못했습니다.`;
     body.appendChild(empty);
     return;
   }
 
   const grid = document.createElement('div');
   grid.className = 'cycle-people-grid';
-  people.slice(0, 8).forEach((person, index) => {
+  visiblePeople.forEach((person, index) => {
     const link = document.createElement('a');
     link.className = 'cycle-person birthday-person';
     link.href = person.article;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    link.dataset.views = String(person.views);
-    link.setAttribute('aria-label', `${index + 1}위 ${person.name}, 한국어 위키백과에서 보기`);
+    if (!person.curated) link.dataset.views = String(person.views);
+    link.setAttribute('aria-label', person.curated
+      ? `${person.name}, 공식 프로필에서 보기`
+      : `${index + 1}위 ${person.name}, 한국어 위키백과에서 보기`);
 
     const mark = document.createElement('span');
     mark.className = 'cycle-person-mark birthday-person-rank';
-    mark.textContent = String(index + 1);
+    mark.textContent = person.curated ? person.name.charAt(0) : String(index + 1);
 
     const copy = document.createElement('span');
     copy.className = 'cycle-person-copy';
@@ -15377,7 +15401,9 @@ function renderSameBirthdayPeople(root, people, date) {
     detail.textContent = `${person.birthYear}년 출생 · ${person.description || '한국어 위키백과 인물'}`;
     const metric = document.createElement('small');
     metric.className = 'cycle-person-views';
-    metric.textContent = `최근 30일 ${Number(person.views).toLocaleString('ko-KR')}회`;
+    metric.textContent = person.curated
+      ? `공식 프로필 확인 · ${person.evidence.verifiedAt}`
+      : `최근 30일 ${Number(person.views).toLocaleString('ko-KR')}회`;
     copy.append(name, detail, metric);
 
     const arrow = document.createElement('span');
@@ -15391,7 +15417,9 @@ function renderSameBirthdayPeople(root, people, date) {
 
   const note = document.createElement('p');
   note.className = 'cycle-people-note';
-  note.textContent = '한국어 위키백과의 양력 생년월일과 최근 30일 조회수 합계 기준입니다.';
+  note.textContent = people.some(person => person.curated)
+    ? '같은 양력 생년월일 기준입니다. 나무위키·공식 프로필 교차 확인 인물은 조회수 순위 없이 보강하며, 링크는 공식 출처로 연결됩니다.'
+    : '한국어 위키백과의 양력 생년월일과 최근 30일 조회수 합계 기준입니다.';
   body.appendChild(note);
 }
 
@@ -15400,6 +15428,7 @@ async function loadSameBirthdayPeople(saju, forceRefresh) {
   if (!root || !saju) return;
   const comparison = getSameBirthdayComparisonDate(saju);
   const date = comparison.date;
+  const localPeople = window.MansePeopleSupplement?.forDate(date) || [];
   const requestKey = sameBirthdayExactDateKey(date);
   root.dataset.requestKey = requestKey;
   root.setAttribute('aria-busy', 'true');
@@ -15413,8 +15442,10 @@ async function loadSameBirthdayPeople(saju, forceRefresh) {
     loading.textContent = '같은 생년월일 인물을 다시 찾고 있습니다';
     body.appendChild(loading);
   }
+  if (localPeople.length) renderSameBirthdayPeople(root, localPeople, date);
   try {
-    const people = await queryWikipediaSameBirthday(date, forceRefresh);
+    const online = await queryWikipediaSameBirthday(date, forceRefresh);
+    const people = window.MansePeopleSupplement?.mergeCandidates(online, date) || online;
     const currentRoot = document.getElementById('sameBirthdayPeople');
     if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
     renderSameBirthdayPeople(currentRoot, people, date);
@@ -15422,6 +15453,12 @@ async function loadSameBirthdayPeople(saju, forceRefresh) {
     console.warn('같은 생일 인물 검색 실패', error);
     const currentRoot = document.getElementById('sameBirthdayPeople');
     if (!currentRoot || currentRoot.dataset.requestKey !== requestKey) return;
+    if (localPeople.length) {
+      renderSameBirthdayPeople(currentRoot, localPeople, date);
+      const note = currentRoot.querySelector('.cycle-people-note');
+      if (note) note.textContent += ' 온라인 조회가 불가능해 내장 보강 목록만 표시합니다.';
+      return;
+    }
     currentRoot.setAttribute('aria-busy', 'false');
     const currentBody = currentRoot.querySelector('.cycle-people-body');
     if (!currentBody) return;
@@ -15438,7 +15475,7 @@ async function loadSameBirthdayPeople(saju, forceRefresh) {
   }
 }
 
-/* ---- 내장 인물 DB (Wikidata 기반, 오프라인 즉시 검색) ---- */
+/* ---- 내장 인물 DB (Wikidata + 출처를 교차 확인한 보강 목록) ---- */
 let PEOPLE_DB = null;
 function loadPeopleDb() {
   if (PEOPLE_DB) return PEOPLE_DB;
@@ -15460,6 +15497,7 @@ function loadPeopleDb() {
       });
     }
   } catch (e) { console.warn('peopleDb parse 실패', e); }
+  PEOPLE_DB = window.MansePeopleSupplement?.mergeLocal(PEOPLE_DB) || PEOPLE_DB;
   return PEOPLE_DB;
 }
 
@@ -15471,7 +15509,9 @@ function searchLocalPeople(query, limit) {
   const starts = [], incl = [];
   for (let i = 0; i < db.length; i++) {
     const p = db[i];               // db는 주목도 내림차순 → 순서 유지
-    const idx = p.k.indexOf(q);
+    const keys = [p.k, ...(p.aliases || []).map(alias => alias.toLowerCase().replace(/\s+/g, ''))];
+    const positions = keys.map(key => key.indexOf(q)).filter(index => index >= 0);
+    const idx = positions.length ? Math.min(...positions) : -1;
     if (idx === 0) { if (starts.length < limit) starts.push(p); }
     else if (idx > 0) { if (incl.length < limit) incl.push(p); }
     if (starts.length >= limit) break;
@@ -15489,7 +15529,7 @@ function psItemHtml(o) {
   // o: {title, desc, thumb, kind:'local'|'wiki', ymd, g, qid}
   const initial = (o.title || '?').charAt(0) || '?';
   const data = o.kind === 'local'
-    ? `data-kind="local" data-name="${escapeHtml(o.title)}" data-ymd="${o.ymd}" data-g="${o.g || ''}"`
+    ? `data-kind="local" data-name="${escapeHtml(o.title)}" data-ymd="${o.ymd}" data-g="${o.g || ''}" data-supplement-id="${escapeHtml(o.evidence?.id || '')}"`
     : `data-kind="wiki" data-title="${escapeHtml(o.title)}" data-qid="${o.qid || ''}"`;
   return `<div class="ps-item" ${data}>
     <div class="ps-thumb" ${o.thumb ? `style="background-image:url('${escapeHtml(o.thumb)}')"` : ''}>
@@ -15522,7 +15562,7 @@ function psBindItems(scope) {
         const ymd = el.dataset.ymd;
         psShowConfirm(el.dataset.name,
           parseInt(ymd.slice(0, 4), 10), parseInt(ymd.slice(4, 6), 10), parseInt(ymd.slice(6, 8), 10),
-          el.dataset.g || '', 'local');
+          el.dataset.g || '', window.MansePeopleSupplement?.byId(el.dataset.supplementId)?.evidence || 'local');
       } else {
         psSelectPerson(el.dataset.title, el.dataset.qid);
       }
@@ -15543,7 +15583,7 @@ async function psSearch(query) {
   let html = '';
   locals.forEach(p => {
     localKeys[p.k] = true;
-    html += psItemHtml({ title: p.n, desc: p.d || '내장 인물 정보', kind: 'local', ymd: p.y, g: p.g });
+    html += psItemHtml({ title: p.n, desc: p.d || '내장 인물 정보', kind: 'local', ymd: p.y, g: p.g, evidence: p.evidence });
   });
   $('#psResults').innerHTML = html +
     '<div class="ps-loading" id="psWikiLoading"><span class="spinner"></span>위키백과 검색 중...</div>';
@@ -15609,7 +15649,14 @@ function psApply(name, year, month, day, gender) {
 function psShowConfirm(title, year, month, day, gender, source) {
   const gText = gender === 'M' ? '남자' : gender === 'F' ? '여자' : '알 수 없음';
   const dateStr = String(year).padStart(4, '0') + '.' + String(month).padStart(2, '0') + '.' + String(day).padStart(2, '0');
-  const srcText = source === 'local' ? '앱 내장 정보(Wikidata) 기준입니다.' : '위키백과 기준입니다.';
+  const evidence = source && typeof source === 'object' ? window.MansePeopleSupplement?.byId(source.id)?.evidence : null;
+  const srcText = evidence
+    ? `${escapeHtml(evidence.officialLabel)}와 나무위키의 공개 생년월일을 교차 확인했습니다. 확인일 ${evidence.verifiedAt} · 양력 기준입니다.`
+    : source === 'local' ? '앱 내장 정보(Wikidata) 기준입니다.' : '위키백과 기준입니다.';
+  const sourceLinks = evidence ? `<div class="pcb-sources">
+    <a class="ps-source-link" href="${escapeHtml(evidence.officialUrl)}" target="_blank" rel="noopener noreferrer">공식 프로필 ↗</a>
+    <a class="ps-source-link" href="${escapeHtml(evidence.namuUrl)}" target="_blank" rel="noopener noreferrer">나무위키 참고 ↗</a>
+  </div>` : '';
   $('#psResults').innerHTML = `<div class="ps-confirm-box">
       <div class="pcb-name">${escapeHtml(title)}</div>
       <div class="pcb-row"><span class="k">생년월일</span><span class="v">${dateStr}</span></div>
@@ -15618,6 +15665,7 @@ function psShowConfirm(title, year, month, day, gender, source) {
       <div style="font-size:11px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
         ※ ${srcText} 입력 후 필요하면 수정하세요.
       </div>
+      ${sourceLinks}
       <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">네이버에서 보기 🔍</a></div>
       <div class="pcb-actions">
         <button type="button" id="pcbCancel">다시 검색</button>
