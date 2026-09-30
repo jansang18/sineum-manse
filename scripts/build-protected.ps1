@@ -22,6 +22,8 @@ $ReleaseWebFiles = @(
     'unified-reading.js',
     'hanja-alignment.js',
     'people-supplement.js',
+    'calendar-notes.js',
+    'calendar-notes.css',
     'building-lookup.js',
     'building-lookup.css',
     'reading.css',

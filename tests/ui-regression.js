@@ -3777,6 +3777,10 @@ async function inspectWidth(browser, width) {
     });
     assert.equal(calendarDirectRender.titleUnchanged, true, 'date selection must not change the calendar month');
     assert.equal(calendarDirectRender.activeAnimations, 0, 'date selection must render without calendar month motion');
+    // Date selection now opens the note editor. Dismiss it before testing
+    // unrelated controls, which must remain inert while an editor is open.
+    await page.evaluate(() => window.closeAppModal(document.getElementById('calendarNoteModal')));
+    await page.waitForFunction(() => !document.getElementById('calendarNoteModal').classList.contains('active'));
 
     await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }]);
     const reducedCalendarMotion = await page.evaluate(() => {
@@ -3898,6 +3902,8 @@ async function inspectWidth(browser, width) {
       assert.equal(calendarSnapshot.immediate.activeAnimations, 0, 'outgoing-date selection must cancel stale month motion immediately');
       assert.deepEqual(calendarSnapshot.finalTitle, calendarSnapshot.rendered, 'stale completion must not reinterpret the selected date in the next month');
       assert.equal(calendarSnapshot.finalActiveAnimations, 0);
+      await page.evaluate(() => window.closeAppModal(document.getElementById('calendarNoteModal')));
+      await page.waitForFunction(() => !document.getElementById('calendarNoteModal').classList.contains('active'));
     }
 
     if (runsGroup('exit-curves')) {

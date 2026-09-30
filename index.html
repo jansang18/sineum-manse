@@ -1659,6 +1659,7 @@
   }
 </style>
   <link rel="stylesheet" href="apple.css?v=20260919-people-sources">
+  <link rel="stylesheet" href="calendar-notes.css?v=20261001">
   <link rel="stylesheet" href="reading.css?v=2.3-design-system">
   <link rel="stylesheet" href="building-lookup.css?v=2.3.4-summary-center">
 </head>
@@ -1785,6 +1786,7 @@
       <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
+    <p class="calendar-note-hint"><span class="date-note-mark" aria-hidden="true">✓</span>메모가 있는 날 · 날짜를 눌러 기록하세요</p>
     <div id="calDayDetail"></div>
   </section>
 
@@ -1804,6 +1806,23 @@
 </div>
 
 <div id="appToast" class="app-toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<div class="modal-bg" id="calendarNoteModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="calendarNoteTitle" aria-describedby="calendarNoteDate" tabindex="-1">
+    <h3 id="calendarNoteTitle">날짜 메모</h3>
+    <p id="calendarNoteDate" class="calendar-note-date"></p>
+    <label class="field-label" for="calendarNoteText">기록할 내용</label>
+    <textarea id="calendarNoteText" maxlength="2000" placeholder="예: 할아버지 별세, 생일, 중요한 약속" aria-describedby="calendarNoteDevice"></textarea>
+    <div class="calendar-note-meta"><span id="calendarNoteDevice">이 기기에 저장됩니다.</span><span id="calendarNoteCount">0 / 2,000</span></div>
+    <p id="calendarNoteError" class="calendar-note-error" role="alert" hidden></p>
+    <p id="calendarNoteDeletePrompt" class="calendar-note-error" role="status" hidden>이 날짜의 메모를 삭제할까요? 삭제 확인을 누르면 기록이 지워집니다.</p>
+    <div class="modal-actions calendar-note-actions">
+      <button type="button" id="calendarNoteDelete" hidden>삭제</button>
+      <button type="button" id="calendarNoteCancel">닫기</button>
+      <button type="button" class="primary" id="calendarNoteSave">저장</button>
+    </div>
+  </div>
+</div>
 
 <div class="modal-bg" id="saveModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="saveModalTitle" tabindex="-1">
@@ -11897,6 +11916,7 @@ Sigrid Niehaus|19641229|F|
 <script src="annual-reading.js"></script>
 <script src="unified-reading.js"></script>
 <script src="people-supplement.js?v=20260919"></script>
+<script src="calendar-notes.js?v=20261001"></script>
 <script>
 /* 전역 에러 핸들러 — 콘솔에만 기록 (화면 오버레이는 iOS에서 인터랙션을 막을 수 있어 제거) */
 window.addEventListener('error', function(e) {
@@ -13162,7 +13182,7 @@ function renderDay() {
     const isToday = isThisMonth && today.getDate() === d;
     const wdIdx = new Date(y, m - 1, d).getDay();
     const wdCls = wdIdx === 0 ? 'sun' : wdIdx === 6 ? 'sat' : '';
-    cells += `<div class="day-item ${wdCls} ${isToday?'today':''}">
+    cells += `<button type="button" class="day-item ${wdCls} ${isToday?'today':''}" data-note-date="${window.ManseCalendarNotes.dateKey(y, m, d)}" data-year="${y}" data-month="${m}" data-day="${d}">
       <div class="d-num">${d}</div>
       <div class="d-han">
         <span class="d-s ${EL_CLASS[sE]}">${STEM[g.stem]}</span>
@@ -13170,7 +13190,7 @@ function renderDay() {
       </div>
       <div class="d-kor-t">${sT}</div>
       <div class="d-kor">${sB}</div>
-    </div>`;
+    </button>`;
   }
 
   $('#dayArea').innerHTML = `
@@ -13178,8 +13198,14 @@ function renderDay() {
       <div class="sub-luck-label">일운 <span class="meta">(${y}.${pad(m)})</span>${isThisMonth ? `<span class="today-chip">오늘 ${today.getDate()}일</span>` : ''}</div>
       <div class="day-grid" role="region" aria-label="${y}년 ${m}월 일운 달력" tabindex="0">${cells}</div>
       <p class="day-scroll-hint">좌우로 넘겨 날짜를 확인하세요</p>
+      <p class="calendar-note-hint"><span class="date-note-mark" aria-hidden="true">✓</span>날짜를 눌러 메모 · 체크는 기록이 있는 날</p>
     </div>
   `;
+  const dayArea = document.getElementById('dayArea');
+  window.ManseCalendarNotes.annotate(dayArea);
+  dayArea.querySelectorAll('button.day-item').forEach(cell => cell.addEventListener('click', () => {
+    window.ManseCalendarNotes.open(+cell.dataset.year, +cell.dataset.month, +cell.dataset.day, cell);
+  }));
 }
 
 function kvCell(k, v) {
@@ -14028,13 +14054,13 @@ function renderCalendar() {
       ssTopHtml = `<div class="cal-ss-t">${ssTop}</div>`;
       ssBotHtml = `<div class="cal-ss-b">${ssBot}</div>`;
     }
-    html += `<div class="cal-day clickable ${isToday?'today':''} ${isSelected?'selected':''}" data-year="${calY}" data-month="${calM}" data-day="${d}">
+    html += `<button type="button" class="cal-day clickable ${isToday?'today':''} ${isSelected?'selected':''}" data-year="${calY}" data-month="${calM}" data-day="${d}">
       <div class="d">${d}</div>
       ${ssTopHtml}
       <div class="gj"><span class="c-s ${EL_CLASS[sE]}">${STEM[g.stem]}</span><span class="c-b ${EL_CLASS[bE]}">${BRANCH[g.branch]}</span></div>
       ${ssBotHtml}
       ${lu ? `<div class="lu">${lu.m}.${lu.d}${lu.isLeap?'윤':''}</div>` : ''}
-    </div>`;
+    </button>`;
   }
   const total = Math.ceil((startWd + daysInMonth) / 7) * 7;
   for (let i = startWd + daysInMonth; i < total; i++) {
@@ -14050,6 +14076,8 @@ function renderCalendar() {
   $$('#calGrid .cal-day.clickable').forEach(el => {
     el.addEventListener('click', () => {
       selectRenderedCalendarDay(+el.dataset.year, +el.dataset.month, +el.dataset.day);
+      const selectedCell = document.querySelector('#calGrid .cal-day.selected');
+      window.ManseCalendarNotes.open(+el.dataset.year, +el.dataset.month, +el.dataset.day, selectedCell);
     });
   });
 
@@ -14058,6 +14086,7 @@ function renderCalendar() {
     selectedCalDay = today.getDate();
   }
   renderCalDayDetail();
+  window.ManseCalendarNotes.annotate(document.getElementById('calGrid'));
 }
 
 function renderCalDayDetail() {
@@ -14077,7 +14106,9 @@ function renderCalDayDetail() {
           ${lu ? ` · 음력 ${lu.m}.${lu.d}${lu.isLeap?'(윤)':''}` : ''}
         </div>
       </div>
+    </div>
   `;
+  window.ManseCalendarNotes.detail(document.querySelector('#calDayDetail .day-detail'), y, m, d);
 }
 
 let calendarAnimation = null;

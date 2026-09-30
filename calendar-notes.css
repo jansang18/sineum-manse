@@ -1,0 +1,110 @@
+/* Date-note marks stay inside the existing calendar geometry. */
+.cal-day, .day-item { position: relative; }
+button.cal-day, button.day-item {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+body.dark button.cal-day:focus-visible,
+button.cal-day:focus-visible, button.day-item:focus-visible,
+.calendar-note-edit:focus-visible, #calendarNoteText:focus-visible {
+  outline: 2px solid var(--apple-focus) !important;
+  outline-offset: 2px !important;
+}
+button.cal-day:active, button.day-item:active { opacity: .75; }
+.date-note-mark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 12px;
+  height: 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--apple-accent);
+  color: var(--apple-on-accent);
+  font: 800 9px/1 var(--app-font-ui);
+  pointer-events: none;
+}
+.day-item .date-note-mark { top: 2px; right: 2px; width: 10px; height: 10px; font-size: 8px; }
+.calendar-note-hint {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+.calendar-note-hint .date-note-mark { position: static; flex-shrink: 0; }
+.calendar-note-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0;
+  padding-inline: 20px;
+}
+.calendar-note-preview {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.calendar-note-edit {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  background: var(--apple-surface);
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+#calendarNoteModal .modal { width: min(100%, 520px); }
+.calendar-note-date { margin: 0 0 20px; color: var(--text-sub); font-size: 14px; }
+#calendarNoteText {
+  width: 100%;
+  min-height: 160px;
+  max-height: 40vh;
+  padding: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--apple-inset);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.7;
+}
+.calendar-note-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+.calendar-note-error { color: var(--app-error); font-size: 13px; line-height: 1.6; margin: 12px 0 0; }
+.calendar-note-actions { flex-wrap: wrap; }
+#calendarNoteDelete { color: var(--app-error) !important; flex: 0 0 auto; }
+#calendarNoteModal [hidden] { display: none !important; }
+#calendarNoteSave:disabled { opacity: .45; cursor: not-allowed; }
+@media (min-width: 768px) { .calendar-note-summary { padding-inline: 24px; } }
+@media (max-width: 400px) {
+  .calendar-note-summary { flex-direction: column; }
+  .calendar-note-actions button { padding-inline: 10px; font-size: 14px; }
+}
+@media (prefers-contrast: more) {
+  .date-note-mark { outline: 1px solid var(--text); }
+}
