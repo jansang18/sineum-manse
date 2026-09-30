@@ -14,6 +14,29 @@ button.cal-day:focus-visible, button.day-item:focus-visible,
   outline-offset: 2px !important;
 }
 button.cal-day:active, button.day-item:active { opacity: .75; }
+/* A saved memo keeps its pale pink fill in either theme and when selected.
+   Give only these light cells the light-surface ink palette. */
+#calGrid .cal-day.has-date-note,
+#dayArea .day-item.has-date-note {
+  --calendar-note-highlight: #fce7ef;
+  --apple-label: #1b2529;
+  --text: var(--apple-label);
+  --text-sub: #59615e;
+  --accent: #795d31;
+  --wood-deep: #2a6243;
+  --fire-deep: #984a36;
+  --earth-deep: #766020;
+  --metal-deep: #4e5b58;
+  --apple-water-foreground: #3d5f77;
+  --water-deep: var(--apple-water-foreground);
+  --apple-focus: #997442;
+  background: var(--calendar-note-highlight) !important;
+  color: var(--apple-label) !important;
+}
+#calGrid .cal-day.has-date-note:is(.today, .selected) {
+  border-color: var(--accent) !important;
+}
+#calGrid .cal-day.other.has-date-note { opacity: 1 !important; }
 .date-note-mark {
   position: absolute;
   top: 3px;

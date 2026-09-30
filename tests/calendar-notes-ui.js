@@ -85,12 +85,35 @@ async function marked(page, date, container = '#calGrid') {
   return page.$eval(daySelector(date, container), element => ({
     class: element.classList.contains('has-date-note'),
     count: element.querySelectorAll('.date-note-mark').length,
+    background: getComputedStyle(element).backgroundColor,
+    opacity: Number(getComputedStyle(element).opacity),
   }));
+}
+
+function colorChannels(color) {
+  const channels = color.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+  assert.equal(channels?.length, 3, `Rendered color must have RGB channels: ${color}`);
+  return color.startsWith('color(srgb ') ? channels.map(channel => channel * 255) : channels;
+}
+
+function contrast(foreground, background) {
+  const luminance = color => colorChannels(color).map(value => {
+    const channel = value / 255;
+    return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+  }).reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
+  const a = luminance(foreground), b = luminance(background);
+  return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
 }
 
 async function assertMark(page, date, expected, label, container = '#calGrid') {
   const state = await marked(page, date, container);
-  assert.deepEqual(state, { class: expected, count: expected ? 1 : 0 }, `${label}: ${date} saved-date indicator`);
+  assert.deepEqual({ class: state.class, count: state.count }, { class: expected, count: expected ? 1 : 0 }, `${label}: ${date} saved-date indicator`);
+  // Missing/overridden saved-date fill must fail even if the check survives.
+  // Allow the palette to evolve, but require a genuinely light pink paint.
+  const [r, g, b] = colorChannels(state.background);
+  const lightPink = r >= 235 && g >= 205 && b >= 215 && r - g >= 8 && b - g >= 3;
+  assert.equal(lightPink, expected, `${label}: ${date} must ${expected ? '' : 'not '}have a light pink saved-note background (${state.background})`);
+  if (expected) assert.equal(state.opacity, 1, `${label}: saved-note pink must not be dimmed, including adjacent-month dates`);
 }
 
 async function assertKeyboardFocus(page, date, stateClass, label) {
@@ -107,6 +130,8 @@ async function assertKeyboardFocus(page, date, stateClass, label) {
 }
 
 async function inspectMarker(page, date, container, label) {
+  await page.hover(daySelector(date, container));
+  await assertMark(page, date, true, `${label} hovered`, container);
   const state = await page.$eval(daySelector(date, container), element => {
     const rect = node => {
       const r = node.getBoundingClientRect();
@@ -141,12 +166,13 @@ async function inspectMarker(page, date, container, label) {
       text.after(baselineProbe);
       const baseline = baselineProbe.getBoundingClientRect().top;
       baselineProbe.remove();
-      ink.push({ name: text.parentElement.className, left: line.left - metrics.actualBoundingBoxLeft,
+      ink.push({ name: text.parentElement.className, color: textStyle.color, left: line.left - metrics.actualBoundingBoxLeft,
         right: line.left + metrics.actualBoundingBoxRight, top: baseline - metrics.actualBoundingBoxAscent,
         bottom: baseline + metrics.actualBoundingBoxDescent });
     }
     const readableText = [...element.children].filter(child => child !== mark).map(child => child.textContent.replace(/\s/g, '')).filter(Boolean);
     return { cell: rect(element), mark: rect(mark), ink, aria: (element.getAttribute('aria-label') || '').replace(/\s/g, ''), readableText,
+      background: getComputedStyle(element).backgroundColor, markBackground: style.backgroundColor, markColor: style.color,
       display: style.display, visibility: style.visibility,
       opacity: Number(style.opacity), text: mark.textContent, pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
   });
@@ -156,12 +182,15 @@ async function inspectMarker(page, date, container, label) {
     state.cell.top - state.mark.top, state.mark.bottom - state.cell.bottom) <= 1,
   `${label}: saved-date marker must stay inside its own date cell`);
   for (const ink of state.ink) {
+    assert.ok(contrast(ink.color, state.background) >= 4.5,
+      `${label}: ${ink.name} must stay readable on pink (${ink.color} on ${state.background})`);
     const intersectionWidth = Math.min(state.mark.right, ink.right) - Math.max(state.mark.left, ink.left);
     const intersectionHeight = Math.min(state.mark.bottom, ink.bottom) - Math.max(state.mark.top, ink.top);
     assert.ok(intersectionWidth <= 1 || intersectionHeight <= 1,
       `${label}: saved-date marker overlaps ${ink.name} (${intersectionWidth.toFixed(2)}px x ${intersectionHeight.toFixed(2)}px); ${JSON.stringify({ mark: state.mark, text: ink })}`);
   }
   assert.ok(state.pageOverflow <= 1, `${label}: notes must not introduce page horizontal overflow (${state.pageOverflow}px)`);
+  assert.ok(contrast(state.markColor, state.markBackground) >= 4.5, `${label}: the checkmark needs readable contrast`);
   for (const text of state.readableText) {
     assert.ok(state.aria.includes(text), `${label}: the date button's accessible name must retain visible calendar information ${text}`);
   }
@@ -234,7 +263,7 @@ async function inspect(browser, url, width, theme) {
   const allowedOrigin = new URL(url).origin;
   page.setDefaultTimeout(12000);
   page.on('pageerror', error => errors.push(error.message));
-  await page.setViewport({ width, height: 1050, deviceScaleFactor: 1, hasTouch: true, isMobile: width < 768 });
+  await page.setViewport({ width, height: 1050, deviceScaleFactor: 1, hasTouch: width < 1024, isMobile: width < 768 });
   await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: theme }, { name: 'prefers-reduced-motion', value: 'reduce' }]);
   await page.evaluateOnNewDocument((nextTheme, key) => {
     // The calendar already supports this clock seam. A fixed local-noon date
@@ -261,6 +290,8 @@ async function inspect(browser, url, width, theme) {
   try {
     console.log(`[calendar-notes] ${label}: exact-date save without calculating saju`);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    assert.equal(await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches), width >= 1024,
+      `${label}: desktop cases must exercise real fine-pointer hover styles`);
     await page.waitForSelector('#tab-calendar');
     await page.click('#tab-calendar');
     await page.waitForSelector('#calGrid .cal-day.clickable');
@@ -278,6 +309,15 @@ async function inspect(browser, url, width, theme) {
     assert.equal(await page.$eval('#calDayDetail .calendar-note-preview', element => element.textContent), savedText,
       `${label}: saved note is readable in the selected-date detail without reopening the editor`);
     const calendarGeometry = await inspectMarker(page, savedDate, '#calGrid', `${label} calendar`);
+    await openDate(page, '2026-10-01');
+    await fillNote(page, '오늘의 기록');
+    await save(page);
+    await assertMark(page, '2026-10-01', true, `${label} today`);
+    await inspectMarker(page, '2026-10-01', '#calGrid', `${label} today`);
+    await navigate(page, -1, 2026, 9);
+    assert.ok(await page.$(`${daySelector('2026-10-01')}.other`), `${label}: saved today must also appear as an adjacent-month date`);
+    await assertMark(page, '2026-10-01', true, `${label} adjacent month`);
+    await navigate(page, 1, 2026, 10);
     await (await page.$('#view-calendar')).screenshot({ path: path.join(output, `${width}-${theme}-calendar.png`) });
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.click('#tab-calendar');
