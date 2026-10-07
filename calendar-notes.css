@@ -18,7 +18,7 @@ button.cal-day:active, button.day-item:active { opacity: .75; }
    Give only these light cells the light-surface ink palette. */
 #calGrid .cal-day.has-date-note,
 #dayArea .day-item.has-date-note {
-  --calendar-note-highlight: #fce7ef;
+  --calendar-note-highlight: #fdf0f5;
   --apple-label: #1b2529;
   --text: var(--apple-label);
   --text-sub: #59615e;
