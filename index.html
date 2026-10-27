@@ -1691,11 +1691,11 @@
     <h1 class="title"><span class="brand-main">잔상</span> <span class="title-sub">만세력</span></h1>
     <div style="display:flex; gap:4px; align-items:center;">
       <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="테마 전환">
-        <svg id="themeIconSun" viewBox="0 0 24 24" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="themeIconSun" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
       <button type="button" class="icon-btn" id="aboutBtn" aria-label="앱 정보">
-        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <svg viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       </button>
     </div>
   </header>
@@ -11935,7 +11935,7 @@ Sigrid Niehaus|19641229|F|
       · 대운 : 남양녀음 순행 / 남음녀양 역행<br>
       · 풀이 : 연도 종합·12개월 월운·대운 흐름
     </div>
-    <div style="font-size:11px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
+    <div style="font-size:12px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
       본 앱의 풀이는 전통 명리학 이론에 기반한 해석으로, 참고용입니다. 실제 삶의 선택과 결과는 본인의 의지와 노력에 달려있습니다.
     </div>
     <div class="modal-actions">
@@ -12626,6 +12626,7 @@ $$('.tab').forEach(t => {
   }
   if (tab === 'saved') renderSaved();
   if (tab === 'fortune') renderFortune();
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   });
 });
 syncTabA11y($('.tab.active'));
@@ -14265,8 +14266,9 @@ function applyTheme(theme) {
   }
 }
 (function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem('saju_theme'); } catch (e) {}
+  let saved = document.documentElement.dataset.theme || null;
+  let explicit = false;
+  try { explicit = ['saju_theme', 'theme'].some(key => ['light', 'dark'].includes(localStorage.getItem(key))); } catch (e) {}
   if (!saved) {
     try {
       saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -14277,7 +14279,7 @@ function applyTheme(theme) {
   (async () => {
     try {
       const r = await window.storage.get('theme');
-      if (r && r.value && r.value !== saved) applyTheme(r.value);
+      if (!explicit && r && ['dark', 'light'].includes(r.value) && r.value !== saved) applyTheme(r.value);
     } catch (e) {}
   })();
 })();
@@ -15696,7 +15698,7 @@ async function psSearch(query) {
     const loadEl2 = $('#psWikiLoading');
     if (loadEl2) loadEl2.remove();
     if (!locals.length && !wikiHtml) {
-      $('#psResults').innerHTML = '<div class="ps-empty">검색 결과가 없습니다<br><span style="font-size:11px;">다른 이름이나 본명으로 시도해보세요</span></div>';
+      $('#psResults').innerHTML = '<div class="ps-empty">검색 결과가 없습니다<br><span style="font-size:12px;">다른 이름이나 본명으로 시도해보세요</span></div>';
       return;
     }
     // 로컬 항목은 그대로 두고 위키 결과만 추가(append) → 이미 렌더/바인딩된 로컬 항목이 교체되지 않음
@@ -15710,7 +15712,7 @@ async function psSearch(query) {
       const loadEl = $('#psWikiLoading');
       if (loadEl) loadEl.outerHTML = '<div class="ps-online-note">※ 위키백과(온라인) 검색은 실패했지만, 위 내장 결과는 사용할 수 있어요.</div>';
     } else {
-      $('#psResults').innerHTML = `<div class="ps-error">검색 실패<br><span style="font-size:11px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">내장 목록에 없는 인물은 <b>인터넷 연결</b>이 필요합니다.<br>파일을 직접 열어 사용 중이라면,<br>https 주소(웹/앱)로 접속해주세요.</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">검색 실패<br><span style="font-size:12px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">내장 목록에 없는 인물은 <b>인터넷 연결</b>이 필요합니다.<br>파일을 직접 열어 사용 중이라면,<br>https 주소(웹/앱)로 접속해주세요.</span></div>`;
     }
   }
 }
@@ -15745,7 +15747,7 @@ function psShowConfirm(title, year, month, day, gender, source) {
       <div class="pcb-row"><span class="k">생년월일</span><span class="v">${dateStr}</span></div>
       <div class="pcb-row"><span class="k">성별</span><span class="v">${gText}</span></div>
       <div class="pcb-row"><span class="k">태어난 시간</span><span class="v" style="color:var(--text-sub);font-weight:600;">시 모름</span></div>
-      <div style="font-size:11px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
+      <div style="font-size:12px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
         ※ ${srcText} 입력 후 필요하면 수정하세요.
       </div>
       ${sourceLinks}
@@ -15761,7 +15763,7 @@ function psShowConfirm(title, year, month, day, gender, source) {
 
 async function psSelectPerson(title, qid) {
   if (!qid) {
-    $('#psResults').innerHTML = '<div class="ps-error">이 인물의 데이터를 찾을 수 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">직접 입력해주세요</span></div>';
+    $('#psResults').innerHTML = '<div class="ps-error">이 인물의 데이터를 찾을 수 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">직접 입력해주세요</span></div>';
     return;
   }
   $('#psResults').innerHTML = '<div class="ps-loading"><span class="spinner"></span>' + escapeHtml(title) + ' 정보를 가져오는 중...</div>';
@@ -15778,13 +15780,13 @@ async function psSelectPerson(title, qid) {
     const genderId = genderClaim && genderClaim.mainsnak && genderClaim.mainsnak.datavalue && genderClaim.mainsnak.datavalue.value && genderClaim.mainsnak.datavalue.value.id;
 
     if (!birth || !birth.time) {
-      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 생년월일 정보를 찾을 수 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">위키백과에 데이터가 없거나 비공개입니다</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 생년월일 정보를 찾을 수 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">위키백과에 데이터가 없거나 비공개입니다</span></div>`;
       return;
     }
 
     const precision = birth.precision;
     if (precision < 11) {
-      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 정확한 생일 정보가 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">연도나 월까지만 공개되어 있습니다</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 정확한 생일 정보가 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">연도나 월까지만 공개되어 있습니다</span></div>`;
       return;
     }
 
@@ -15809,7 +15811,7 @@ async function psSelectPerson(title, qid) {
     psShowConfirm(title, year, month, day, gender, 'wiki');
   } catch (e) {
     console.error(e);
-    $('#psResults').innerHTML = `<div class="ps-error">정보 가져오기 실패<br><span style="font-size:11px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">인터넷 연결을 확인하거나<br>https 주소로 접속해주세요.</span></div>`;
+    $('#psResults').innerHTML = `<div class="ps-error">정보 가져오기 실패<br><span style="font-size:12px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">인터넷 연결을 확인하거나<br>https 주소로 접속해주세요.</span></div>`;
   }
 }
 
@@ -15922,5 +15924,6 @@ clearLegacyAppCaching().catch((error) => {
 <script src="nav.js"></script>
 <script src="hanja-alignment.js?v=2.3.2-hanja-ink" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>
+<script src="reading-navigation.js?v=20261027-design10"></script>
 </body>
 </html>

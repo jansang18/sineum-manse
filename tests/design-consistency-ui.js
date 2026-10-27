@@ -15,6 +15,7 @@ const widths = process.env.DESIGN_WIDTHS
 const schemes = process.env.DESIGN_SCHEMES ? process.env.DESIGN_SCHEMES.split(',') : ['light', 'dark'];
 const failures = [];
 const measurements = [];
+const qualityMeasurements = [];
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
   '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.woff2': 'font/woff2' };
@@ -88,6 +89,46 @@ async function inspectShell(page, label) {
     check(control.font >= (control.isField ? 16 : 13), `${label}: ${control.name} font ${control.font}px is too small`);
     check(control.family === state.bodyFamily, `${label}: ${control.name} does not share the UI font family`);
   }
+  const quality = await page.evaluate(() => {
+    const visible = element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden';
+    const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d', {willReadFrequently:true});
+    const rgba = color => {ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return [...ctx.getImageData(0,0,1,1).data].map(n=>n/255);};
+    const mix = (fg,bg) => fg.slice(0,3).map((n,i)=>n*fg[3]+bg[i]*(1-fg[3]));
+    const lum = color => color.map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4).reduce((s,n,i)=>s+n*[.2126,.7152,.0722][i],0);
+    const texts = [];
+    const walker = document.createTreeWalker(document.querySelector('.app'),NodeFilter.SHOW_TEXT);
+    for(let node;node=walker.nextNode();) {
+      const el=node.parentElement, value=node.textContent.trim();
+      if(!value || !el || el.closest('script,style,svg,[aria-hidden="true"],button:disabled,[aria-disabled="true"]') || !visible(el)) continue;
+      const range=document.createRange();range.selectNodeContents(node);
+      if(![...range.getClientRects()].some(r=>r.width>0&&r.height>0)) continue;
+      const s=getComputedStyle(el), ancestors=[];
+      for(let p=el;p;p=p.parentElement) ancestors.push(p);
+      const bg=ancestors.reverse().reduce((base,p)=>mix(rgba(getComputedStyle(p).backgroundColor),base),[1,1,1]);
+      const fg=mix(rgba(s.color),bg), levels=[lum(bg),lum(fg)].sort((a,b)=>a-b);
+      const font=parseFloat(s.fontSize), ratio=(levels[1]+.05)/(levels[0]+.05);
+      texts.push({text:value.slice(0,60),selector:el.id||el.className||el.tagName,font,ratio,required:font>=24||(font>=18&&Number(s.fontWeight)>=700)?3:4.5,color:s.color,background:bg.map(n=>Math.round(n*255))});
+    }
+    const inputs=[...document.querySelectorAll('.view.active input:not([type="hidden"]):not([type="file"]),.view.active select')].filter(visible);
+    const unlabelled=inputs.filter(el=>!el.labels?.length&&!el.getAttribute('aria-label')&&!el.getAttribute('aria-labelledby')).map(el=>el.id);
+    const icon=document.querySelector('.saved-empty .empty-mark');
+    const iconRect=icon?.getBoundingClientRect();
+    return {root:getComputedStyle(document.documentElement).backgroundColor,body:getComputedStyle(document.body).backgroundColor,
+      minimum:Math.min(...texts.map(t=>t.font)),small:texts.filter(t=>t.font<11.99),contrast:texts.filter(t=>t.ratio+.02<t.required),
+      colors:[...new Map(texts.map(t=>[t.color+'|'+t.background.join(),t])).values()],
+      emoji:texts.filter(t=>/\p{Extended_Pictographic}/u.test(t.text)),unlabelled,
+      empty:iconRect?.width?{width:iconRect.width,height:iconRect.height}:null,
+      toc:!!document.querySelector('nav[aria-label="풀이 목차"]')};
+  });
+  check(quality.root===quality.body,`${label}: root/body background mismatch`);
+  check(!quality.small.length,`${label}: text below12px ${JSON.stringify(quality.small.slice(0,8))}`);
+  check(!quality.contrast.length,`${label}: contrast below AA ${JSON.stringify(quality.contrast.slice(0,8))}`);
+  check(!quality.emoji.length,`${label}: emoji UI icons remain ${JSON.stringify(quality.emoji)}`);
+  check(!quality.unlabelled.length,`${label}: fields without programmatic labels ${quality.unlabelled}`);
+  if(quality.empty) check(quality.empty.width<=64&&quality.empty.height<=64,`${label}: empty icon exceeds64px`);
+  if(label.endsWith('fortune')) check(quality.toc,`${label}: reading table of contents missing`);
+  qualityMeasurements.push({label,...quality});
   return state;
 }
 
@@ -333,7 +374,7 @@ async function runViewport(browser, baseUrl, width, scheme) {
       const ratios = measurements.filter(item => item.scheme === scheme).map(item => item.natal.font / item.natal.width);
       check(Math.max(...ratios) - Math.min(...ratios) <= 0.08, `${scheme}: natal glyph/box ratio varies excessively across viewports (${ratios.join(', ')})`);
     }
-    fs.writeFileSync(path.join(output, 'measurements.json'), JSON.stringify({ measurements, failures: [...new Set(failures)] }, null, 2));
+    fs.writeFileSync(path.join(output, 'measurements.json'), JSON.stringify({ measurements, qualityMeasurements, failures: [...new Set(failures)] }, null, 2));
     assert.deepEqual([...new Set(failures)], [], 'Rendered design consistency violations');
     console.log(`Design consistency UI PASS: ${widths.join(', ')}px; ${schemes.join(', ')}`);
   } finally {

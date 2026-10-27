@@ -10,7 +10,7 @@ const root = process.env.DESIGN_ROOT || path.resolve(__dirname, '..');
       const page = await browser.newPage();
       await page.setViewport({width:390,height:844});
       await page.emulateMediaFeatures([{name:'prefers-color-scheme',value:theme==='dark'?'light':'dark'},{name:'prefers-reduced-motion',value:'reduce'}]);
-      await page.evaluateOnNewDocument(value => {localStorage.setItem('saju_theme',value);localStorage.setItem('theme',value);},theme);
+      await page.evaluateOnNewDocument(value => {localStorage.setItem('saju_theme',value);localStorage.setItem('theme',value==='dark'?'light':'dark');},theme);
       await page.goto(pathToFileURL(path.join(root,'index.html')).href,{waitUntil:'load'});
       const result = await page.evaluate(() => ({html:getComputedStyle(document.documentElement).backgroundColor,body:getComputedStyle(document.body).backgroundColor,scheme:getComputedStyle(document.documentElement).colorScheme,meta:[...document.querySelectorAll('meta[name="theme-color"]')].filter(m=>!m.media||matchMedia(m.media).matches).map(m=>m.content)}));
       assert.equal(result.html,result.body,`${theme}: root backdrop does not match body`);
