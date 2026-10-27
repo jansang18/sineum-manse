@@ -1,6 +1,6 @@
 /* JANSANG: one ink-and-gold foundation for every screen and component. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --app-font-ui: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
   --app-font-display: "Noto Serif KR", "Batang", serif;
   --app-font-body: 1rem;
@@ -36,7 +36,9 @@
   font-family: var(--app-font-ui);
 }
 
+:root.dark,
 body.dark {
+  color-scheme: dark;
   --apple-bg: #0b1115;
   --apple-surface: #111a20;
   --apple-surface-2: #182229;
