@@ -340,10 +340,10 @@ body.dark {
   border-color: var(--apple-accent) !important;
   color: var(--apple-accent) !important;
   -webkit-text-fill-color: var(--apple-label);
-  outline-width: 3px !important;
+  outline-width: 2px !important;
   outline-style: solid !important;
   outline-color: var(--apple-accent) !important;
-  outline-offset: 0;
+  outline-offset: 2px;
   box-shadow: none !important;
 }
 
@@ -405,7 +405,7 @@ body.dark {
 .tab:focus-visible,
 .icon-btn:focus-visible,
 .modal-actions button:focus-visible {
-  outline: 3px solid var(--apple-focus) !important;
+  outline: 2px solid var(--apple-focus) !important;
   outline-offset: 2px;
 }
 
@@ -2396,6 +2396,8 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   transform: translateX(-50%) !important;
   border: 1px solid var(--apple-separator) !important;
   border-radius: 14px 14px 0 0;
+  background: var(--apple-surface) !important;
+  box-shadow: none !important;
 }
 
 .bottom-bar .bb {
@@ -2411,4 +2413,44 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   .bottom-bar {
     width: calc(var(--app-shell-width) - 16px) !important;
   }
+}
+
+/* Every interactive surface has the same keyboard and pointer-down feedback. */
+:is(button, a[href], summary, [role="button"], [role="tab"], [tabindex]):focus-visible,
+body.dark .cal-day:focus-visible {
+  outline: 2px solid var(--apple-focus) !important;
+  outline-offset: 2px !important;
+}
+
+:is(button, summary, [role="button"]):not(:disabled) {
+  touch-action: manipulation;
+  transition-duration: 100ms;
+  transition-timing-function: ease-out;
+}
+:is(button, summary, [role="button"]):not(:disabled):active {
+  transform: scale(.98) !important;
+  opacity: 1;
+}
+
+#daeunScroll,
+#seunScroll,
+#woonScroll.woon-grid {
+  padding-inline: 12px !important;
+  scroll-padding-inline: 12px;
+  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+}
+
+@media (min-width: 1024px) {
+  .bottom-bar {
+    width: calc(var(--app-shell-width) - var(--app-content-inset) - var(--app-content-inset)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  :is(button, summary, [role="button"]):not(:disabled):active { transform: none !important; }
 }
