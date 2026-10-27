@@ -44,9 +44,11 @@
   color: var(--apple-accent);
 }
 .building-lookup[open] > summary::after { content: '−'; }
+.building-lookup > summary.lookup-trigger::after { content: none; }
+.building-lookup[open] > summary.lookup-trigger .lookup-chevron { transform: rotate(90deg); }
 .building-summary-note { font-size: 12px; font-weight: 500; color: var(--apple-secondary); }
 .building-lookup-body { padding: 4px 16px 16px; }
-.building-lookup label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+.building-lookup label { display: block; margin-bottom: 8px; color: var(--apple-label); font-size: 13px; font-weight: 600; }
 .building-search-row { display: flex; align-items: stretch; gap: 8px; min-width: 0; }
 .building-lookup .input {
   min-width: 0;
@@ -108,7 +110,7 @@
 .building-result dd { margin: 0; font-size: var(--app-section-title-size, clamp(18px, 2vw, 20px)); line-height: 1.4; font-weight: 650; font-variant-numeric: tabular-nums; }
 .building-source, .building-date-note { font-size: 12px; line-height: 1.6; color: var(--apple-secondary); }
 .building-date-note { margin-top: 4px !important; }
-.building-lookup .building-apply { width: 100%; margin-top: 16px; background: var(--apple-accent); color: var(--apple-bg); }
+.building-lookup .building-apply { width: 100%; margin-top: 16px; background: var(--apple-accent); color: var(--apple-on-accent); }
 .building-lookup [hidden] { display: none !important; }
 .building-chart-source { margin: 12px 0 0; font-size: 12px; line-height: 1.65; font-weight: 400; color: var(--apple-secondary); overflow-wrap: anywhere; }
 .oguk-card .result-head.view-head.building-chart-head { height: auto; min-height: 96px; justify-content: flex-start; padding-block: 12px !important; }
@@ -116,7 +118,7 @@
 .building-lookup :is(summary, input, button, select):focus-visible { outline: 2px solid var(--apple-accent); outline-offset: 3px; }
 @media (max-width: 360px) {
   .building-lookup > summary { gap: 2px 8px; }
-  .building-summary-note { font-size: 11px; }
+  .building-summary-note { font-size: 12px; }
   .building-lookup-body { padding-inline: 12px; }
   .building-lookup .building-button { padding-inline: 12px; }
 }
