@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const crypto = require('node:crypto');
 const { isDeepStrictEqual } = require('node:util');
 const puppeteer = require('puppeteer-core');
 const root = path.resolve(__dirname, '..');
@@ -14,6 +15,10 @@ const oldKey = Object.keys(oldStorage).find(key => key.startsWith('saju:'));
 const oldRecord = JSON.parse(oldStorage[oldKey]);
 const report = { startedAt: new Date().toISOString(), baselineCommit: before.baselineCommit, root, output, cases: [], calculations: [], storage: [], names: [], failures: [], optionalServices: 'Wikipedia and Wikidata enrichment use deterministic empty responses; app/calculation/storage/fonts are real.' };
 const check = (value, message) => { if (!value) report.failures.push(message); };
+const engineBefore = JSON.parse(fs.readFileSync(path.join(baseline, 'engine-sha256.json'), 'utf8'));
+report.engineHashes = Object.fromEntries(Object.entries(engineBefore).map(([file, hash]) => { const current = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex'); return [file, { baseline: hash, current, matches: hash === current }]; }));
+check(Object.values(report.engineHashes).every(value => value.matches), 'An immutable calculation/reading/storage module hash changed');
+report.presentationHashes = Object.fromEntries(['index.html', 'apple.css', 'reading.css', 'building-lookup.css', 'reading-navigation.js', 'presentation.js'].map(file => [file, crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex')]));
 const mime = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webp': 'image/webp', '.webmanifest': 'application/manifest+json' };
 async function settle(page) { await page.evaluate(async () => { await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 2000))]); await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); }); }
 async function configure(page, width, theme, storage = null, legacy = false) {
@@ -129,7 +134,16 @@ async function measure(page, state) {
         const fortuneName = await page.$eval('#fortuneContent', el => el.textContent);
         await page.screenshot({ path: path.join(output, `${width}-${theme}-name-${slug}-fortune.png`) });
         check(!fortuneName.includes('이름 없음'), `${theme}/${slug}: unnatural anonymous name in fortune`);
-        report.names.push({ name, theme, resultName, fortuneTitle: await page.$eval('.fortune-head-summary .nm', el => el.textContent), sample: fortuneName.slice(0, 900) });
+        const nameEvidence = { name, theme, resultName, fortuneTitle: await page.$eval('.fortune-head-summary .nm', el => el.textContent), sample: fortuneName.slice(0, 900) };
+        if (!name) {
+          await page.click('#tab-result'); await page.click('#saveBtn'); await page.waitForSelector('#saveModal.active');
+          await page.click('#saveConfirm'); await page.waitForFunction(() => !document.getElementById('saveModal').classList.contains('active'));
+          await page.click('#tab-saved'); await page.waitForSelector('.saved-card');
+          nameEvidence.savedLabel = await page.$eval('.saved-card .sname', el => el.firstChild.textContent.trim());
+          check(nameEvidence.savedLabel === '1989.03.19 · 남성', `${theme}: nameless saved label differs from birth date and gender`);
+          await page.screenshot({ path: path.join(output, `${width}-${theme}-name-blank-saved.png`) });
+        }
+        report.names.push(nameEvidence);
       }
       check(!diagnostics.errors.length && !diagnostics.consoleErrors.length, `${width}/${theme}: browser console/page errors`);
       report.cases.push(entry); await page.close(); console.log(`Evidence ${width}px ${theme}: captured six states`);

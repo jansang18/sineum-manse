@@ -2318,6 +2318,9 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   width: min(100%, 72ch);
   margin-inline: auto;
 }
+.fortune-head-summary > div:first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.fortune-head-summary .nm { overflow-wrap: anywhere; }
+.reading-section__head h2, .reading-deep-intro h3 { overflow-wrap: anywhere; }
 
 .fortune-head .nm {
   margin: 0 0 4px !important;

@@ -12680,6 +12680,7 @@ document.addEventListener('input', e => {
 
 let _inErrTimer = null;
 function showInErr(msg, focusSel) {
+  clearInErr();
   const el = $('#inErr');
   if (el) { el.textContent = msg; el.classList.add('show'); }
   if (focusSel) { const f = $(focusSel); if (f) {
@@ -12690,7 +12691,11 @@ function showInErr(msg, focusSel) {
     if (description) { description.textContent = msg; description.hidden = false; }
   } }
   if (_inErrTimer) clearTimeout(_inErrTimer);
-  _inErrTimer = setTimeout(clearInErr, 4000);
+  _inErrTimer = setTimeout(() => {
+    // Transient alert may close; the field's accessible error stays until
+    // the next validation, so unchanged invalid input never appears valid.
+    if (el) { el.textContent = ''; el.classList.remove('show'); }
+  }, 4000);
 }
 function clearInErr() {
   const el = $('#inErr');
