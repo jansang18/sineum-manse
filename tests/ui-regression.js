@@ -2305,7 +2305,7 @@ async function inspectLuckFlowResponsive(page, width) {
   if (width >= 768) {
     assert.ok(state.daeun.scrollWidth - state.daeun.clientWidth <= 1);
     assert.ok(state.seun.scrollWidth - state.seun.clientWidth <= 1);
-    assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1);
+    assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1, `${width}px monthly region ${JSON.stringify(state.woon)}`);
   }
   for (const [layer, metrics] of Object.entries({ daeun: state.daeun, seun: state.seun })) {
     if (metrics.scrollWidth - metrics.clientWidth <= 1) {

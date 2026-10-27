@@ -2440,9 +2440,9 @@ body.dark .cal-day:focus-visible {
 #daeunScroll,
 #seunScroll,
 #woonScroll.woon-grid {
-  padding-inline: 12px !important;
-  scroll-padding-inline: 12px;
-  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 12px), transparent);
+  padding-inline: 8px !important;
+  scroll-padding-inline: 8px;
+  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 8px), transparent);
 }
 
 @media (min-width: 1024px) {
