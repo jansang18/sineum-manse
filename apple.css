@@ -2452,5 +2452,9 @@ body.dark .cal-day:focus-visible {
     transition: none !important;
     scroll-behavior: auto !important;
   }
+  body :is(button, input, select, textarea, summary, a[href], [role="button"], [role="tab"], .view, .view > *, .saved-card) {
+    animation: none !important;
+    transition: none !important;
+  }
   :is(button, summary, [role="button"]):not(:disabled):active { transform: none !important; }
 }

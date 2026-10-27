@@ -45,6 +45,7 @@
 }
 .building-lookup[open] > summary::after { content: '−'; }
 .building-lookup > summary.lookup-trigger::after { content: none; }
+.building-lookup > summary.lookup-trigger { border: 0; border-radius: inherit; background: transparent; }
 .building-lookup[open] > summary.lookup-trigger .lookup-chevron { transform: rotate(90deg); }
 .building-summary-note { font-size: 12px; font-weight: 500; color: var(--apple-secondary); }
 .building-lookup-body { padding: 4px 16px 16px; }
