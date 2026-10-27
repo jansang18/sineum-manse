@@ -1,2 +1,4 @@
 .worktrees/
 output/
+node_modules/
+.npm-cache/
