@@ -58,7 +58,13 @@ async function inspectLayout(page, width, state) {
     });
     const textLeft = Math.min(...textBoxes.map(box => box.left));
     const textRight = Math.max(...textBoxes.map(box => box.right));
-    const marker = getComputedStyle(summary, '::after');
+    // Design10 deliberately replaces the formerly centered +/− pseudo-element
+    // with the same left-icon/copy/right-chevron structure as person lookup.
+    const markerNode = summary.querySelector('.lookup-chevron');
+    const markerBox = markerNode.getBoundingClientRect();
+    const copyBox = summary.querySelector('.lookup-copy').getBoundingClientRect();
+    const iconBox = summary.querySelector('.lookup-icon').getBoundingClientRect();
+    const transform = new DOMMatrix(getComputedStyle(markerNode).transform);
     const controls = [...root.querySelectorAll('summary, button, input, select')]
       .filter(element => !element.hidden && element.getClientRects().length)
       .map(element => {
@@ -71,16 +77,17 @@ async function inspectLayout(page, width, state) {
       left: rect.left, right: rect.right, height: rect.height, controls,
       summary: {
         centerError: Math.abs((textLeft + textRight - summaryBox.left - summaryBox.right) / 2),
-        textRight, markerLeft: summaryBox.right - parseFloat(marker.right) - parseFloat(marker.width),
-        marker: marker.content, open: root.open,
+        textRight: copyBox.right, markerLeft: markerBox.left,
+        copyLeft: copyBox.left, iconRight: iconBox.right,
+        angle: Math.atan2(transform.b, transform.a) * 180 / Math.PI, open: root.open,
       },
     };
   });
   assert.ok(result.documentWidth <= result.viewportWidth + 1, `${width} ${state}: page horizontal overflow`);
   assert.ok(result.left >= -1 && result.right <= width + 1, `${width} ${state}: lookup exceeds viewport`);
-  assert.ok(result.summary.centerError <= 1, `${width} ${state}: summary text is ${result.summary.centerError}px away from the box center`);
+  assert.ok(result.summary.copyLeft - result.summary.iconRight >= 8, `${width} ${state}: lookup icon overlaps the copy`);
   assert.ok(result.summary.markerLeft - result.summary.textRight >= 8, `${width} ${state}: summary text overlaps the expand marker`);
-  assert.ok(result.summary.marker.includes(result.summary.open ? '−' : '+'), `${width} ${state}: expand/collapse marker is incorrect`);
+  assert.ok(Math.abs(result.summary.angle - (result.summary.open ? 90 : 0)) <= 1, `${width} ${state}: expand/collapse chevron state is incorrect`);
   for (const control of result.controls) {
     assert.ok(control.height >= 44, `${width} ${state}: ${control.id} is below 44px (${control.height})`);
     assert.ok(control.left >= -1 && control.right <= width + 1, `${width} ${state}: ${control.id} exceeds viewport`);

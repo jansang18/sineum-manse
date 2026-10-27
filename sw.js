@@ -1,5 +1,6 @@
 // 잔상 만세력 서비스워커 종료용 파일.
 // 캐시는 영구 비활성화하며, 과거 jansang-manse-* 캐시와 등록만 정리한다.
+// 20261027-design10: 표현 자원 버전은 index.html에서 갱신; 캐시를 재도입하지 않는다.
 const APP_CACHE_PREFIX = 'jansang-manse-';
 
 self.addEventListener('install', (event) => {

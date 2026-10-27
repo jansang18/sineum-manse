@@ -2,12 +2,31 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script>
+// Restore the selected theme before styles or the first body paint. No new storage keys.
+(function () {
+  var selected;
+  try { selected = localStorage.getItem('saju_theme') || localStorage.getItem('theme'); } catch (error) {}
+  if (selected !== 'dark' && selected !== 'light') selected = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', selected === 'dark');
+  document.documentElement.dataset.theme = selected;
+  document.documentElement.style.colorScheme = selected;
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>잔상 만세력</title>
 <meta name="description" content="잔상 만세력 · 자평명리학 1000년 만세력 · 운세풀이">
+<meta property="og:title" content="잔상 만세력">
+<meta property="og:description" content="나의 명반, 차분하게 읽는 운의 흐름. 원국·연도 풀이·12개월 월운과 날짜 메모를 한곳에서 확인하세요.">
+<meta property="og:image" content="https://jansang18.github.io/sineum-manse/og-share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://jansang18.github.io/sineum-manse/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#f4f1e9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b1115" media="(prefers-color-scheme: dark)">
 <!-- iOS PWA (홈화면 추가시 앱처럼 작동) -->
@@ -1658,23 +1677,25 @@
     #view-result { max-width: 1280px; }
   }
 </style>
-  <link rel="stylesheet" href="apple.css?v=20260919-people-sources">
+  <link rel="stylesheet" href="apple.css?v=20261027-design10">
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
-  <link rel="stylesheet" href="reading.css?v=2.3-design-system">
-  <link rel="stylesheet" href="building-lookup.css?v=2.3.4-summary-center">
+  <link rel="stylesheet" href="reading.css?v=20261027-design10">
+  <link rel="stylesheet" href="building-lookup.css?v=20261027-design10">
+  <script src="presentation.js?v=20261027-design10"></script>
 </head>
 <body>
+<script>document.body.classList.toggle('dark', document.documentElement.dataset.theme === 'dark');</script>
 
 <div class="app">
   <header class="top-bar">
     <h1 class="title"><span class="brand-main">잔상</span> <span class="title-sub">만세력</span></h1>
     <div style="display:flex; gap:4px; align-items:center;">
       <button type="button" class="icon-btn" id="themeToggleBtn" aria-label="테마 전환">
-        <svg id="themeIconSun" viewBox="0 0 24 24" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-        <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="themeIconSun" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true" style="display:none;"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg id="themeIconMoon" viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
       <button type="button" class="icon-btn" id="aboutBtn" aria-label="앱 정보">
-        <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <svg viewBox="0 0 24 24" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       </button>
     </div>
   </header>
@@ -1692,13 +1713,14 @@
       <h2>사주 입력</h2>
       <p>생년월일과 태어난 시간을 입력하면 원국과 운의 흐름을 펼칩니다.</p>
     </header>
-    <button type="button" class="person-search-btn" id="personSearchBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <span>인물 검색 <span style="opacity:0.7;font-weight:600;">(연예인·유명인 자동 입력)</span></span>
+    <button type="button" class="person-search-btn lookup-trigger" id="personSearchBtn">
+      <svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="lookup-copy"><strong>인물 검색</strong><small>연예인·유명인 생년월일 자동 입력</small></span>
+      <svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
     </button>
 
     <details class="building-lookup" id="buildingLookup">
-      <summary><span>건물 날짜 조회</span><span class="building-summary-note">주소로 사용승인일 찾기</span></summary>
+      <summary class="lookup-trigger"><svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1"/></svg><span class="lookup-copy"><strong>건물 날짜 조회</strong><small class="building-summary-note">주소로 사용승인일 찾기</small></span><svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></summary>
       <div class="building-lookup-body">
         <form id="buildingLookupForm">
           <label for="buildingQuery">도로명·지번 주소 또는 건물명</label>
@@ -1727,7 +1749,7 @@
     <div class="input-card">
     <div class="field">
       <label class="field-label" for="inputName">이름</label>
-      <input class="input" id="inputName" placeholder="이름을 입력하세요 (선택)" />
+      <input class="input" id="inputName" autocomplete="name" placeholder="이름을 입력하세요 (선택)" />
     </div>
 
     <div class="field field-row">
@@ -1750,11 +1772,13 @@
     <div class="field field-row">
       <div class="field-half">
         <label class="field-label" for="inBirth">생년월일 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(YYYYMMDD)</span></label>
-        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inBirth" placeholder="19890319" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inBirth" placeholder="19890319" maxlength="8" autocomplete="bday" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="inBirthError" />
+        <p id="inBirthError" class="input-field-error" hidden></p>
       </div>
       <div class="field-half">
         <label class="field-label" for="inTime">태어난 시간 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(HHMM · 선택)</span></label>
-        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="inTimeError" />
+        <p id="inTimeError" class="input-field-error" hidden></p>
       </div>
     </div>
     </div>
@@ -1762,6 +1786,14 @@
     <button type="button" class="primary-btn" id="calcBtn">사주 펼치기</button>
     <div id="inErr" role="alert"></div>
 
+    <section class="input-guide" aria-labelledby="inputGuideTitle">
+      <h3 id="inputGuideTitle">명반을 펼친 뒤, 이렇게 읽어보세요</h3>
+      <div class="input-guide-grid">
+        <article><h4>원국</h4><p>네 기둥과 오행을 보고, 대운부터 일운까지 흐름을 이어보세요.</p></article>
+        <article><h4>풀이</h4><p>연도 종합을 먼저 읽고, 필요한 월운과 대운으로 바로 이동하세요.</p></article>
+        <article><h4>만세력</h4><p>날짜별 간지를 살피고, 기억할 날에는 나만의 메모를 남기세요.</p></article>
+      </div>
+    </section>
     <div class="note-text" style="margin-top: 20px;">
       <strong>잔상 만세력</strong>은 서기 1026년부터 2099년까지 약 1,000년의 만세력을 지원합니다. 원국에서 대운→세운→월운→일운을 차례로 펼쳐볼 수 있고, <strong>풀이</strong> 탭에서는 연도 종합·12개월 월운·대운 흐름을 한 번에 확인할 수 있습니다.
     </div>
@@ -1785,7 +1817,8 @@
       <div class="cal-title" id="calTitle">—</div>
       <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
     </div>
-    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-grid" id="calGrid" tabindex="-1" role="region" aria-label="만세력 달력, 좌우로 스크롤"></div>
+    <p class="calendar-scroll-hint">작은 화면에서는 달력을 좌우로 밀어 확인하세요.</p>
     <p class="calendar-note-hint"><span class="date-note-mark" aria-hidden="true">✓</span>메모가 있는 날 · 날짜를 눌러 기록하세요</p>
     <div id="calDayDetail"></div>
   </section>
@@ -1800,7 +1833,7 @@
 </div>
 
 <div class="bottom-bar" id="bottomBar" style="display:none">
-  <button type="button" class="bb" id="similarBtn">🔎 비슷한</button>
+  <button type="button" class="bb" id="similarBtn"><svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> 비슷한</button>
   <button type="button" class="bb" id="shareBtn">공유</button>
   <button type="button" class="bb primary" id="saveBtn">저장하기</button>
 </div>
@@ -1856,7 +1889,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="personSearchModalTitle" tabindex="-1">
     <h3 id="personSearchModalTitle">인물 검색</h3>
     <div style="font-size:12px; font-weight:500; color:var(--text-sub); line-height:1.6; margin-bottom:10px;">
-      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>네이버 🔍</b>로 인물정보·상세를 열 수 있어요.
+      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>네이버</b>로 인물정보·상세를 열 수 있어요.
     </div>
     <div style="position:relative;">
       <input class="input" id="psQuery" placeholder="예: 아이유, 방탄소년단 뷔, 세종대왕" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:44px;" />
@@ -11902,7 +11935,7 @@ Sigrid Niehaus|19641229|F|
       · 대운 : 남양녀음 순행 / 남음녀양 역행<br>
       · 풀이 : 연도 종합·12개월 월운·대운 흐름
     </div>
-    <div style="font-size:11px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
+    <div style="font-size:12px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
       본 앱의 풀이는 전통 명리학 이론에 기반한 해석으로, 참고용입니다. 실제 삶의 선택과 결과는 본인의 의지와 노력에 달려있습니다.
     </div>
     <div class="modal-actions">
@@ -12593,6 +12626,7 @@ $$('.tab').forEach(t => {
   }
   if (tab === 'saved') renderSaved();
   if (tab === 'fortune') renderFortune();
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   });
 });
 syncTabA11y($('.tab.active'));
@@ -12646,16 +12680,28 @@ document.addEventListener('input', e => {
 
 let _inErrTimer = null;
 function showInErr(msg, focusSel) {
+  clearInErr();
   const el = $('#inErr');
   if (el) { el.textContent = msg; el.classList.add('show'); }
-  if (focusSel) { const f = $(focusSel); if (f) { try { f.focus(); } catch (e) {} f.classList.add('field-err'); } }
+  if (focusSel) { const f = $(focusSel); if (f) {
+    try { f.focus(); } catch (e) {}
+    f.classList.add('field-err');
+    f.setAttribute('aria-invalid', 'true');
+    const description = document.getElementById(f.id + 'Error');
+    if (description) { description.textContent = msg; description.hidden = false; }
+  } }
   if (_inErrTimer) clearTimeout(_inErrTimer);
-  _inErrTimer = setTimeout(clearInErr, 4000);
+  _inErrTimer = setTimeout(() => {
+    // Transient alert may close; the field's accessible error stays until
+    // the next validation, so unchanged invalid input never appears valid.
+    if (el) { el.textContent = ''; el.classList.remove('show'); }
+  }, 4000);
 }
 function clearInErr() {
   const el = $('#inErr');
   if (el) { el.textContent = ''; el.classList.remove('show'); }
-  $$('.field-err').forEach(f => f.classList.remove('field-err'));
+  $$('.field-err').forEach(f => { f.classList.remove('field-err'); f.removeAttribute('aria-invalid'); });
+  $$('.input-field-error').forEach(error => { error.textContent = ''; error.hidden = true; });
 }
 
 onTap($('#calcBtn'), () => {
@@ -12733,7 +12779,7 @@ function renderResult() {
   const html = `
     <div class="oguk-card">
     <div class="result-head view-head${s.buildingRegistry ? ' building-chart-head' : ''}">
-      <div class="name">${escapeHtml(s.name)} ${s.buildingRegistry ? '' : `<span class="age-inline">(만 ${age}세)</span>`}</div>
+      <div class="name">${escapeHtml(MansePresentation.chartLabel(s, 'natal'))} ${s.buildingRegistry ? '' : `<span class="age-inline">(만 ${age}세)</span>`}</div>
       <div class="info">
         ${s.buildingRegistry ? '건물 · 사용승인일 기준' : s.gender === 'M' ? '남성' : '여성'}<br>
         양력 ${s.year}.${pad(s.month)}.${pad(s.day)}${s.lunar ? ` / 음력 ${s.lunar.y}.${pad(s.lunar.m)}.${pad(s.lunar.d)}` : ''}<br>
@@ -13552,7 +13598,7 @@ onTap($('#shareBtn'), () => {
   if (!currentSaju) return;
   if (window.shareCard) { window.shareCard(currentSaju); return; }
   const s = currentSaju;
-  const txt = `${s.name}의 사주\n${s.year}.${pad(s.month)}.${pad(s.day)} ${s.unknown?'시 모름':(pad(s.hour)+':'+pad(s.minute))}\n${STEM[s.yStem]}${BRANCH[s.yBranch]} ${STEM[s.mStem]}${BRANCH[s.mBranch]} ${STEM[s.dStem]}${BRANCH[s.dBranch]} ${s.hStem>=0?STEM[s.hStem]+BRANCH[s.hBranch]:'시간모름'}\n\n잔상 만세력`;
+  const txt = `${MansePresentation.chartLabel(s, 'share')}\n${s.year}.${pad(s.month)}.${pad(s.day)} ${s.unknown?'시 모름':(pad(s.hour)+':'+pad(s.minute))}\n${STEM[s.yStem]}${BRANCH[s.yBranch]} ${STEM[s.mStem]}${BRANCH[s.mBranch]} ${STEM[s.dStem]}${BRANCH[s.dBranch]} ${s.hStem>=0?STEM[s.hStem]+BRANCH[s.hBranch]:'시간모름'}\n\n잔상 만세력`;
   if (navigator.share) navigator.share({ text: txt });
   else { navigator.clipboard.writeText(txt); alert('클립보드에 복사되었습니다'); }
 });
@@ -13568,10 +13614,10 @@ function makeSavedElement(tag, className, text) {
 
 function makeSavedToolbar(count) {
   const toolbar = makeSavedElement('div', 'saved-toolbar');
-  const exportButton = makeSavedElement('button', 'bb', count ? `📤 내보내기 (${count})` : '📤 내보내기');
+  const exportButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', count ? `내보내기 (${count})` : '내보내기'), 'upload');
   exportButton.type = 'button';
   exportButton.id = 'savedExportBtn';
-  const importButton = makeSavedElement('button', 'bb', '📥 불러오기');
+  const importButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', '불러오기'), 'download');
   importButton.type = 'button';
   importButton.id = 'savedImportBtn';
   const fileInput = document.createElement('input');
@@ -13588,7 +13634,7 @@ function makeSavedCard(record) {
   card.dataset.id = String(record.id || '');
 
   const row = makeSavedElement('div', 'row1');
-  const name = makeSavedElement('div', 'sname', record.name || '이름 없음');
+  const name = makeSavedElement('div', 'sname', MansePresentation.chartLabel(record, 'saved'));
   name.append(' ', makeSavedElement('span', 'sgender', record.gender === 'M' ? '남' : '여'));
   const actions = makeSavedElement('div', 'scard-actions');
   const favourite = makeSavedElement('button', `sfav${record.fav ? ' on' : ''}`, record.fav ? '★' : '☆');
@@ -13642,7 +13688,7 @@ async function renderSaved() {
 
   if (list.length === 0) {
     const empty = makeSavedElement('div', 'saved-empty');
-    const mark = makeSavedElement('div', 'empty-mark', '✦');
+    const mark = MansePresentation.prependIcon(makeSavedElement('div', 'empty-mark'), 'sparkle');
     const heading = makeSavedElement('h3', '', '아직 저장된 명반이 없습니다');
     const copy = makeSavedElement('p');
     copy.append('원국에서 자주 보는 명반을 저장하면', document.createElement('br'), '이곳에서 빠르게 다시 열 수 있습니다.');
@@ -13662,7 +13708,8 @@ async function renderSaved() {
   const search = document.createElement('input');
   search.id = 'savedSearch';
   search.className = 'input';
-  search.placeholder = '🔍 이름·메모 검색';
+  search.placeholder = '이름·메모 검색';
+  search.setAttribute('aria-label', '저장한 명반 이름·메모 검색');
   search.style.marginBottom = '10px';
   search.addEventListener('input', () => filterSaved(search.value));
   const cards = makeSavedElement('div', 'saved-list');
@@ -13811,7 +13858,7 @@ async function findSimilarSaju() {
         const hHan = (rec.hStem>=0 && rec.hBranch>=0) ? `${STEM[rec.hStem]}${BRANCH[rec.hBranch]}` : '시?';
         return `<div class="similar-card" data-id="${escapeHtml(String(rec.id || ''))}">
           <div class="sc-head">
-            <div class="sc-name">${escapeHtml(rec.name || '이름 없음')}</div>
+            <div class="sc-name">${escapeHtml(MansePresentation.chartLabel(rec, 'saved'))}</div>
             <div class="sc-score ${sCls}">${sim.score}<span>점</span></div>
           </div>
           <div class="sc-pillars">
@@ -14202,6 +14249,15 @@ $$('.modal-bg').forEach(m => {
 
 /* 테마 토글 (라이트/다크) */
 function applyTheme(theme) {
+  theme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    // Manual theme choice takes precedence over the operating-system media query.
+    meta.removeAttribute('media');
+    meta.content = theme === 'dark' ? '#0b1115' : '#f4f1e9';
+  });
   const sun = document.getElementById('themeIconSun');
   const moon = document.getElementById('themeIconMoon');
   if (theme === 'dark') {
@@ -14215,8 +14271,9 @@ function applyTheme(theme) {
   }
 }
 (function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem('saju_theme'); } catch (e) {}
+  let saved = document.documentElement.dataset.theme || null;
+  let explicit = false;
+  try { explicit = ['saju_theme', 'theme'].some(key => ['light', 'dark'].includes(localStorage.getItem(key))); } catch (e) {}
   if (!saved) {
     try {
       saved = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -14227,7 +14284,7 @@ function applyTheme(theme) {
   (async () => {
     try {
       const r = await window.storage.get('theme');
-      if (r && r.value && r.value !== saved) applyTheme(r.value);
+      if (!explicit && r && ['dark', 'light'].includes(r.value) && r.value !== saved) applyTheme(r.value);
     } catch (e) {}
   })();
 })();
@@ -14634,6 +14691,8 @@ function buildAnnualReading(fortune, saju) {
 
 function renderUnifiedReading(report) {
   if (!report) return '';
+  // The calculation/generation report is immutable; normalize only its display copy.
+  report = MansePresentation.readingReport(report, currentSaju);
   const paragraphs = items => (items || [])
     .map(item => `<p>${escapeHtml(String(item))}</p>`)
     .join('');
@@ -14704,7 +14763,7 @@ function renderFortune(focusYearControl = '') {
     const box = document.getElementById('fortuneContent');
     if (box) {
       box.innerHTML = `<div class="fortune-empty">
-        <div class="ico">⚠️</div>
+        <div class="ico">${MansePresentation.icon('info')}</div>
         <p>풀이 생성 중 오류가 발생했습니다<br><span style="font-size:12px;color:var(--text-light)">${escapeHtml(e.message || String(e))}</span></p>
       </div>`;
     }
@@ -14717,7 +14776,7 @@ function _renderFortuneInner(focusYearControl = '') {
       <h2>풀이</h2>
       <p>연도 종합부터 12개월 월운과 대운까지 차례로 읽습니다.</p>
     </header><div class="fortune-empty">
-      <div class="ico">🔮</div>
+      <div class="ico">${MansePresentation.icon('sparkle')}</div>
       <p>먼저 <strong>입력</strong> 탭에서 사주를 펼쳐주세요<br>또는 <strong>저장</strong>된 명반을 불러오세요</p>
     </div>`;
     return;
@@ -14766,7 +14825,7 @@ function _renderFortuneInner(focusYearControl = '') {
     <div class="fortune-head view-head">
       <div class="fortune-head-summary">
         <div>
-          <div class="nm">${escapeHtml(s.name)}님의 ${isCurrentYear ? '올해운' : `${fortuneYear}년 운세`}</div>
+          <div class="nm">${escapeHtml(MansePresentation.chartLabel(s, 'fortune', isCurrentYear ? null : fortuneYear))}</div>
           <div class="year-tag">${fortune.year}년 · ${SIPSIN_KOR[fortune.seunStemSipsin]} / ${SIPSIN_KOR[fortune.seunBranchSipsin]}</div>
         </div>
         <div class="ganji-big" aria-label="${fortune.year}년 ${ga}년">
@@ -15569,7 +15628,7 @@ function psItemHtml(o) {
     <div class="ps-info">
       <div class="ps-title">${escapeHtml(o.title)}${o.kind === 'local' ? '<span class="ps-src">즉시</span>' : ''}</div>
       <div class="ps-desc">${escapeHtml(o.desc || '설명 없음')}</div>
-      <a class="ps-naver" href="${escapeHtml(buildNaverUrl(o.title))}" target="_blank" rel="noopener noreferrer">네이버 🔍</a>
+      <a class="ps-naver" href="${escapeHtml(buildNaverUrl(o.title))}" target="_blank" rel="noopener noreferrer">${MansePresentation.icon('search')} 네이버</a>
     </div>
   </div>`;
 }
@@ -15644,7 +15703,7 @@ async function psSearch(query) {
     const loadEl2 = $('#psWikiLoading');
     if (loadEl2) loadEl2.remove();
     if (!locals.length && !wikiHtml) {
-      $('#psResults').innerHTML = '<div class="ps-empty">검색 결과가 없습니다<br><span style="font-size:11px;">다른 이름이나 본명으로 시도해보세요</span></div>';
+      $('#psResults').innerHTML = '<div class="ps-empty">검색 결과가 없습니다<br><span style="font-size:12px;">다른 이름이나 본명으로 시도해보세요</span></div>';
       return;
     }
     // 로컬 항목은 그대로 두고 위키 결과만 추가(append) → 이미 렌더/바인딩된 로컬 항목이 교체되지 않음
@@ -15658,7 +15717,7 @@ async function psSearch(query) {
       const loadEl = $('#psWikiLoading');
       if (loadEl) loadEl.outerHTML = '<div class="ps-online-note">※ 위키백과(온라인) 검색은 실패했지만, 위 내장 결과는 사용할 수 있어요.</div>';
     } else {
-      $('#psResults').innerHTML = `<div class="ps-error">검색 실패<br><span style="font-size:11px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">내장 목록에 없는 인물은 <b>인터넷 연결</b>이 필요합니다.<br>파일을 직접 열어 사용 중이라면,<br>https 주소(웹/앱)로 접속해주세요.</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">검색 실패<br><span style="font-size:12px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">내장 목록에 없는 인물은 <b>인터넷 연결</b>이 필요합니다.<br>파일을 직접 열어 사용 중이라면,<br>https 주소(웹/앱)로 접속해주세요.</span></div>`;
     }
   }
 }
@@ -15693,11 +15752,11 @@ function psShowConfirm(title, year, month, day, gender, source) {
       <div class="pcb-row"><span class="k">생년월일</span><span class="v">${dateStr}</span></div>
       <div class="pcb-row"><span class="k">성별</span><span class="v">${gText}</span></div>
       <div class="pcb-row"><span class="k">태어난 시간</span><span class="v" style="color:var(--text-sub);font-weight:600;">시 모름</span></div>
-      <div style="font-size:11px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
+      <div style="font-size:12px; color:var(--text-sub); line-height:1.6; margin-top:10px; font-weight:500;">
         ※ ${srcText} 입력 후 필요하면 수정하세요.
       </div>
       ${sourceLinks}
-      <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">네이버에서 보기 🔍</a></div>
+      <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">${MansePresentation.icon('search')} 네이버에서 보기</a></div>
       <div class="pcb-actions">
         <button type="button" id="pcbCancel">다시 검색</button>
         <button type="button" class="primary" id="pcbApply">자동 입력</button>
@@ -15709,7 +15768,7 @@ function psShowConfirm(title, year, month, day, gender, source) {
 
 async function psSelectPerson(title, qid) {
   if (!qid) {
-    $('#psResults').innerHTML = '<div class="ps-error">이 인물의 데이터를 찾을 수 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">직접 입력해주세요</span></div>';
+    $('#psResults').innerHTML = '<div class="ps-error">이 인물의 데이터를 찾을 수 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">직접 입력해주세요</span></div>';
     return;
   }
   $('#psResults').innerHTML = '<div class="ps-loading"><span class="spinner"></span>' + escapeHtml(title) + ' 정보를 가져오는 중...</div>';
@@ -15726,13 +15785,13 @@ async function psSelectPerson(title, qid) {
     const genderId = genderClaim && genderClaim.mainsnak && genderClaim.mainsnak.datavalue && genderClaim.mainsnak.datavalue.value && genderClaim.mainsnak.datavalue.value.id;
 
     if (!birth || !birth.time) {
-      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 생년월일 정보를 찾을 수 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">위키백과에 데이터가 없거나 비공개입니다</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 생년월일 정보를 찾을 수 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">위키백과에 데이터가 없거나 비공개입니다</span></div>`;
       return;
     }
 
     const precision = birth.precision;
     if (precision < 11) {
-      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 정확한 생일 정보가 없습니다<br><span style="font-size:11px;color:var(--text-sub);margin-top:6px;display:inline-block;">연도나 월까지만 공개되어 있습니다</span></div>`;
+      $('#psResults').innerHTML = `<div class="ps-error">${escapeHtml(title)}의 정확한 생일 정보가 없습니다<br><span style="font-size:12px;color:var(--text-sub);margin-top:6px;display:inline-block;">연도나 월까지만 공개되어 있습니다</span></div>`;
       return;
     }
 
@@ -15757,7 +15816,7 @@ async function psSelectPerson(title, qid) {
     psShowConfirm(title, year, month, day, gender, 'wiki');
   } catch (e) {
     console.error(e);
-    $('#psResults').innerHTML = `<div class="ps-error">정보 가져오기 실패<br><span style="font-size:11px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">인터넷 연결을 확인하거나<br>https 주소로 접속해주세요.</span></div>`;
+    $('#psResults').innerHTML = `<div class="ps-error">정보 가져오기 실패<br><span style="font-size:12px;color:var(--text-sub);margin-top:8px;display:inline-block;line-height:1.7;">인터넷 연결을 확인하거나<br>https 주소로 접속해주세요.</span></div>`;
   }
 }
 
@@ -15866,9 +15925,21 @@ clearLegacyAppCaching().catch((error) => {
    홈화면 추가 안내 — 제거됨
    ============================================ */
 </script>
-<script src="share.js?v=2.2"></script>
+<script src="share.js?v=20261027-design10"></script>
 <script src="nav.js"></script>
 <script src="hanja-alignment.js?v=2.3.2-hanja-ink" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>
+<script src="reading-navigation.js?v=20261027-design10"></script>
+<script>
+// A scrollable narrow calendar needs a keyboard stop; a fitting grid should
+// continue directly from month controls to the date buttons, without a dead stop.
+(function () {
+  const grid = document.getElementById('calGrid');
+  const update = () => { grid.tabIndex = grid.scrollWidth > grid.clientWidth + 1 ? 0 : -1; };
+  if ('ResizeObserver' in window) new ResizeObserver(update).observe(grid);
+  new MutationObserver(update).observe(grid, { childList: true });
+  update();
+})();
+</script>
 </body>
 </html>

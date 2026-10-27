@@ -1260,7 +1260,7 @@ async function inspectFinalSecurityRuntime(page, width) {
 
     for (const key of keys) await window.storage.delete(key);
     localStorage.removeItem('saju_list');
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     document.querySelector('.tab[data-tab="saved"]').click();
     await renderSaved();
@@ -1363,14 +1363,14 @@ async function inspectCalendarCurrentYear(page, width) {
     };
 
     window.__calendarNow = () => new Date(2034, 6, 15, 12, 0, 0);
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     document.querySelector('.tab[data-tab="calendar"]').click();
     const initial = readTitle();
-    document.body.classList.add('dark');
+    applyTheme('dark');
     await wait(300);
     const forcedDark = readTitle();
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     for (let index = 0; index < 6; index++) document.getElementById('calNext').click();
     document.querySelector('.tab[data-tab="input"]').click();
@@ -1763,6 +1763,8 @@ async function inspectUnifiedReading(page, width) {
       yearText: root.querySelector('[data-reading-section="year"]')?.textContent || '',
       daeunText: root.querySelector('[data-reading-section="daeun"]')?.textContent || '',
       detailsCount: root.querySelectorAll('details').length,
+      monthDisclosures: root.querySelectorAll('.reading-detail--month').length,
+      openMonths: root.querySelectorAll('.reading-detail--month[open]').length,
       scoreCards: root.querySelectorAll('.overall-card, .f-card, .match-total-card').length,
       lifeGraphs: root.querySelectorAll('.life-course, [data-lifetime-graph]').length,
       deepCards: root.querySelectorAll('.deep-reading, .deep-chapter').length,
@@ -1804,7 +1806,11 @@ async function inspectUnifiedReading(page, width) {
   assert.equal(initial.monthLabels[0], '1월');
   assert.equal(initial.monthLabels[11], '12월');
   assert.match(initial.daeunText, /대운/);
-  assert.equal(initial.detailsCount, 0);
+  // Design10 explicitly approves native disclosures; all generated text and
+  // the annual→months→daeun sequence above still remain in the DOM.
+  assert.ok(initial.detailsCount >= 22);
+  assert.equal(initial.monthDisclosures, 12);
+  assert.equal(initial.openMonths, 1);
   assert.equal(initial.scoreCards, 0);
   assert.equal(initial.lifeGraphs, 0);
   assert.equal(initial.deepCards, 0);
@@ -1993,6 +1999,9 @@ async function inspectLongReading(page, width) {
       proseWidth: proseRect?.width || 0,
       viewportWidth: document.documentElement.clientWidth,
       details: root?.querySelectorAll('details').length || 0,
+      invalidDetails: root?.querySelectorAll('details:not(:has(> summary))').length || 0,
+      monthDisclosures: root?.querySelectorAll('.reading-detail--month').length || 0,
+      openMonths: root?.querySelectorAll('.reading-detail--month[open]').length || 0,
       cards: root?.querySelectorAll('.overall-card, .life-course, .deep-reading, .deep-chapter').length || 0,
       overflowNodes,
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -2008,7 +2017,10 @@ async function inspectLongReading(page, width) {
   assert.ok(state.fontSize >= 14, `${width}px reading font below 14px`);
   assert.ok(state.lineHeight / state.fontSize >= 1.65, `${width}px reading line-height is cramped`);
   assert.ok(state.proseWidth <= Math.min(state.viewportWidth, 760), `${width}px readable line measure is too wide: ${state.proseWidth}px`);
-  assert.equal(state.details, 0, `${width}px continuous reading must not use disclosures`);
+  assert.ok(state.details >= 22, `${width}px monthly/deep chapters need accessible disclosures`);
+  assert.equal(state.invalidDetails, 0, `${width}px disclosures must have a native summary`);
+  assert.equal(state.monthDisclosures, 12, `${width}px all twelve monthly readings remain available`);
+  assert.equal(state.openMonths, 1, `${width}px only the current month starts expanded`);
   assert.equal(state.cards, 0, `${width}px removed score/graph/chapter cards returned`);
   assert.deepEqual(state.overflowNodes, [], `${width}px reading descendants overflow: ${state.overflowNodes.join(', ')}`);
   assert.ok(state.pageOverflow <= 1, `${width}px reading page overflowed by ${state.pageOverflow}px`);
@@ -2148,7 +2160,7 @@ async function inspectLuckFlowAccessibility(page, width) {
   assert.match(initial.currentDaeun[0], /현재/);
 
   for (const dark of [false, true]) {
-    await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), dark);
+    await page.evaluate(isDark => applyTheme(isDark ? 'dark' : 'light'), dark);
     await page.keyboard.press('Tab');
     await page.$eval('#daeunScroll .luck-item.selected', item => item.focus());
     const focus = await page.$eval('#daeunScroll .luck-item.selected', item => {
@@ -2169,7 +2181,7 @@ async function inspectLuckFlowAccessibility(page, width) {
     assert.equal(focus.outlineOffset, '2px');
     assert.notEqual(focus.outlineColor, 'rgba(0, 0, 0, 0)');
   }
-  await page.evaluate(() => document.body.classList.add('dark'));
+  await page.evaluate(() => applyTheme('dark'));
 
   await page.evaluate(() => {
     const selected = document.querySelector('#daeunScroll .luck-item.selected');
@@ -2293,7 +2305,7 @@ async function inspectLuckFlowResponsive(page, width) {
   if (width >= 768) {
     assert.ok(state.daeun.scrollWidth - state.daeun.clientWidth <= 1);
     assert.ok(state.seun.scrollWidth - state.seun.clientWidth <= 1);
-    assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1);
+    assert.ok(state.woon.scrollWidth - state.woon.clientWidth <= 1, `${width}px monthly region ${JSON.stringify(state.woon)}`);
   }
   for (const [layer, metrics] of Object.entries({ daeun: state.daeun, seun: state.seun })) {
     if (metrics.scrollWidth - metrics.clientWidth <= 1) {
@@ -2307,6 +2319,15 @@ async function inspectLuckFlowResponsive(page, width) {
 }
 
 async function collectAppleInspection(page, selectors) {
+  // Theme now updates root and body together. Wait for the actual finite
+  // transitions (including inherited-color descendants), not a timing guess.
+  await page.evaluate(async () => {
+    for (let pass = 0; pass < 3; pass++) {
+      const finite = document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime));
+      await Promise.race([Promise.allSettled(finite.map(a => a.finished)), new Promise(resolve => setTimeout(resolve, 1200))]);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+  });
   return page.evaluate(({ styleSelectors, geometrySelectors }) => {
     const visualProperties = [
       'background', 'backgroundColor', 'backgroundImage',
@@ -2642,7 +2663,7 @@ async function inspectAppleDesign(page, width) {
   };
 
   for (const [theme, accent] of Object.entries(expectedAccents)) {
-    await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), theme === 'dark');
+    await page.evaluate(isDark => applyTheme(isDark ? 'dark' : 'light'), theme === 'dark');
     await page.click('.tab[data-tab="input"]');
     await page.waitForFunction(() => document.querySelector('#view-input')?.classList.contains('active'));
     await sleep(250);
@@ -2857,7 +2878,7 @@ async function inspectAppleSecondaryScreens(page, width) {
         await Promise.all(animations.map(animation => animation.finished.catch(() => undefined)));
         await wait(0);
       };
-      document.body.classList.toggle('dark', theme === 'dark');
+      applyTheme(theme);
       await wait(300);
 
       const css = element => {
@@ -3109,7 +3130,7 @@ async function inspectAppleSecondaryScreens(page, width) {
     });
     const reducedTransparency = await page.evaluate(async () => {
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-      document.body.classList.add('dark');
+      applyTheme('dark');
       const inspect = element => {
         const style = getComputedStyle(element);
         return {
@@ -3361,7 +3382,7 @@ async function inspectWidth(browser, width) {
   console.log(`[ui] ${width}px: navigating`);
   await page.goto(URL, { waitUntil: 'networkidle0' });
   console.log(`[ui] ${width}px: loaded`);
-  await page.evaluate(() => document.body.classList.add('dark'));
+  await page.evaluate(() => applyTheme('dark'));
 
   await inspectAndroidSafeAreaGeometry(page, width);
   if (TEST_GROUP === 'android-safe-area') {
@@ -3394,7 +3415,7 @@ async function inspectWidth(browser, width) {
   }
   if (!TEST_GROUP && width === 390) {
     await page.reload({ waitUntil: 'networkidle0' });
-    await page.evaluate(() => document.body.classList.add('dark'));
+    await page.evaluate(() => applyTheme('dark'));
   }
 
   if (width === 390) {
@@ -3595,10 +3616,10 @@ async function inspectWidth(browser, width) {
         };
 
         document.querySelector('.tab[data-tab="calendar"]').click();
-        document.body.classList.remove('dark');
+        applyTheme('light');
         await wait(350);
         const light = measure();
-        document.body.classList.add('dark');
+        applyTheme('dark');
         await wait(350);
         const dark = measure();
         document.querySelector('.tab[data-tab="input"]').click();
@@ -3622,7 +3643,7 @@ async function inspectWidth(browser, width) {
         });
         transparencyStyles = await page.evaluate(async () => {
           const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-          document.body.classList.add('dark');
+          applyTheme('dark');
           const toast = document.getElementById('appToast');
           const measure = () => {
             const style = getComputedStyle(toast);
@@ -3634,10 +3655,10 @@ async function inspectWidth(browser, width) {
             };
           };
 
-          document.body.classList.remove('dark');
+          applyTheme('light');
           await wait(300);
           const light = measure();
-          document.body.classList.add('dark');
+          applyTheme('dark');
           await wait(300);
           const dark = measure();
           return {

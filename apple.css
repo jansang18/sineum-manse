@@ -1,6 +1,6 @@
 /* JANSANG: one ink-and-gold foundation for every screen and component. */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --app-font-ui: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
   --app-font-display: "Noto Serif KR", "Batang", serif;
   --app-font-body: 1rem;
@@ -13,7 +13,7 @@
   --apple-surface-2: #eeebe3;
   --apple-label: #1b2529;
   --apple-secondary: #59615e;
-  --apple-tertiary: #68716d;
+  --apple-tertiary: #606a64;
   --apple-separator: rgba(43, 52, 49, .18);
   --apple-separator-strong: #737a6e;
   /* Capacitor 8 writes this value on Android 15+; Safari falls back to env(). */
@@ -36,7 +36,9 @@
   font-family: var(--app-font-ui);
 }
 
+:root.dark,
 body.dark {
+  color-scheme: dark;
   --apple-bg: #0b1115;
   --apple-surface: #111a20;
   --apple-surface-2: #182229;
@@ -338,10 +340,10 @@ body.dark {
   border-color: var(--apple-accent) !important;
   color: var(--apple-accent) !important;
   -webkit-text-fill-color: var(--apple-label);
-  outline-width: 3px !important;
+  outline-width: 2px !important;
   outline-style: solid !important;
   outline-color: var(--apple-accent) !important;
-  outline-offset: 0;
+  outline-offset: 2px;
   box-shadow: none !important;
 }
 
@@ -403,7 +405,7 @@ body.dark {
 .tab:focus-visible,
 .icon-btn:focus-visible,
 .modal-actions button:focus-visible {
-  outline: 3px solid var(--apple-focus) !important;
+  outline: 2px solid var(--apple-focus) !important;
   outline-offset: 2px;
 }
 
@@ -1770,6 +1772,78 @@ html {
 
 .jj-primary { color: var(--apple-label); font-weight: 700; }
 
+/* Metadata stays readable without changing the approved square tile sizes. */
+:is(.tap-hint, .calli-kor, .jijanggan, .meta, .today-chip,
+    .cycle-target small, .cycle-row-label small, .cycle-date-chip, .cycle-empty,
+    .cycle-note, .cycle-people-kicker, .cycle-people-source, .cycle-people-loading,
+    .cycle-people-empty, .cycle-person-copy small, .birthday-calendar-note,
+    .cycle-people-note, .cycle-people-retry, .cal-current-year, .cal-wd,
+    .cal-day .lu, .cal-day .cal-ss-t, .cal-day .cal-ss-b,
+    .siju-label .hint, .siju-item .sj-label, .siju-item .sj-time,
+    .similar-card .sc-score span, .similar-card .sc-meta, .saved-card .sgender,
+    .ps-item .ps-src, .ps-naver, .ps-online-note, .ps-empty span, .ps-error span,
+    .result-head .info small, .fortune-head .year-tag, .fortune-head .ganji-big small) {
+  font-size: 12px !important;
+}
+
+.pillar-col .he-tag {
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 1px 3px;
+  font-size: 12px;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.pillar-col {
+  /* Three relationship badges fit their own slot, never over a label or tile. */
+  grid-template-rows: 24px 26px 44px auto 20px auto 20px 28px 64px 28px;
+}
+
+.pillar-col .he-row { min-height: 0; margin-block: 2px; }
+.pillar-col .he-row-top { min-height: 0; margin-block: 2px; }
+
+.he-tag.he-sam,
+body.dark .he-tag.he-sam {
+  background: var(--apple-fire-surface);
+  color: var(--apple-fire-foreground);
+}
+.he-tag.he-bang,
+body.dark .he-tag.he-bang {
+  background: var(--apple-water-surface);
+  color: var(--apple-water-foreground);
+}
+.he-tag.he-hap,
+body.dark .he-tag.he-hap {
+  background: var(--apple-wood-surface);
+  color: var(--apple-wood-foreground);
+}
+.he-tag.he-chung,
+body.dark .he-tag.he-chung {
+  background: var(--apple-earth-surface);
+  color: var(--apple-earth-foreground);
+}
+
+.cal-day.other { opacity: 1 !important; background: var(--apple-inset) !important; }
+.saved-card .sdelete { color: var(--app-error) !important; }
+.saved-card .sgender,
+.ps-item .ps-src,
+body.dark .ps-item .ps-src {
+  background: var(--apple-fire-surface);
+  color: var(--apple-fire-foreground);
+}
+.ps-naver,
+body.dark .ps-naver {
+  background: var(--apple-wood-surface);
+  color: var(--apple-wood-foreground);
+  border-color: var(--apple-separator-strong);
+}
+.saved-card .spill.el-wood { background: var(--apple-wood-surface); color: var(--apple-wood-foreground); }
+.saved-card .spill.el-fire { background: var(--apple-fire-surface); color: var(--apple-fire-foreground); }
+.saved-card .spill.el-earth { background: var(--apple-earth-surface); color: var(--apple-earth-foreground); }
+.saved-card .spill.el-metal { background: var(--apple-metal-surface); color: var(--apple-metal-foreground); }
+.saved-card .spill.el-water { background: var(--apple-water-surface); color: var(--apple-water-foreground); }
+
 .pillar-block.empty,
 body.dark .pillar-block.empty { background: var(--apple-inset); }
 
@@ -1947,7 +2021,7 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 .day-wd {
   padding-block: 5.6px;
-  font-size: 9.8px;
+  font-size: 12px;
 }
 
 .day-scroll-hint {
@@ -2010,10 +2084,10 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 .day-item .d-kor-t { bottom: var(--day-text-inset); left: 0; width: 50%; }
 .day-item .d-kor { bottom: var(--day-text-inset); left: 50%; width: 50%; }
 
-.day-item .d-num { font-size: clamp(9.8px, 0.91vw, 11.2px) !important; }
+.day-item .d-num { font-size: 12px !important; }
 .day-item .d-han { font-size: clamp(16.8px, 1.75vw, 22.4px) !important; font-family: var(--app-font-display); }
 .day-item .d-kor,
-.day-item .d-kor-t { font-size: clamp(8.4px, 0.77vw, 9.8px) !important; }
+.day-item .d-kor-t { font-size: 12px !important; }
 
 /* Unified responsive shell: one rectangle for every live surface. */
 :root {
@@ -2116,6 +2190,56 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 .person-search-btn { margin-top: clamp(16px, 3vw, 26px) !important; }
 
+/* People and building lookup are the same optional step in the input flow. */
+.lookup-trigger {
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px !important;
+  width: 100%;
+  min-height: var(--app-control-height);
+  box-sizing: border-box;
+  padding: 12px 14px !important;
+  border: 1px solid var(--apple-separator);
+  border-radius: var(--apple-radius-control);
+  background: var(--apple-inset);
+  color: var(--apple-label);
+  font-family: var(--app-font-ui);
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  text-align: left !important;
+  cursor: pointer;
+}
+.lookup-icon,
+.lookup-chevron { display: grid; place-items: center; width: 20px; color: var(--apple-accent); }
+.lookup-copy { display: grid; min-width: 0; gap: 2px; }
+.lookup-copy strong { color: var(--apple-label); font-size: 14px; font-weight: 600; }
+.lookup-copy small { color: var(--apple-secondary); font-size: 12px; font-weight: 400; }
+.lookup-chevron { font-size: 20px; transition: transform 100ms ease-out; }
+.ui-icon { display: inline-block; width: 20px; height: 20px; flex-shrink: 0; vertical-align: middle; }
+
+.input-guide {
+  display: none;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--apple-separator);
+  border-radius: var(--apple-radius-card);
+  background: var(--apple-inset);
+  color: var(--apple-label);
+}
+.input-guide h3,
+.input-guide h4 { margin: 0; font-size: 18px; font-weight: 600; line-height: 1.4; }
+.input-guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 16px; }
+.input-guide p { margin: 8px 0 0; color: var(--apple-secondary); font-size: 16px; line-height: 1.7; }
+@media (min-width: 1024px) { .input-guide { display: block; } }
+
+/* A narrow calendar scrolls locally; seven touch targets never shrink below 44px. */
+.cal-grid { grid-template-columns: repeat(7, minmax(44px, 1fr)); overflow-x: auto; overscroll-behavior-x: contain; }
+/* The enlarged 12px date must not collide with the existing memo check badge. */
+#calGrid .date-note-mark { top: 0; right: 0; }
+.calendar-scroll-hint { display: none; margin: 8px 0 0; color: var(--apple-secondary); font-size: 12px; line-height: 1.5; text-align: center; }
+@media (max-width: 390px) { .calendar-scroll-hint { display: block; } }
+
 .oguk-card .result-head.view-head {
   height: auto;
   min-height: 88px;
@@ -2149,6 +2273,43 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 .view-empty p { margin: 0; }
 
+/* One empty-state rhythm: a bounded mark, title, copy, then a clear action. */
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) {
+  box-sizing: border-box;
+  padding: clamp(28px, 6vw, 56px) clamp(12px, 3vw, 24px);
+  color: var(--apple-secondary);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > :is(.empty-mark, .ico) {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--apple-separator);
+  border-radius: var(--apple-radius-card);
+  background: color-mix(in srgb, var(--apple-accent) 12%, var(--apple-surface));
+  color: var(--apple-accent);
+  font-size: 28px;
+  line-height: 1;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > h3 {
+  margin: 0 0 8px;
+  color: var(--apple-label);
+  font-size: var(--app-section-title-size);
+  line-height: 1.4;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > p { margin: 0; }
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > :is(button, .empty-cta) {
+  margin-top: 24px;
+}
+
 .fortune-head-summary {
   display: flex;
   align-items: center;
@@ -2157,6 +2318,9 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   width: min(100%, 72ch);
   margin-inline: auto;
 }
+.fortune-head-summary > div:first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.fortune-head-summary .nm { overflow-wrap: anywhere; }
+.reading-section__head h2, .reading-deep-intro h3 { overflow-wrap: anywhere; }
 
 .fortune-head .nm {
   margin: 0 0 4px !important;
@@ -2237,6 +2401,8 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   transform: translateX(-50%) !important;
   border: 1px solid var(--apple-separator) !important;
   border-radius: 14px 14px 0 0;
+  background: var(--apple-surface) !important;
+  box-shadow: none !important;
 }
 
 .bottom-bar .bb {
@@ -2252,4 +2418,48 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
   .bottom-bar {
     width: calc(var(--app-shell-width) - 16px) !important;
   }
+}
+
+/* Every interactive surface has the same keyboard and pointer-down feedback. */
+:is(button, a[href], summary, [role="button"], [role="tab"], [tabindex]):focus-visible,
+body.dark .cal-day:focus-visible {
+  outline: 2px solid var(--apple-focus) !important;
+  outline-offset: 2px !important;
+}
+
+:is(button, summary, [role="button"]):not(:disabled) {
+  touch-action: manipulation;
+  transition-duration: 100ms;
+  transition-timing-function: ease-out;
+}
+:is(button, summary, [role="button"]):not(:disabled):active {
+  transform: scale(.98) !important;
+  opacity: 1;
+}
+
+#daeunScroll,
+#seunScroll,
+#woonScroll.woon-grid {
+  padding-inline: 8px !important;
+  scroll-padding-inline: 8px;
+  mask-image: linear-gradient(to right, transparent, #000 8px, #000 calc(100% - 8px), transparent);
+}
+
+@media (min-width: 1024px) {
+  .bottom-bar {
+    width: calc(var(--app-shell-width) - var(--app-content-inset) - var(--app-content-inset)) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  body :is(button, input, select, textarea, summary, a[href], [role="button"], [role="tab"], .view, .view > *, .saved-card) {
+    animation: none !important;
+    transition: none !important;
+  }
+  :is(button, summary, [role="button"]):not(:disabled):active { transform: none !important; }
 }

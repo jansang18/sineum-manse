@@ -47,7 +47,9 @@ async function inspect(page, label, fixture) {
   check(Math.abs(state.grid.width - Math.min(state.parent.width, expectedCell * 7 + 33.6)) <= 1,
     `${label}: reduced calendar wastes space or exceeds its intended width`);
   check(state.weekdays.map(day => day.text).join('') === '일월화수목금토', `${label}: weekday order changed`);
-  check(state.weekdays.every(day => Math.abs(day.font - 9.8) < 0.05), `${label}: weekday labels were not reduced by 30%`);
+  // Latest approved accessibility floor supersedes the former 9.8px labels;
+  // retain the 30% box reduction and the independent geometry baseline above.
+  check(state.weekdays.every(day => Math.abs(day.font - 12) < 0.05), `${label}: weekday labels must respect the 12px accessibility floor`);
   check(state.blanks === fixture.start && state.days.length === fixture.count, `${label}: month length/weekday placeholders changed`);
   for (const [index, day] of state.days.entries()) {
     check(day.day === index + 1, `${label}: date order changed`);
@@ -60,8 +62,8 @@ async function inspect(page, label, fixture) {
       const previousFont = text.name === 'd-han' ? Math.min(32, Math.max(24, state.viewport * 0.025))
         : text.name === 'd-num' ? Math.min(16, Math.max(14, state.viewport * 0.013))
           : Math.min(14, Math.max(12, state.viewport * 0.011));
-      check(Math.abs(text.font - previousFont * 0.7) <= 0.05,
-        `${label}: ${text.name} ${text.font}px must be 30% smaller than ${previousFont}px`);
+      check(Math.abs(text.font - Math.max(12, previousFont * 0.7)) <= 0.05,
+        `${label}: ${text.name} ${text.font}px must preserve the reduction without going below12px`);
       check(text.text.length > 0 && text.innerOverflow <= 1, `${label}: day ${day.day} text is missing or clipped`);
       check(Math.max(day.left - text.left, text.right - day.right, day.top - text.top, text.bottom - day.bottom) <= 1,
         `${label}: day ${day.day} ${text.name} exceeds its box`);
