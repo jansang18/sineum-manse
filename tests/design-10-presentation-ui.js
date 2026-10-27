@@ -19,6 +19,11 @@ const root = process.env.DESIGN_ROOT || path.resolve(__dirname, '..');
       await page.click('#themeToggleBtn');
       const flipped=await page.evaluate(()=>({dark:document.documentElement.classList.contains('dark'),body:document.body.classList.contains('dark')}));
       assert.equal(flipped.dark,flipped.body,'theme toggle root and body diverge');
+      assert.equal(await page.$$('.lookup-trigger').then(items=>items.length),2,'peer lookup actions must share one component');
+      await page.click('#calcBtn');
+      const fieldError = await page.$eval('#inBirth',field=>({invalid:field.getAttribute('aria-invalid'),linked:(field.getAttribute('aria-describedby')||'').split(' ').some(id=>document.getElementById(id)?.textContent.trim())}));
+      assert.equal(fieldError.invalid,'true','invalid date must expose aria-invalid');
+      assert.equal(fieldError.linked,true,'date error must be linked directly to field');
       await page.close();
     }
     console.log('Design10 presentation UI PASS: explicit selected theme on root/body/meta');

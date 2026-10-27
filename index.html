@@ -1705,13 +1705,14 @@
       <h2>사주 입력</h2>
       <p>생년월일과 태어난 시간을 입력하면 원국과 운의 흐름을 펼칩니다.</p>
     </header>
-    <button type="button" class="person-search-btn" id="personSearchBtn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <span>인물 검색 <span style="opacity:0.7;font-weight:600;">(연예인·유명인 자동 입력)</span></span>
+    <button type="button" class="person-search-btn lookup-trigger" id="personSearchBtn">
+      <svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="lookup-copy"><strong>인물 검색</strong><small>연예인·유명인 생년월일 자동 입력</small></span>
+      <svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
     </button>
 
     <details class="building-lookup" id="buildingLookup">
-      <summary><span>건물 날짜 조회</span><span class="building-summary-note">주소로 사용승인일 찾기</span></summary>
+      <summary class="lookup-trigger"><svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1"/></svg><span class="lookup-copy"><strong>건물 날짜 조회</strong><small class="building-summary-note">주소로 사용승인일 찾기</small></span><svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></summary>
       <div class="building-lookup-body">
         <form id="buildingLookupForm">
           <label for="buildingQuery">도로명·지번 주소 또는 건물명</label>
@@ -1740,7 +1741,7 @@
     <div class="input-card">
     <div class="field">
       <label class="field-label" for="inputName">이름</label>
-      <input class="input" id="inputName" placeholder="이름을 입력하세요 (선택)" />
+      <input class="input" id="inputName" autocomplete="name" placeholder="이름을 입력하세요 (선택)" />
     </div>
 
     <div class="field field-row">
@@ -1763,11 +1764,13 @@
     <div class="field field-row">
       <div class="field-half">
         <label class="field-label" for="inBirth">생년월일 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(YYYYMMDD)</span></label>
-        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inBirth" placeholder="19890319" maxlength="8" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inBirth" placeholder="19890319" maxlength="8" autocomplete="bday" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="inBirthError" />
+        <p id="inBirthError" class="input-field-error" hidden></p>
       </div>
       <div class="field-half">
         <label class="field-label" for="inTime">태어난 시간 <span style="font-size:12px; font-weight:500; color:var(--text-sub);">(HHMM · 선택)</span></label>
-        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <input class="input" type="tel" inputmode="numeric" pattern="[0-9]*" id="inTime" placeholder="1430" maxlength="4" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-describedby="inTimeError" />
+        <p id="inTimeError" class="input-field-error" hidden></p>
       </div>
     </div>
     </div>
@@ -1775,6 +1778,14 @@
     <button type="button" class="primary-btn" id="calcBtn">사주 펼치기</button>
     <div id="inErr" role="alert"></div>
 
+    <section class="input-guide" aria-labelledby="inputGuideTitle">
+      <h3 id="inputGuideTitle">명반을 펼친 뒤, 이렇게 읽어보세요</h3>
+      <div class="input-guide-grid">
+        <article><h4>원국</h4><p>네 기둥과 오행을 보고, 대운부터 일운까지 흐름을 이어보세요.</p></article>
+        <article><h4>풀이</h4><p>연도 종합을 먼저 읽고, 필요한 월운과 대운으로 바로 이동하세요.</p></article>
+        <article><h4>만세력</h4><p>날짜별 간지를 살피고, 기억할 날에는 나만의 메모를 남기세요.</p></article>
+      </div>
+    </section>
     <div class="note-text" style="margin-top: 20px;">
       <strong>잔상 만세력</strong>은 서기 1026년부터 2099년까지 약 1,000년의 만세력을 지원합니다. 원국에서 대운→세운→월운→일운을 차례로 펼쳐볼 수 있고, <strong>풀이</strong> 탭에서는 연도 종합·12개월 월운·대운 흐름을 한 번에 확인할 수 있습니다.
     </div>
@@ -12661,14 +12672,21 @@ let _inErrTimer = null;
 function showInErr(msg, focusSel) {
   const el = $('#inErr');
   if (el) { el.textContent = msg; el.classList.add('show'); }
-  if (focusSel) { const f = $(focusSel); if (f) { try { f.focus(); } catch (e) {} f.classList.add('field-err'); } }
+  if (focusSel) { const f = $(focusSel); if (f) {
+    try { f.focus(); } catch (e) {}
+    f.classList.add('field-err');
+    f.setAttribute('aria-invalid', 'true');
+    const description = document.getElementById(f.id + 'Error');
+    if (description) { description.textContent = msg; description.hidden = false; }
+  } }
   if (_inErrTimer) clearTimeout(_inErrTimer);
   _inErrTimer = setTimeout(clearInErr, 4000);
 }
 function clearInErr() {
   const el = $('#inErr');
   if (el) { el.textContent = ''; el.classList.remove('show'); }
-  $$('.field-err').forEach(f => f.classList.remove('field-err'));
+  $$('.field-err').forEach(f => { f.classList.remove('field-err'); f.removeAttribute('aria-invalid'); });
+  $$('.input-field-error').forEach(error => { error.textContent = ''; error.hidden = true; });
 }
 
 onTap($('#calcBtn'), () => {
