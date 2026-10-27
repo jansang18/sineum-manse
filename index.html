@@ -1817,7 +1817,7 @@
       <div class="cal-title" id="calTitle">—</div>
       <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
     </div>
-    <div class="cal-grid" id="calGrid" tabindex="0" role="region" aria-label="만세력 달력, 좌우로 스크롤"></div>
+    <div class="cal-grid" id="calGrid" tabindex="-1" role="region" aria-label="만세력 달력, 좌우로 스크롤"></div>
     <p class="calendar-scroll-hint">작은 화면에서는 달력을 좌우로 밀어 확인하세요.</p>
     <p class="calendar-note-hint"><span class="date-note-mark" aria-hidden="true">✓</span>메모가 있는 날 · 날짜를 눌러 기록하세요</p>
     <div id="calDayDetail"></div>
@@ -15925,5 +15925,16 @@ clearLegacyAppCaching().catch((error) => {
 <script src="hanja-alignment.js?v=2.3.2-hanja-ink" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>
 <script src="reading-navigation.js?v=20261027-design10"></script>
+<script>
+// A scrollable narrow calendar needs a keyboard stop; a fitting grid should
+// continue directly from month controls to the date buttons, without a dead stop.
+(function () {
+  const grid = document.getElementById('calGrid');
+  const update = () => { grid.tabIndex = grid.scrollWidth > grid.clientWidth + 1 ? 0 : -1; };
+  if ('ResizeObserver' in window) new ResizeObserver(update).observe(grid);
+  new MutationObserver(update).observe(grid, { childList: true });
+  update();
+})();
+</script>
 </body>
 </html>

@@ -2235,6 +2235,8 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 /* A narrow calendar scrolls locally; seven touch targets never shrink below 44px. */
 .cal-grid { grid-template-columns: repeat(7, minmax(44px, 1fr)); overflow-x: auto; overscroll-behavior-x: contain; }
+/* The enlarged 12px date must not collide with the existing memo check badge. */
+#calGrid .date-note-mark { top: 0; right: 0; }
 .calendar-scroll-hint { display: none; margin: 8px 0 0; color: var(--apple-secondary); font-size: 12px; line-height: 1.5; text-align: center; }
 @media (max-width: 390px) { .calendar-scroll-hint { display: block; } }
 

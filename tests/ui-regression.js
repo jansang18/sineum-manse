@@ -1763,6 +1763,8 @@ async function inspectUnifiedReading(page, width) {
       yearText: root.querySelector('[data-reading-section="year"]')?.textContent || '',
       daeunText: root.querySelector('[data-reading-section="daeun"]')?.textContent || '',
       detailsCount: root.querySelectorAll('details').length,
+      monthDisclosures: root.querySelectorAll('.reading-detail--month').length,
+      openMonths: root.querySelectorAll('.reading-detail--month[open]').length,
       scoreCards: root.querySelectorAll('.overall-card, .f-card, .match-total-card').length,
       lifeGraphs: root.querySelectorAll('.life-course, [data-lifetime-graph]').length,
       deepCards: root.querySelectorAll('.deep-reading, .deep-chapter').length,
@@ -1804,7 +1806,11 @@ async function inspectUnifiedReading(page, width) {
   assert.equal(initial.monthLabels[0], '1월');
   assert.equal(initial.monthLabels[11], '12월');
   assert.match(initial.daeunText, /대운/);
-  assert.equal(initial.detailsCount, 0);
+  // Design10 explicitly approves native disclosures; all generated text and
+  // the annual→months→daeun sequence above still remain in the DOM.
+  assert.ok(initial.detailsCount >= 22);
+  assert.equal(initial.monthDisclosures, 12);
+  assert.equal(initial.openMonths, 1);
   assert.equal(initial.scoreCards, 0);
   assert.equal(initial.lifeGraphs, 0);
   assert.equal(initial.deepCards, 0);
@@ -1993,6 +1999,9 @@ async function inspectLongReading(page, width) {
       proseWidth: proseRect?.width || 0,
       viewportWidth: document.documentElement.clientWidth,
       details: root?.querySelectorAll('details').length || 0,
+      invalidDetails: root?.querySelectorAll('details:not(:has(> summary))').length || 0,
+      monthDisclosures: root?.querySelectorAll('.reading-detail--month').length || 0,
+      openMonths: root?.querySelectorAll('.reading-detail--month[open]').length || 0,
       cards: root?.querySelectorAll('.overall-card, .life-course, .deep-reading, .deep-chapter').length || 0,
       overflowNodes,
       pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -2008,7 +2017,10 @@ async function inspectLongReading(page, width) {
   assert.ok(state.fontSize >= 14, `${width}px reading font below 14px`);
   assert.ok(state.lineHeight / state.fontSize >= 1.65, `${width}px reading line-height is cramped`);
   assert.ok(state.proseWidth <= Math.min(state.viewportWidth, 760), `${width}px readable line measure is too wide: ${state.proseWidth}px`);
-  assert.equal(state.details, 0, `${width}px continuous reading must not use disclosures`);
+  assert.ok(state.details >= 22, `${width}px monthly/deep chapters need accessible disclosures`);
+  assert.equal(state.invalidDetails, 0, `${width}px disclosures must have a native summary`);
+  assert.equal(state.monthDisclosures, 12, `${width}px all twelve monthly readings remain available`);
+  assert.equal(state.openMonths, 1, `${width}px only the current month starts expanded`);
   assert.equal(state.cards, 0, `${width}px removed score/graph/chapter cards returned`);
   assert.deepEqual(state.overflowNodes, [], `${width}px reading descendants overflow: ${state.overflowNodes.join(', ')}`);
   assert.ok(state.pageOverflow <= 1, `${width}px reading page overflowed by ${state.pageOverflow}px`);
