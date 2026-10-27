@@ -2,6 +2,17 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script>
+// Restore the selected theme before styles or the first body paint. No new storage keys.
+(function () {
+  var selected;
+  try { selected = localStorage.getItem('saju_theme') || localStorage.getItem('theme'); } catch (error) {}
+  if (selected !== 'dark' && selected !== 'light') selected = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', selected === 'dark');
+  document.documentElement.dataset.theme = selected;
+  document.documentElement.style.colorScheme = selected;
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -1664,6 +1675,7 @@
   <link rel="stylesheet" href="building-lookup.css?v=2.3.4-summary-center">
 </head>
 <body>
+<script>document.body.classList.toggle('dark', document.documentElement.dataset.theme === 'dark');</script>
 
 <div class="app">
   <header class="top-bar">
@@ -14202,6 +14214,15 @@ $$('.modal-bg').forEach(m => {
 
 /* 테마 토글 (라이트/다크) */
 function applyTheme(theme) {
+  theme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+  document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(meta => {
+    // Manual theme choice takes precedence over the operating-system media query.
+    meta.removeAttribute('media');
+    meta.content = theme === 'dark' ? '#0b1115' : '#f4f1e9';
+  });
   const sun = document.getElementById('themeIconSun');
   const moon = document.getElementById('themeIconMoon');
   if (theme === 'dark') {
