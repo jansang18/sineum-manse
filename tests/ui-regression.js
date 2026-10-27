@@ -2319,6 +2319,15 @@ async function inspectLuckFlowResponsive(page, width) {
 }
 
 async function collectAppleInspection(page, selectors) {
+  // Theme now updates root and body together. Wait for the actual finite
+  // transitions (including inherited-color descendants), not a timing guess.
+  await page.evaluate(async () => {
+    for (let pass = 0; pass < 3; pass++) {
+      const finite = document.getAnimations().filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime));
+      await Promise.race([Promise.allSettled(finite.map(a => a.finished)), new Promise(resolve => setTimeout(resolve, 1200))]);
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+  });
   return page.evaluate(({ styleSelectors, geometrySelectors }) => {
     const visualProperties = [
       'background', 'backgroundColor', 'backgroundImage',

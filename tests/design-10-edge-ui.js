@@ -25,6 +25,23 @@ const puppeteer=require('puppeteer-core');
         clipped:[...document.querySelectorAll('.fortune-head .nm,.reading-section__head h2')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.className||el.id)}));
       assert.ok(state.overflow<=1,`${width}/${theme}: long-name page overflow`);
       assert.deepEqual(state.clipped,[],`${width}/${theme}: long-name title is clipped`);
+      if(width===390&&theme==='light') {
+        await page.click('#tab-input');
+        await page.$eval('#inputName',el=>el.value='');
+        await page.click('#calcBtn');await page.waitForSelector('#view-result.active .pillar-block');
+        // Only the operating-system share boundary is doubled; the app builds
+        // the actual image, File name and text. No external share is sent.
+        await page.evaluate(()=>{
+          Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
+          Object.defineProperty(navigator,'share',{configurable:true,value:async payload=>{window.__design10Share={name:payload.files[0].name,text:payload.text};}});
+        });
+        await page.click('#shareBtn');await page.waitForSelector('#shareCardDo');
+        await page.click('#shareCardDo');await page.waitForFunction(()=>window.__design10Share);
+        const payload=await page.evaluate(()=>window.__design10Share);
+        assert.equal(payload.name,'나의 사주_잔상_만세력.png');
+        assert.match(payload.text,/^나의 사주 · 잔상 만세력/);
+        assert.doesNotMatch(payload.text,/이름 없음/);
+      }
       await page.close();
     }
     console.log('Design10 edge UI PASS: persistent errors and long names in two widths/two themes');
