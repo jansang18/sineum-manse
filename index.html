@@ -1673,6 +1673,7 @@
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
   <link rel="stylesheet" href="reading.css?v=2.3-design-system">
   <link rel="stylesheet" href="building-lookup.css?v=2.3.4-summary-center">
+  <script src="presentation.js?v=20261027-design10"></script>
 </head>
 <body>
 <script>document.body.classList.toggle('dark', document.documentElement.dataset.theme === 'dark');</script>
@@ -1812,7 +1813,7 @@
 </div>
 
 <div class="bottom-bar" id="bottomBar" style="display:none">
-  <button type="button" class="bb" id="similarBtn">🔎 비슷한</button>
+  <button type="button" class="bb" id="similarBtn"><svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> 비슷한</button>
   <button type="button" class="bb" id="shareBtn">공유</button>
   <button type="button" class="bb primary" id="saveBtn">저장하기</button>
 </div>
@@ -1868,7 +1869,7 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="personSearchModalTitle" tabindex="-1">
     <h3 id="personSearchModalTitle">인물 검색</h3>
     <div style="font-size:12px; font-weight:500; color:var(--text-sub); line-height:1.6; margin-bottom:10px;">
-      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>네이버 🔍</b>로 인물정보·상세를 열 수 있어요.
+      국내 유명인은 <b>앱에 내장된 정보로 즉시</b> 자동 입력되고, 그 밖의 인물은 위키백과에서 찾습니다. 각 결과의 <b>네이버</b>로 인물정보·상세를 열 수 있어요.
     </div>
     <div style="position:relative;">
       <input class="input" id="psQuery" placeholder="예: 아이유, 방탄소년단 뷔, 세종대왕" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="padding-right:44px;" />
@@ -13580,10 +13581,10 @@ function makeSavedElement(tag, className, text) {
 
 function makeSavedToolbar(count) {
   const toolbar = makeSavedElement('div', 'saved-toolbar');
-  const exportButton = makeSavedElement('button', 'bb', count ? `📤 내보내기 (${count})` : '📤 내보내기');
+  const exportButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', count ? `내보내기 (${count})` : '내보내기'), 'upload');
   exportButton.type = 'button';
   exportButton.id = 'savedExportBtn';
-  const importButton = makeSavedElement('button', 'bb', '📥 불러오기');
+  const importButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', '불러오기'), 'download');
   importButton.type = 'button';
   importButton.id = 'savedImportBtn';
   const fileInput = document.createElement('input');
@@ -13654,7 +13655,7 @@ async function renderSaved() {
 
   if (list.length === 0) {
     const empty = makeSavedElement('div', 'saved-empty');
-    const mark = makeSavedElement('div', 'empty-mark', '✦');
+    const mark = MansePresentation.prependIcon(makeSavedElement('div', 'empty-mark'), 'sparkle');
     const heading = makeSavedElement('h3', '', '아직 저장된 명반이 없습니다');
     const copy = makeSavedElement('p');
     copy.append('원국에서 자주 보는 명반을 저장하면', document.createElement('br'), '이곳에서 빠르게 다시 열 수 있습니다.');
@@ -13674,7 +13675,8 @@ async function renderSaved() {
   const search = document.createElement('input');
   search.id = 'savedSearch';
   search.className = 'input';
-  search.placeholder = '🔍 이름·메모 검색';
+  search.placeholder = '이름·메모 검색';
+  search.setAttribute('aria-label', '저장한 명반 이름·메모 검색');
   search.style.marginBottom = '10px';
   search.addEventListener('input', () => filterSaved(search.value));
   const cards = makeSavedElement('div', 'saved-list');
@@ -14725,7 +14727,7 @@ function renderFortune(focusYearControl = '') {
     const box = document.getElementById('fortuneContent');
     if (box) {
       box.innerHTML = `<div class="fortune-empty">
-        <div class="ico">⚠️</div>
+        <div class="ico">${MansePresentation.icon('info')}</div>
         <p>풀이 생성 중 오류가 발생했습니다<br><span style="font-size:12px;color:var(--text-light)">${escapeHtml(e.message || String(e))}</span></p>
       </div>`;
     }
@@ -14738,7 +14740,7 @@ function _renderFortuneInner(focusYearControl = '') {
       <h2>풀이</h2>
       <p>연도 종합부터 12개월 월운과 대운까지 차례로 읽습니다.</p>
     </header><div class="fortune-empty">
-      <div class="ico">🔮</div>
+      <div class="ico">${MansePresentation.icon('sparkle')}</div>
       <p>먼저 <strong>입력</strong> 탭에서 사주를 펼쳐주세요<br>또는 <strong>저장</strong>된 명반을 불러오세요</p>
     </div>`;
     return;
@@ -15590,7 +15592,7 @@ function psItemHtml(o) {
     <div class="ps-info">
       <div class="ps-title">${escapeHtml(o.title)}${o.kind === 'local' ? '<span class="ps-src">즉시</span>' : ''}</div>
       <div class="ps-desc">${escapeHtml(o.desc || '설명 없음')}</div>
-      <a class="ps-naver" href="${escapeHtml(buildNaverUrl(o.title))}" target="_blank" rel="noopener noreferrer">네이버 🔍</a>
+      <a class="ps-naver" href="${escapeHtml(buildNaverUrl(o.title))}" target="_blank" rel="noopener noreferrer">${MansePresentation.icon('search')} 네이버</a>
     </div>
   </div>`;
 }
@@ -15718,7 +15720,7 @@ function psShowConfirm(title, year, month, day, gender, source) {
         ※ ${srcText} 입력 후 필요하면 수정하세요.
       </div>
       ${sourceLinks}
-      <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">네이버에서 보기 🔍</a></div>
+      <div style="margin-top:10px;"><a class="ps-naver" id="pcbNaver" href="${escapeHtml(buildNaverUrl(title))}" target="_blank" rel="noopener noreferrer">${MansePresentation.icon('search')} 네이버에서 보기</a></div>
       <div class="pcb-actions">
         <button type="button" id="pcbCancel">다시 검색</button>
         <button type="button" class="primary" id="pcbApply">자동 입력</button>
