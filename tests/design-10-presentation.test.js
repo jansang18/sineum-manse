@@ -11,6 +11,7 @@ test('blank and legacy unnamed charts have natural titles without changing store
   assert.equal(ui.chartLabel({ name: '  ' }, 'fortune', 2027), '나의 2027년 운세');
   assert.equal(ui.chartLabel({ name: '박정민' }, 'fortune'), '박정민님의 올해운');
   assert.equal(ui.chartLabel({ name: '민수' }, 'fortune'), '민수님의 올해운');
+  assert.equal(ui.chartLabel({ name: '이름 없음' }, 'share'), '나의 사주');
   assert.equal(ui.chartLabel({ name: '이름 없음', year: 2000, month: 1, day: 2, gender: 'F' }, 'saved'), '2000.01.02 · 여성');
 });
 test('unnamed reading text is normalized only at presentation and named prose stays untouched', () => {

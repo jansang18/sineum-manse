@@ -13598,7 +13598,7 @@ onTap($('#shareBtn'), () => {
   if (!currentSaju) return;
   if (window.shareCard) { window.shareCard(currentSaju); return; }
   const s = currentSaju;
-  const txt = `${s.name}의 사주\n${s.year}.${pad(s.month)}.${pad(s.day)} ${s.unknown?'시 모름':(pad(s.hour)+':'+pad(s.minute))}\n${STEM[s.yStem]}${BRANCH[s.yBranch]} ${STEM[s.mStem]}${BRANCH[s.mBranch]} ${STEM[s.dStem]}${BRANCH[s.dBranch]} ${s.hStem>=0?STEM[s.hStem]+BRANCH[s.hBranch]:'시간모름'}\n\n잔상 만세력`;
+  const txt = `${MansePresentation.chartLabel(s, 'share')}\n${s.year}.${pad(s.month)}.${pad(s.day)} ${s.unknown?'시 모름':(pad(s.hour)+':'+pad(s.minute))}\n${STEM[s.yStem]}${BRANCH[s.yBranch]} ${STEM[s.mStem]}${BRANCH[s.mBranch]} ${STEM[s.dStem]}${BRANCH[s.dBranch]} ${s.hStem>=0?STEM[s.hStem]+BRANCH[s.hBranch]:'시간모름'}\n\n잔상 만세력`;
   if (navigator.share) navigator.share({ text: txt });
   else { navigator.clipboard.writeText(txt); alert('클립보드에 복사되었습니다'); }
 });

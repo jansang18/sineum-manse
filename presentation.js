@@ -14,6 +14,7 @@
     const date = [record?.year, String(record?.month || '').padStart(2,'0'), String(record?.day || '').padStart(2,'0')].join('.');
     if (context === 'saved') return name || `${date} · ${record?.gender === 'M' ? '남성' : '여성'}`;
     if (context === 'natal') return name || '나의 원국';
+    if (context === 'share') return name ? `${name}님의 사주` : '나의 사주';
     if (context === 'fortune') return `${name ? name + '님의' : '나의'} ${year ? year + '년 운세' : '올해운'}`;
     return name || '나의 명반';
   }

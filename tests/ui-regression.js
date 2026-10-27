@@ -1260,7 +1260,7 @@ async function inspectFinalSecurityRuntime(page, width) {
 
     for (const key of keys) await window.storage.delete(key);
     localStorage.removeItem('saju_list');
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     document.querySelector('.tab[data-tab="saved"]').click();
     await renderSaved();
@@ -1363,14 +1363,14 @@ async function inspectCalendarCurrentYear(page, width) {
     };
 
     window.__calendarNow = () => new Date(2034, 6, 15, 12, 0, 0);
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     document.querySelector('.tab[data-tab="calendar"]').click();
     const initial = readTitle();
-    document.body.classList.add('dark');
+    applyTheme('dark');
     await wait(300);
     const forcedDark = readTitle();
-    document.body.classList.remove('dark');
+    applyTheme('light');
     await wait(300);
     for (let index = 0; index < 6; index++) document.getElementById('calNext').click();
     document.querySelector('.tab[data-tab="input"]').click();
@@ -2160,7 +2160,7 @@ async function inspectLuckFlowAccessibility(page, width) {
   assert.match(initial.currentDaeun[0], /현재/);
 
   for (const dark of [false, true]) {
-    await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), dark);
+    await page.evaluate(isDark => applyTheme(isDark ? 'dark' : 'light'), dark);
     await page.keyboard.press('Tab');
     await page.$eval('#daeunScroll .luck-item.selected', item => item.focus());
     const focus = await page.$eval('#daeunScroll .luck-item.selected', item => {
@@ -2181,7 +2181,7 @@ async function inspectLuckFlowAccessibility(page, width) {
     assert.equal(focus.outlineOffset, '2px');
     assert.notEqual(focus.outlineColor, 'rgba(0, 0, 0, 0)');
   }
-  await page.evaluate(() => document.body.classList.add('dark'));
+  await page.evaluate(() => applyTheme('dark'));
 
   await page.evaluate(() => {
     const selected = document.querySelector('#daeunScroll .luck-item.selected');
@@ -2654,7 +2654,7 @@ async function inspectAppleDesign(page, width) {
   };
 
   for (const [theme, accent] of Object.entries(expectedAccents)) {
-    await page.evaluate(isDark => document.body.classList.toggle('dark', isDark), theme === 'dark');
+    await page.evaluate(isDark => applyTheme(isDark ? 'dark' : 'light'), theme === 'dark');
     await page.click('.tab[data-tab="input"]');
     await page.waitForFunction(() => document.querySelector('#view-input')?.classList.contains('active'));
     await sleep(250);
@@ -2869,7 +2869,7 @@ async function inspectAppleSecondaryScreens(page, width) {
         await Promise.all(animations.map(animation => animation.finished.catch(() => undefined)));
         await wait(0);
       };
-      document.body.classList.toggle('dark', theme === 'dark');
+      applyTheme(theme);
       await wait(300);
 
       const css = element => {
@@ -3121,7 +3121,7 @@ async function inspectAppleSecondaryScreens(page, width) {
     });
     const reducedTransparency = await page.evaluate(async () => {
       const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-      document.body.classList.add('dark');
+      applyTheme('dark');
       const inspect = element => {
         const style = getComputedStyle(element);
         return {
@@ -3373,7 +3373,7 @@ async function inspectWidth(browser, width) {
   console.log(`[ui] ${width}px: navigating`);
   await page.goto(URL, { waitUntil: 'networkidle0' });
   console.log(`[ui] ${width}px: loaded`);
-  await page.evaluate(() => document.body.classList.add('dark'));
+  await page.evaluate(() => applyTheme('dark'));
 
   await inspectAndroidSafeAreaGeometry(page, width);
   if (TEST_GROUP === 'android-safe-area') {
@@ -3406,7 +3406,7 @@ async function inspectWidth(browser, width) {
   }
   if (!TEST_GROUP && width === 390) {
     await page.reload({ waitUntil: 'networkidle0' });
-    await page.evaluate(() => document.body.classList.add('dark'));
+    await page.evaluate(() => applyTheme('dark'));
   }
 
   if (width === 390) {
@@ -3607,10 +3607,10 @@ async function inspectWidth(browser, width) {
         };
 
         document.querySelector('.tab[data-tab="calendar"]').click();
-        document.body.classList.remove('dark');
+        applyTheme('light');
         await wait(350);
         const light = measure();
-        document.body.classList.add('dark');
+        applyTheme('dark');
         await wait(350);
         const dark = measure();
         document.querySelector('.tab[data-tab="input"]').click();
@@ -3634,7 +3634,7 @@ async function inspectWidth(browser, width) {
         });
         transparencyStyles = await page.evaluate(async () => {
           const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-          document.body.classList.add('dark');
+          applyTheme('dark');
           const toast = document.getElementById('appToast');
           const measure = () => {
             const style = getComputedStyle(toast);
@@ -3646,10 +3646,10 @@ async function inspectWidth(browser, width) {
             };
           };
 
-          document.body.classList.remove('dark');
+          applyTheme('light');
           await wait(300);
           const light = measure();
-          document.body.classList.add('dark');
+          applyTheme('dark');
           await wait(300);
           const dark = measure();
           return {

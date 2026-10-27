@@ -258,8 +258,9 @@
     m.onclick = function (e) { if (e.target === m) closeShareCardModal(); };
     document.getElementById('shareCardDo').onclick = function () {
       cv.toBlob(async function (blob) {
-        var file = new File([blob], (s.name || '사주') + '_잔상_만세력.png', { type: 'image/png' });
-        var txt = (s.name || '') + ' 사주 · 잔상 만세력\njansang18.github.io/sineum-manse';
+        var label = window.MansePresentation?.chartLabel(s, 'share') || '나의 사주';
+        var file = new File([blob], label + '_잔상_만세력.png', { type: 'image/png' });
+        var txt = label + ' · 잔상 만세력\njansang18.github.io/sineum-manse';
         try {
           if (navigator.canShare && navigator.canShare({ files: [file] })) {
             await navigator.share({ files: [file], text: txt });
