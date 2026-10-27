@@ -24,6 +24,13 @@ const root = process.env.DESIGN_ROOT || path.resolve(__dirname, '..');
       const fieldError = await page.$eval('#inBirth',field=>({invalid:field.getAttribute('aria-invalid'),linked:(field.getAttribute('aria-describedby')||'').split(' ').some(id=>document.getElementById(id)?.textContent.trim())}));
       assert.equal(fieldError.invalid,'true','invalid date must expose aria-invalid');
       assert.equal(fieldError.linked,true,'date error must be linked directly to field');
+      await page.type('#inBirth','19890319');
+      await page.click('#calcBtn');
+      await page.waitForSelector('#view-result:not([hidden]) .name');
+      assert.match(await page.$eval('#view-result .name',element=>element.textContent),/나의 원국/,'unnamed result must have a natural title');
+      await page.click('#tab-fortune');
+      await page.waitForSelector('.unified-reading');
+      assert.doesNotMatch(await page.$eval('#fortuneContent',element=>element.textContent),/이름 없음/,'placeholder name leaked into reading prose');
       await page.close();
     }
     console.log('Design10 presentation UI PASS: explicit selected theme on root/body/meta');

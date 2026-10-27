@@ -12764,7 +12764,7 @@ function renderResult() {
   const html = `
     <div class="oguk-card">
     <div class="result-head view-head${s.buildingRegistry ? ' building-chart-head' : ''}">
-      <div class="name">${escapeHtml(s.name)} ${s.buildingRegistry ? '' : `<span class="age-inline">(만 ${age}세)</span>`}</div>
+      <div class="name">${escapeHtml(MansePresentation.chartLabel(s, 'natal'))} ${s.buildingRegistry ? '' : `<span class="age-inline">(만 ${age}세)</span>`}</div>
       <div class="info">
         ${s.buildingRegistry ? '건물 · 사용승인일 기준' : s.gender === 'M' ? '남성' : '여성'}<br>
         양력 ${s.year}.${pad(s.month)}.${pad(s.day)}${s.lunar ? ` / 음력 ${s.lunar.y}.${pad(s.lunar.m)}.${pad(s.lunar.d)}` : ''}<br>
@@ -13619,7 +13619,7 @@ function makeSavedCard(record) {
   card.dataset.id = String(record.id || '');
 
   const row = makeSavedElement('div', 'row1');
-  const name = makeSavedElement('div', 'sname', record.name || '이름 없음');
+  const name = makeSavedElement('div', 'sname', MansePresentation.chartLabel(record, 'saved'));
   name.append(' ', makeSavedElement('span', 'sgender', record.gender === 'M' ? '남' : '여'));
   const actions = makeSavedElement('div', 'scard-actions');
   const favourite = makeSavedElement('button', `sfav${record.fav ? ' on' : ''}`, record.fav ? '★' : '☆');
@@ -13843,7 +13843,7 @@ async function findSimilarSaju() {
         const hHan = (rec.hStem>=0 && rec.hBranch>=0) ? `${STEM[rec.hStem]}${BRANCH[rec.hBranch]}` : '시?';
         return `<div class="similar-card" data-id="${escapeHtml(String(rec.id || ''))}">
           <div class="sc-head">
-            <div class="sc-name">${escapeHtml(rec.name || '이름 없음')}</div>
+            <div class="sc-name">${escapeHtml(MansePresentation.chartLabel(rec, 'saved'))}</div>
             <div class="sc-score ${sCls}">${sim.score}<span>점</span></div>
           </div>
           <div class="sc-pillars">
@@ -14675,6 +14675,8 @@ function buildAnnualReading(fortune, saju) {
 
 function renderUnifiedReading(report) {
   if (!report) return '';
+  // The calculation/generation report is immutable; normalize only its display copy.
+  report = MansePresentation.readingReport(report, currentSaju);
   const paragraphs = items => (items || [])
     .map(item => `<p>${escapeHtml(String(item))}</p>`)
     .join('');
@@ -14807,7 +14809,7 @@ function _renderFortuneInner(focusYearControl = '') {
     <div class="fortune-head view-head">
       <div class="fortune-head-summary">
         <div>
-          <div class="nm">${escapeHtml(s.name)}님의 ${isCurrentYear ? '올해운' : `${fortuneYear}년 운세`}</div>
+          <div class="nm">${escapeHtml(MansePresentation.chartLabel(s, 'fortune', isCurrentYear ? null : fortuneYear))}</div>
           <div class="year-tag">${fortune.year}년 · ${SIPSIN_KOR[fortune.seunStemSipsin]} / ${SIPSIN_KOR[fortune.seunBranchSipsin]}</div>
         </div>
         <div class="ganji-big" aria-label="${fortune.year}년 ${ga}년">

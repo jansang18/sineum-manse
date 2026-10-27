@@ -94,7 +94,7 @@
     var age = (new Date().getFullYear()) - s.year;
     c.fillStyle = THEME.text;
     c.font = '800 54px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
-    c.fillText(s.name || '이름 없음', W / 2, 292, W - 100);
+    c.fillText(window.MansePresentation?.chartLabel(s, 'natal') || s.name || '나의 원국', W / 2, 292, W - 100);
     c.fillStyle = THEME.sub;
     c.font = '500 27px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
     c.fillText(s.buildingRegistry ? '건물 · 사용승인일 기준' : (s.gender === 'M' ? '남성' : '여성') + ' · 만 ' + age + '세', W / 2, 340);

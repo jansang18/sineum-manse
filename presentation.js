@@ -26,6 +26,12 @@
       .replaceAll('이름 없음님은', '이 명식의 주인은')
       .replaceAll('이름 없음', '이 명식');
   }
+  function readingReport(value, record) {
+    if (typeof value === 'string') return readingText(value, record);
+    if (Array.isArray(value)) return value.map(item => readingReport(item, record));
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, readingReport(item, record)]));
+    return value;
+  }
   const paths = {
     search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/>',
     upload:'<path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/>',
@@ -47,5 +53,5 @@
     element.insertAdjacentHTML('afterbegin', icon(key));
     return element;
   }
-  return Object.freeze({nameOf,chartLabel,readingText,icon,prependIcon});
+  return Object.freeze({nameOf,chartLabel,readingText,readingReport,icon,prependIcon});
 });
