@@ -2149,6 +2149,43 @@ body.dark .pillar-block.empty { background: var(--apple-inset); }
 
 .view-empty p { margin: 0; }
 
+/* One empty-state rhythm: a bounded mark, title, copy, then a clear action. */
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) {
+  box-sizing: border-box;
+  padding: clamp(28px, 6vw, 56px) clamp(12px, 3vw, 24px);
+  color: var(--apple-secondary);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > :is(.empty-mark, .ico) {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  margin: 0 auto 16px;
+  border: 1px solid var(--apple-separator);
+  border-radius: var(--apple-radius-card);
+  background: color-mix(in srgb, var(--apple-accent) 12%, var(--apple-surface));
+  color: var(--apple-accent);
+  font-size: 28px;
+  line-height: 1;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > h3 {
+  margin: 0 0 8px;
+  color: var(--apple-label);
+  font-size: var(--app-section-title-size);
+  line-height: 1.4;
+}
+
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > p { margin: 0; }
+:is(.view-empty, .saved-empty, .fortune-empty, .ps-empty, .ps-error) > :is(button, .empty-cta) {
+  margin-top: 24px;
+}
+
 .fortune-head-summary {
   display: flex;
   align-items: center;
