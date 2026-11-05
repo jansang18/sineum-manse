@@ -15,8 +15,8 @@
     text: '#1c1c1e',
     sub: '#636366',
     tertiary: '#8e8e93',
-    accent: '#007aff',
-    accentSoft: '#e7f2ff',
+    accent: '#795d31',
+    accentSoft: '#f2ead1',
     line: 'rgba(60,60,67,0.16)'
   };
   var shareCardOpener = null;

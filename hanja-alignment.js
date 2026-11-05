@@ -47,7 +47,7 @@
       context.font = `${style.fontStyle} ${style.fontWeight} ${size * precision}px ${style.fontFamily}`;
       context.textAlign = 'left';
       context.textBaseline = 'alphabetic';
-      for (const property of ['fontKerning', 'fontStretch', 'fontVariantCaps', 'letterSpacing', 'wordSpacing', 'textRendering']) {
+      for (const property of ['fontKerning', 'fontVariantCaps', 'letterSpacing', 'wordSpacing', 'textRendering']) {
         if (property in context) context[property] =
           property === 'letterSpacing' || property === 'wordSpacing'
             ? `${(parseFloat(style[property]) || 0) * precision}px` : style[property];

@@ -1678,7 +1678,7 @@
   }
 </style>
   <link rel="preload" href="noto-serif-kr-hanja-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="apple.css?v=20261105-hanja">
+  <link rel="stylesheet" href="apple.css?v=20261105-tools">
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
   <link rel="stylesheet" href="reading.css?v=20261027-design10">
   <link rel="stylesheet" href="building-lookup.css?v=20261027-design10">
@@ -1815,9 +1815,16 @@
   <section class="view" id="view-calendar" role="tabpanel" aria-labelledby="tab-calendar" hidden>
     <div class="view-head cal-head">
       <button type="button" class="cal-nav" id="calPrev" aria-label="이전 달">‹</button>
-      <div class="cal-title" id="calTitle">—</div>
+      <button type="button" class="cal-title" id="calTitle" aria-expanded="false" aria-controls="calJump" aria-label="연월 바로 이동">—</button>
       <button type="button" class="cal-nav" id="calNext" aria-label="다음 달">›</button>
     </div>
+    <form class="cal-jump" id="calJump" hidden>
+      <label>연도 <input type="number" id="calJumpYear" min="1026" max="2099" inputmode="numeric" required></label>
+      <label>월 <input type="number" id="calJumpMonth" min="1" max="12" inputmode="numeric" required></label>
+      <button type="submit" class="cal-jump-go">이동</button>
+      <button type="button" class="cal-jump-today" id="calJumpToday">오늘</button>
+    </form>
+    <p class="cal-term" id="calTerm"></p>
     <div class="cal-grid" id="calGrid" tabindex="-1" role="region" aria-label="만세력 달력, 좌우로 스크롤"></div>
     <p class="calendar-scroll-hint">작은 화면에서는 달력을 좌우로 밀어 확인하세요.</p>
     <p class="calendar-note-hint"><span class="date-note-mark" aria-hidden="true">✓</span>메모가 있는 날 · 날짜를 눌러 기록하세요</p>
@@ -1834,7 +1841,7 @@
 </div>
 
 <div class="bottom-bar" id="bottomBar" style="display:none">
-  <button type="button" class="bb" id="similarBtn"><svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> 비슷한</button>
+  <button type="button" class="bb" id="similarBtn"><svg class="ui-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg> 비교</button>
   <button type="button" class="bb" id="shareBtn">공유</button>
   <button type="button" class="bb primary" id="saveBtn">저장하기</button>
 </div>
@@ -1878,7 +1885,7 @@
 
 <div class="modal-bg" id="similarModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="similarModalTitle" tabindex="-1">
-    <h3 id="similarModalTitle">비슷한 사주</h3>
+    <h3 id="similarModalTitle">저장 명반과 비교</h3>
     <div class="similar-body"></div>
     <div class="modal-actions">
       <button type="button" class="primary" id="similarClose">닫기</button>
@@ -12462,7 +12469,7 @@ function calcShinsal(yB, dB, all, dS) {
   all.forEach((b, i) => { if (cb.includes(b)) r.guiin.push({ name: '천을귀인', pos: i }); });
   const mun = {0:5,1:6,2:8,4:8,3:9,5:9,6:11,7:0,8:2,9:3};
   all.forEach((b, i) => { if (mun[dS] === b) r.guiin.push({ name: '문창귀인', pos: i }); });
-  const doh = {0:9,4:9,8:9,2:3,6:3,10:3,5:0,9:0,1:0,3:6,7:6,11:6};
+  const doh = {0:9,4:9,8:9,2:3,6:3,10:3,5:6,9:6,1:6,3:0,7:0,11:0};
   if (all.includes(doh[yB])) r.special.push({ name: '도화', pos: all.indexOf(doh[yB]) });
   return r;
 }
@@ -12754,6 +12761,7 @@ onTap($('#calcBtn'), () => {
   try {
     const saju = calcSaju({ year: y, month: m, day: d, hour: h, minute: mi, calendar, gender, unknown });
     saju.name = name || '이름 없음';
+    saju.entered = { unknown, hour: h, minute: mi };
     const buildingRecord = window.jansangBuildingLookup?.getInputRecord();
     if (buildingRecord) saju.buildingRegistry = buildingRecord;
     currentSaju = saju;
@@ -12790,7 +12798,7 @@ function renderResult() {
       <div class="info">
         ${s.buildingRegistry ? '건물 · 사용승인일 기준' : s.gender === 'M' ? '남성' : '여성'}<br>
         양력 ${s.year}.${pad(s.month)}.${pad(s.day)}${s.lunar ? ` / 음력 ${s.lunar.y}.${pad(s.lunar.m)}.${pad(s.lunar.d)}` : ''}<br>
-        ${s.unknown ? '시 모름' : `${BRANCH_KOR[s.hBranch]}시 (${pad(s.hour)}시 ${pad(s.minute)}분)`}
+        ${s.unknown ? '시 모름' : `${BRANCH_KOR[s.hBranch]}시 (${pad(s.hour)}시 ${pad(s.minute)}분)`}${isHourAssumed(s) ? ' <span class="assumed-hour">가정 시주</span>' : ''}
       </div>
       ${s.buildingRegistry ? `<p class="building-chart-source">${escapeHtml(s.buildingRegistry.roadAddress || s.buildingRegistry.parcelAddress)}<br>${escapeHtml(s.buildingRegistry.source)} · 사용승인일 ${escapeHtml(s.buildingRegistry.approvalDate)}<br>대운·풀이는 기존 사주 설정을 기준으로 계산합니다.</p>` : ''}
     </div>
@@ -12813,6 +12821,8 @@ function renderResult() {
             ].join('');
           })()}
         </div>
+        ${renderHourPicker(s)}
+        ${ChartInsight.sheet(s, renderInteractions(s.interactions))}
       </div>
     </div>
     </div>
@@ -12865,29 +12875,73 @@ function renderResult() {
     }
   }
 
-  // 시주 클릭 → 다음 시진으로 순환
-  const hourEl = document.getElementById('hourPillar');
-  if (hourEl) {
-    hourEl.addEventListener('click', () => {
-      const s = currentSaju;
-      if (s.unknown) {
-        // 시간 모름 → 자시부터 시작
-        s.unknown = false;
-        s.hBranch = 0;
-      } else {
-        s.hBranch = (s.hBranch + 1) % 12;
-      }
-      // 오서둔법에 따른 시간 천간 재계산
-      s.hStem = getHourStem(s.dStem, s.hBranch);
-      // 해당 시진의 대표 시각으로 hour/minute 업데이트 (시주 표시용)
-      // 자시는 23시, 나머지는 2*branch - 1 (축=1, 인=3, …)
-      s.hour = s.hBranch === 0 ? 23 : (s.hBranch * 2 - 1);
-      s.minute = 0;
-      // 십신/오행/합충/신살 재계산을 위해 사주 다시 계산
-      recomputeSipsinAndOhaeng(s);
-      renderResult();
-    });
-  }
+  bindHourPicker();
+  const printBtn = document.getElementById('printChartBtn');
+  if (printBtn) printBtn.addEventListener('click', () => window.print());
+}
+
+function isHourAssumed(s) {
+  if (!s.entered) return false;
+  if (s.entered.unknown !== Boolean(s.unknown)) return true;
+  return !s.unknown && (s.entered.hour !== s.hour || s.entered.minute !== s.minute);
+}
+
+const HOUR_RANGES = ['23–01','01–03','03–05','05–07','07–09','09–11','11–13','13–15','15–17','17–19','19–21','21–23'];
+function renderHourPicker(s) {
+  const entered = s.entered;
+  const resetLabel = entered && !entered.unknown ? `입력값 ${pad(entered.hour)}:${pad(entered.minute)}로 되돌리기` : '입력값으로 되돌리기';
+  return `<div class="hour-picker" id="hourPicker" hidden>
+    <p class="hour-picker-title">시주를 바꿔 봅니다. 입력한 생년월일은 그대로입니다.</p>
+    <div class="hour-picker-grid">
+      ${BRANCH.map((b, i) => `<button type="button" class="hour-option${s.hBranch === i ? ' selected' : ''}" data-branch="${i}" aria-pressed="${s.hBranch === i}"><span class="han-inline">${b}</span> ${BRANCH_KOR[i]}시<small>${HOUR_RANGES[i]}시</small></button>`).join('')}
+    </div>
+    <div class="hour-picker-actions">
+      ${isHourAssumed(s) ? `<button type="button" class="hour-action" data-hour-action="reset">${resetLabel}</button>` : ''}
+      ${s.unknown ? '' : '<button type="button" class="hour-action" data-hour-action="unknown">시 모름으로</button>'}
+    </div>
+  </div>`;
+}
+
+function applyHour(s, unknown, hour, minute) {
+  if (!s.entered) s.entered = { unknown: Boolean(s.unknown), hour: s.hour, minute: s.minute };
+  // 대운수와 절입일 월주까지 시각에 따라 달라지므로 전체를 다시 계산한다.
+  const keep = { inputCalendar: s.inputCalendar, inputDate: s.inputDate, lunar: s.lunar };
+  Object.assign(s, calcSaju({ year: s.year, month: s.month, day: s.day, hour, minute, calendar: 'solar', gender: s.gender, unknown }), keep);
+  renderResult();
+  document.getElementById('hourPillar')?.focus({ preventScroll: true });
+}
+
+function bindHourPicker() {
+  const pillar = document.getElementById('hourPillar');
+  const picker = document.getElementById('hourPicker');
+  if (!pillar || !picker) return;
+  pillar.setAttribute('role', 'button');
+  pillar.setAttribute('tabindex', '0');
+  pillar.setAttribute('aria-label', '시주 고르기');
+  pillar.setAttribute('aria-expanded', 'false');
+  pillar.setAttribute('aria-controls', 'hourPicker');
+  const toggle = () => {
+    picker.hidden = !picker.hidden;
+    pillar.setAttribute('aria-expanded', String(!picker.hidden));
+  };
+  pillar.addEventListener('click', toggle);
+  pillar.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); }
+    if (event.key === 'Escape' && !picker.hidden) toggle();
+  });
+  picker.addEventListener('click', event => {
+    const s = currentSaju;
+    const option = event.target.closest('[data-branch]');
+    if (option) {
+      const branch = Number(option.dataset.branch);
+      // 대표 시각: 자시 23시, 나머지는 시진의 첫 시각
+      applyHour(s, false, branch === 0 ? 23 : branch * 2 - 1, 0);
+      return;
+    }
+    const action = event.target.closest('[data-hour-action]')?.dataset.hourAction;
+    if (action === 'unknown') applyHour(s, true, 0, 0);
+    if (action === 'reset' && s.entered) applyHour(s, s.entered.unknown, s.entered.hour, s.entered.minute);
+  });
 }
 
 // 시주 변경 시 십신·오행·합충 등 재계산
@@ -12923,7 +12977,7 @@ function renderCol(title, sipT, stem, branch, sipB, unknown, isDay, isHour, hap,
       </div>`
     : `<div class="he-row he-row-top"></div>`;
   if (unknown) return `<div class="pillar-col calli-mode ${isHour?'hour-col clickable':''}" ${isHour?'id="hourPillar"':''}>
-    <div class="pillar-title">${title}${isHour?' <span class="tap-hint">↻</span>':''}</div>
+    <div class="pillar-title">${title}${isHour?' <svg class="tap-hint" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>':''}</div>
     <div class="pillar-sipsin-top">—</div>
     <div class="he-row he-row-top"></div>
     <div class="pillar-block stem-block empty"><div class="han">?</div></div>
@@ -12937,10 +12991,10 @@ function renderCol(title, sipT, stem, branch, sipB, unknown, isDay, isHour, hap,
   const sE = STEM_EL[stem], bE = BRANCH_EL[branch];
   const topLabel = isDay ? '일간' : (sipT >= 0 ? SIPSIN_KOR[sipT] : '');
   return `<div class="pillar-col calli-mode ${isHour?'hour-col clickable':''}" ${isHour?'id="hourPillar"':''}>
-    <div class="pillar-title">${title}${isHour?' <span class="tap-hint">↻</span>':''}</div>
+    <div class="pillar-title">${title}${isHour?' <svg class="tap-hint" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>':''}</div>
     <div class="pillar-sipsin-top">${topLabel}</div>
     ${stemHapHtml}
-    <div class="pillar-block stem-block ${EL_CLASS[sE]}${isGeok?' geok':''}">
+    <div class="pillar-block stem-block ${EL_CLASS[sE]}${isGeok?' geok':''}${isDay?' ilgan-block':''}">
       
       <div class="han">${STEM[stem]}</div>
     </div>
@@ -13139,6 +13193,7 @@ function renderSeun() {
 
   $('#seunArea').innerHTML = `
     <div class="sub-luck">
+      ${ChartInsight.luckLine(`${STEM[d.stem]}${BRANCH[d.branch]} 대운`, s, d.stem, d.branch)}
       <div class="sub-luck-label">세운 흐름 <span class="meta">(${startYear}년 ~ ${endYear}년 · 만 나이 기준)</span></div>
       <div class="luck-scroll" id="seunScroll">
         ${years.slice().reverse().map(y => {
@@ -13151,6 +13206,7 @@ function renderSeun() {
             stem: g.stem,
             branch: g.branch,
             ilgan: s.dStem,
+            isCurrent: y === new Date().getFullYear(),
             dataAttrs: 'data-year="' + y + '"'
           });
         }).join('')}
@@ -13176,6 +13232,11 @@ function renderWoon() {
   const y = selectedSeun;
   $('#woonArea').innerHTML = `
     <div class="sub-luck inner">
+      ${(() => {
+        const g = yearGanji(y);
+        const d = selectedDaeun === null ? null : s.daeun.list[selectedDaeun];
+        return ChartInsight.luckLine(`${y} ${STEM[g.stem]}${BRANCH[g.branch]} 세운`, s, g.stem, g.branch, d ? { name: '대운', stem: d.stem, branch: d.branch } : null);
+      })()}
       <div class="sub-luck-label">월운 흐름 <span class="meta">(${y}년)</span></div>
       <div class="luck-scroll woon-grid" id="woonScroll">
         ${Array.from({length: 12}, (_, i) => {
@@ -13582,7 +13643,7 @@ document.addEventListener('keydown', event => {
 onTap($('#saveBtn'), () => {
   if (!currentSaju) return;
   $('#saveName').value = currentSaju.name !== '이름 없음' ? currentSaju.name : '';
-  $('#saveMemo').value = '';
+  $('#saveMemo').value = currentSaju.memo || '';
   window.openAppModal($('#saveModal'));
 });
 onTap($('#saveCancel'), () => window.closeAppModal($('#saveModal')));
@@ -13590,15 +13651,20 @@ onTap($('#similarClose'), () => window.closeAppModal($('#similarModal')));
 onTap($('#saveConfirm'), async () => {
   const name = $('#saveName').value.trim() || '이름 없음';
   const memo = $('#saveMemo').value.trim();
-  const record = { ...currentSaju, name, memo, savedAt: Date.now(), id: 'saju_' + Date.now() };
+  const updating = Boolean(currentSaju.id);
+  const record = { ...currentSaju, name, memo, savedAt: currentSaju.savedAt || Date.now(), id: currentSaju.id || 'saju_' + Date.now() };
   try { await window.storage.set('saju:' + record.id, JSON.stringify(record)); }
   catch (e) {
     const list = JSON.parse(localStorage.getItem('saju_list') || '[]');
-    list.push(record);
+    const index = list.findIndex(item => item.id === record.id);
+    if (index >= 0) list[index] = record; else list.push(record);
     localStorage.setItem('saju_list', JSON.stringify(list));
   }
+  Object.assign(currentSaju, { name, memo, savedAt: record.savedAt, id: record.id });
+  const heading = document.querySelector('.oguk-card .result-head .name');
+  if (heading?.firstChild) heading.firstChild.textContent = MansePresentation.chartLabel(currentSaju, 'natal') + ' ';
   window.closeAppModal($('#saveModal'));
-  window.showAppToast('명반이 저장되었습니다');
+  window.showAppToast((updating ? '명반을 고쳐 저장했습니다' : '명반이 저장되었습니다') + (isHourAssumed(record) ? ' · 가정 시주로 저장' : ''));
 });
 
 onTap($('#shareBtn'), () => {
@@ -13659,12 +13725,12 @@ function makeSavedCard(record) {
   const date = makeSavedElement('div', 'sdate', dateText);
   const pillars = makeSavedElement('div', 'spillars');
   const parts = [
-    { s: record.yStem, b: record.yBranch },
+    { s: record.dStem, b: record.dBranch },
     { s: record.mStem, b: record.mBranch },
-    { s: record.dStem, b: record.dBranch }
+    { s: record.yStem, b: record.yBranch }
   ];
   if (Number.isInteger(record.hStem) && record.hStem >= 0) {
-    parts.push({ s: record.hStem, b: record.hBranch });
+    parts.unshift({ s: record.hStem, b: record.hBranch });
   }
   for (const part of parts) {
     if (
@@ -13835,71 +13901,81 @@ async function findSimilarSaju() {
     list = JSON.parse(localStorage.getItem('saju_list') || '[]');
   }
 
+  // 지금 보는 명식 자신은 답에서 뺀다.
+  const base = currentSaju;
+  list = list.filter(rec => !(rec.id && rec.id === base.id) && !(rec.name === base.name && rec.year === base.year && rec.month === base.month && rec.day === base.day && rec.hStem === base.hStem));
+  const body = $('#similarModal .similar-body');
   if (list.length === 0) {
-    $('#similarModal .similar-body').innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-sub);font-size:14px;font-weight:600;line-height:1.7;">저장된 명반이 없습니다.<br>저장 탭에서 사주를 모아두면<br>여기서 비교할 수 있어요.</div>`;
+    body.innerHTML = `<div class="similar-empty">비교할 다른 저장 명반이 없습니다.<br>저장 탭에 사주를 모아두면 나란히 볼 수 있어요.</div>`;
     window.openAppModal($('#similarModal'));
     return;
   }
-
-  // 유사도 계산 후 정렬, 너무 낮은 건 필터
-  const scored = list
-    .map(rec => ({ rec, sim: calcSajuSimilarity(currentSaju, rec) }))
-    .filter(x => x.sim.hits >= 2);  // 최소 2글자 일치
-  scored.sort((x, y) => y.sim.score - x.sim.score);
-
-  if (scored.length === 0) {
-    $('#similarModal .similar-body').innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-sub);font-size:14px;font-weight:600;line-height:1.7;">비슷한 사주가 없습니다.<br>최소 2글자 이상 일치하는<br>명반이 저장 목록에 없어요.</div>`;
-    window.openAppModal($('#similarModal'));
-    return;
-  }
-
-  const baseName = (currentSaju.name && currentSaju.name !== '이름 없음') ? currentSaju.name : '현재 사주';
-  const html = `
-    <div style="font-size:13px;font-weight:600;color:var(--text-sub);margin-bottom:12px;line-height:1.5;">
-      <b style="color:var(--text);">${escapeHtml(baseName)}</b>와 가장 비슷한 사주
-    </div>
-    <div class="similar-list">
-      ${scored.map(({ rec, sim }) => {
-        const sCls = sim.score >= 75 ? 'high' : sim.score >= 50 ? 'mid' : 'low';
-        const pillarTxt = sim.pillars.length ? sim.pillars.join('·') + ' 일치' : `${sim.hits}/${sim.totalSlots}글자 일치`;
-        const hHan = (rec.hStem>=0 && rec.hBranch>=0) ? `${STEM[rec.hStem]}${BRANCH[rec.hBranch]}` : '시?';
-        return `<div class="similar-card" data-id="${escapeHtml(String(rec.id || ''))}">
-          <div class="sc-head">
-            <div class="sc-name">${escapeHtml(MansePresentation.chartLabel(rec, 'saved'))}</div>
-            <div class="sc-score ${sCls}">${sim.score}<span>점</span></div>
-          </div>
-          <div class="sc-pillars">
-            <span class="${sim.useHour && sim.matches.hStem && sim.matches.hBranch ? 'm' : ''}">${hHan}</span>
-            <span class="${sim.matches.dStem && sim.matches.dBranch ? 'm' : ''}">${STEM[rec.dStem]}${BRANCH[rec.dBranch]}</span>
-            <span class="${sim.matches.mStem && sim.matches.mBranch ? 'm' : ''}">${STEM[rec.mStem]}${BRANCH[rec.mBranch]}</span>
-            <span class="${sim.matches.yStem && sim.matches.yBranch ? 'm' : ''}">${STEM[rec.yStem]}${BRANCH[rec.yBranch]}</span>
-          </div>
-          <div class="sc-meta">${rec.year}.${pad(rec.month)}.${pad(rec.day)} · ${pillarTxt}</div>
-        </div>`;
-      }).join('')}
+  const scored = list.map(rec => ({ rec, sim: calcSajuSimilarity(base, rec) })).sort((x, y) => y.sim.score - x.sim.score);
+  const baseName = (base.name && base.name !== '이름 없음') ? base.name : '현재 사주';
+  const card = ({ rec, sim }) => {
+    const sCls = sim.score >= 75 ? 'high' : sim.score >= 50 ? 'mid' : 'low';
+    const pillarTxt = sim.pillars.length ? sim.pillars.join('·') + ' 일치' : `${sim.hits}/${sim.totalSlots}글자 일치`;
+    const hHan = (rec.hStem>=0 && rec.hBranch>=0) ? `${STEM[rec.hStem]}${BRANCH[rec.hBranch]}` : '시?';
+    return `<div class="similar-card" data-id="${escapeHtml(String(rec.id || ''))}">
+      <div class="sc-head">
+        <div class="sc-name">${escapeHtml(MansePresentation.chartLabel(rec, 'saved'))}</div>
+        <div class="sc-score ${sCls}">${sim.score}<span>점</span></div>
+      </div>
+      <div class="sc-pillars">
+        <span class="${sim.useHour && sim.matches.hStem && sim.matches.hBranch ? 'm' : ''}">${hHan}</span>
+        <span class="${sim.matches.dStem && sim.matches.dBranch ? 'm' : ''}">${STEM[rec.dStem]}${BRANCH[rec.dBranch]}</span>
+        <span class="${sim.matches.mStem && sim.matches.mBranch ? 'm' : ''}">${STEM[rec.mStem]}${BRANCH[rec.mBranch]}</span>
+        <span class="${sim.matches.yStem && sim.matches.yBranch ? 'm' : ''}">${STEM[rec.yStem]}${BRANCH[rec.yBranch]}</span>
+      </div>
+      <div class="sc-meta">${rec.year}.${pad(rec.month)}.${pad(rec.day)} · ${pillarTxt}</div>
+      <div class="sc-actions">
+        <button type="button" class="sc-action primary" data-compare>나란히 보기</button>
+        <button type="button" class="sc-action" data-open>이 명반 열기</button>
+      </div>
     </div>`;
-  $('#similarModal .similar-body').innerHTML = html;
-  window.openAppModal($('#similarModal'));
-
-  // 카드 클릭 시 해당 사주 불러오기
-  $$('#similarModal .similar-card').forEach(c => {
-    c.addEventListener('click', () => {
-      const id = c.dataset.id;
-      const item = scored.find(x => x.rec.id === id);
-      if (item) {
+  };
+  const showList = () => {
+    body.innerHTML = `<p class="similar-intro"><b>${escapeHtml(baseName)}</b>와 닮은 순서로 저장 명반을 보여 줍니다.</p><div class="similar-list">${scored.map(card).join('')}</div>`;
+    body.querySelectorAll('.similar-card').forEach(c => {
+      const item = scored.find(x => String(x.rec.id) === c.dataset.id);
+      if (!item) return;
+      c.querySelector('[data-compare]').addEventListener('click', () => showCompare(item.rec));
+      c.querySelector('[data-open]').addEventListener('click', () => {
         currentSaju = item.rec;
         selectedFortuneYear = null;
         renderResult(item.rec);
         window.closeAppModal($('#similarModal'));
-        // 원국 탭으로
         $$('.tab').forEach(t => t.classList.remove('active'));
         document.querySelector('.tab[data-tab="result"]').classList.add('active');
         $$('.view').forEach(v => v.classList.remove('active'));
         $('#view-result').classList.add('active');
         syncTabA11y(document.querySelector('.tab[data-tab="result"]'));
-      }
+      });
     });
-  });
+  };
+  const miniChart = rec => {
+    const cols = ChartInsight.pillarsOf(rec).map(p => {
+      const block = (index, han, element) => index >= 0
+        ? `<span class="compare-cell ${EL_CLASS[element]}">${han}</span>`
+        : '<span class="compare-cell unknown">?</span>';
+      return `<div class="compare-col"><span class="compare-label">${p.name}</span>${block(p.stem, STEM[p.stem], STEM_EL[p.stem])}${block(p.branch, BRANCH[p.branch], BRANCH_EL[p.branch])}</div>`;
+    }).join('');
+    const nameText = (rec.name && rec.name !== '이름 없음') ? rec.name : '현재 사주';
+    return `<figure class="compare-chart"><figcaption>${escapeHtml(nameText)}<small>${rec.year}.${pad(rec.month)}.${pad(rec.day)} · ${rec.gender === 'M' ? '남' : '여'}</small></figcaption><div class="compare-grid">${cols}</div></figure>`;
+  };
+  const showCompare = other => {
+    const otherName = (other.name && other.name !== '이름 없음') ? other.name : '상대';
+    const relation = `${otherName}의 일간은 ${baseName}에게 <b>${SIPSIN_KOR[getSipsin(base.dStem, other.dStem)]}</b>, ${baseName}의 일간은 ${otherName}에게 <b>${SIPSIN_KOR[getSipsin(other.dStem, base.dStem)]}</b>입니다.`;
+    body.innerHTML = `<button type="button" class="compare-back" data-back>목록으로</button>
+      <div class="compare-pair">${miniChart(base)}${miniChart(other)}</div>
+      <p class="compare-sipsin">${escapeHtml(relation).replace(/&lt;(\/?)b&gt;/g, '<$1b>')}</p>
+      <h4 class="compare-heading">${escapeHtml(otherName)}의 기둥 ↔ ${escapeHtml(baseName)}의 기둥</h4>
+      <div class="relation-chips">${ChartInsight.chips(ChartInsight.compare(base, other), '직접 맺는 합·충이 없습니다')}</div>`;
+    body.querySelector('[data-back]').addEventListener('click', showList);
+    body.closest('.modal')?.scrollTo?.({ top: 0 });
+  };
+  showList();
+  window.openAppModal($('#similarModal'));
 }
 
 function createSecureUuid() {
@@ -14082,6 +14158,7 @@ function renderCalendar() {
   if (isCurrentYear) title.setAttribute('aria-current', 'date');
   else title.removeAttribute('aria-current');
   title.innerHTML = `${calY}년 ${calM}월 <span class="ganji">${STEM[gy.stem]}${BRANCH[gy.branch]}年</span>${isCurrentYear ? '<span class="cal-current-year">올해</span>' : ''}`;
+  renderCalendarTerm();
   const wd = ['일','월','화','수','목','금','토'];
   let html = wd.map((w, i) => `<div class="cal-wd ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('');
 
@@ -14125,6 +14202,9 @@ function renderCalendar() {
     html += `<div class="cal-day other" data-year="${ny}" data-month="${nm}" data-day="${d}"><div class="d">${d}</div><div class="gj"><span class="c-s ${EL_CLASS[sE]}">${STEM[g.stem]}</span><span class="c-b ${EL_CLASS[bE]}">${BRANCH[g.branch]}</span></div></div>`;
   }
   $('#calGrid').innerHTML = html;
+  const scrollHint = document.querySelector('.calendar-scroll-hint');
+  const gridEl = $('#calGrid');
+  if (scrollHint && gridEl) scrollHint.classList.toggle('is-needed', gridEl.scrollWidth > gridEl.clientWidth);
 
   // 날짜 클릭 이벤트
   $$('#calGrid .cal-day.clickable').forEach(el => {
@@ -14141,6 +14221,20 @@ function renderCalendar() {
   }
   renderCalDayDetail();
   window.ManseCalendarNotes.annotate(document.getElementById('calGrid'));
+}
+
+const JEOLGI_NAMES = ['입춘','경칩','청명','입하','망종','소서','입추','백로','한로','입동','대설','소한'];
+function renderCalendarTerm() {
+  const line = $('#calTerm');
+  if (!line) return;
+  const index = calM === 1 ? 11 : calM - 2;
+  const jd = findJeolgiJD(calY, JEOLGI_LON[index]);
+  const date = fromJD(Math.floor(jd));
+  const minutes = Math.floor((jd - Math.floor(jd)) * 1440);
+  const yi = getYearStemBranch(jd + 0.001, calY);
+  const branch = JEOLGI_BRANCH[index];
+  const stem = getMonthStem(((yi.useYear - 4) % 10 + 10) % 10, branch);
+  line.innerHTML = `<b>${JEOLGI_NAMES[index]}</b> ${date.m}월 ${date.d}일 ${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)} · <span class="han-inline">${STEM[stem]}${BRANCH[branch]}</span>월 시작`;
 }
 
 function renderCalDayDetail() {
@@ -14245,6 +14339,26 @@ function changeCalendarMonth(delta) {
   }, () => {});
 }
 
+onTap($('#calTitle'), () => {
+  const form = $('#calJump');
+  form.hidden = !form.hidden;
+  $('#calTitle').setAttribute('aria-expanded', String(!form.hidden));
+  if (!form.hidden) { $('#calJumpYear').value = calY; $('#calJumpMonth').value = calM; $('#calJumpYear').focus(); }
+});
+$('#calJump').addEventListener('submit', event => {
+  event.preventDefault();
+  const year = Number($('#calJumpYear').value), month = Number($('#calJumpMonth').value);
+  if (!(year >= 1026 && year <= 2099 && month >= 1 && month <= 12)) return;
+  selectRenderedCalendarDay(year, month, null);
+  $('#calJump').hidden = true;
+  $('#calTitle').setAttribute('aria-expanded', 'false');
+});
+onTap($('#calJumpToday'), () => {
+  const now = calendarLocalNow();
+  selectRenderedCalendarDay(now.getFullYear(), now.getMonth() + 1, now.getDate());
+  $('#calJump').hidden = true;
+  $('#calTitle').setAttribute('aria-expanded', 'false');
+});
 onTap($('#calPrev'), () => changeCalendarMonth(-1));
 onTap($('#calNext'), () => changeCalendarMonth(1));
 
@@ -15932,9 +16046,10 @@ clearLegacyAppCaching().catch((error) => {
    홈화면 추가 안내 — 제거됨
    ============================================ */
 </script>
-<script src="share.js?v=20261105-hanja"></script>
+<script src="chart-insight.js?v=20261105-tools"></script>
+<script src="share.js?v=20261105-tools"></script>
 <script src="nav.js"></script>
-<script src="hanja-alignment.js?v=2.3.2-hanja-ink" defer></script>
+<script src="hanja-alignment.js?v=20261105-tools" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>
 <script src="reading-navigation.js?v=20261027-design10"></script>
 <script>

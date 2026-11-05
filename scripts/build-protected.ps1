@@ -20,6 +20,7 @@ $ReleaseWebFiles = @(
     'annual-reading.js',
     'reading.js',
     'unified-reading.js',
+    'chart-insight.js',
     'hanja-alignment.js',
     'people-supplement.js',
     'calendar-notes.js',
