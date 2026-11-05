@@ -11934,6 +11934,8 @@ Sigrid Niehaus|19641229|F|
       · 시주 계산 : 야자시 구분<br>
       · 월주 기준 : 절기<br>
       · 대운 : 남양녀음 순행 / 남음녀양 역행<br>
+      · 대운수 : 절입까지 일수 ÷ 3 반올림, 만 나이 기준<br>
+      · 시각 미입력 : 정오 기준<br>
       · 풀이 : 연도 종합·12개월 월운·대운 흐름
     </div>
     <div style="font-size:12px; color:var(--text-light); line-height:1.7; margin-top:12px; font-weight:500; padding-top:10px; border-top:1px solid var(--line);">
@@ -12225,7 +12227,7 @@ function calcSaju(opts) {
     day = sol.day;
   } else lunar = solarToLunar(year, month, day);
 
-  const jd = toJD(year, month, day) + (hour + minute/60) / 24;
+  const jd = toJD(year, month, day) + (unknown ? 0.5 : (hour + minute/60) / 24);
   const yi = getYearStemBranch(jd, year);
   const mi = getMonthBranch(jd, year);
   const refStem = ((yi.useYear - 4) % 10 + 10) % 10;
@@ -12526,7 +12528,11 @@ function calcDaeun(yS, gender, mS, mB, bJD, bY) {
   let tJD;
   if (fwd) { const n = ms.find(m => m.jd > bJD); tJD = n ? n.jd : bJD + 30; }
   else { const p = ms.filter(m => m.jd < bJD); tJD = p.length ? p[p.length-1].jd : bJD - 30; }
-  const num = Math.max(1, Math.floor(Math.abs(tJD - bJD) / 3));
+  // 3일 = 1년, 1일 = 4개월. 대운수는 반올림하고, 실제 시작 나이는 따로 보여 준다.
+  const exactAge = Math.abs(tJD - bJD) / 3;
+  const num = Math.max(1, Math.round(exactAge));
+  const startYears = Math.floor(exactAge);
+  const startMonths = Math.floor((exactAge - startYears) * 12);
 
   const list = [];
   list.push({ age: 0, stem: mS, branch: mB, isInitial: true });
@@ -12537,7 +12543,7 @@ function calcDaeun(yS, gender, mS, mB, bJD, bY) {
     cb = ((cb + step) % 12 + 12) % 12;
     list.push({ age: num + i * 10, stem: cs, branch: cb });
   }
-  return { num, forward: fwd, list };
+  return { num, startYears, startMonths, forward: fwd, list };
 }
 
 function getWoonMonth(y, m) {
@@ -12813,7 +12819,7 @@ function renderResult() {
 
     <div class="result-right">
         <div class="luck-section">
-          <div class="luck-title">대운 흐름 <span class="meta">(대운수 ${s.daeun.num}, ${s.daeun.forward ? '순행' : '역행'})</span></div>
+          <div class="luck-title">대운 흐름 <span class="meta">(대운수 ${s.daeun.num} · ${s.daeun.startYears}세${s.daeun.startMonths ? ' ' + s.daeun.startMonths + '개월' : ''} 시작 · ${s.daeun.forward ? '순행' : '역행'})</span></div>
           <div class="luck-scroll" id="daeunScroll">
             ${s.daeun.list.slice().reverse().map((d, rIdx) => {
               const orig = s.daeun.list.length - 1 - rIdx;
@@ -13133,7 +13139,7 @@ function renderSeun() {
 
   $('#seunArea').innerHTML = `
     <div class="sub-luck">
-      <div class="sub-luck-label">세운 흐름 <span class="meta">(${startYear}년 ~ ${endYear}년)</span></div>
+      <div class="sub-luck-label">세운 흐름 <span class="meta">(${startYear}년 ~ ${endYear}년 · 만 나이 기준)</span></div>
       <div class="luck-scroll" id="seunScroll">
         ${years.slice().reverse().map(y => {
           const g = yearGanji(y);
