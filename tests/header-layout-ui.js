@@ -73,7 +73,7 @@ async function measure(page) {
         const birth = document.querySelector('#inBirth');
         birth.value = '19930516';
         birth.dispatchEvent(new Event('input', { bubbles: true }));
-        document.querySelector('#calcBtn').click();
+        if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); document.querySelector('#calcBtn').click();
       });
       await page.waitForSelector('#view-result.active .pillar-block');
       for (const tab of ['result', 'fortune', 'calendar', 'saved', 'input']) {

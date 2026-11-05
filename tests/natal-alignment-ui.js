@@ -50,7 +50,7 @@ async function inspect(browser, width, scheme, unknown) {
     await page.waitForSelector('#calcBtn');
     await page.type('#inBirth', '20031231');
     if (!unknown) await page.type('#inTime', '1430');
-    await page.click('#calcBtn');
+    await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
     await page.waitForSelector('#view-result:not([hidden]) .pillar-block .han');
     await settle(page);
     const state = await page.evaluate(() => {

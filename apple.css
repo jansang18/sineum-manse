@@ -2579,4 +2579,5 @@ button.cal-title { min-height: 44px; border: 0; background: transparent; color: 
   .luck-scroll { overflow: visible !important; flex-wrap: wrap !important; }
   .pillar-block, .luck-block, .rel-chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
-
+.segmented.field-err button { border-color: var(--apple-fire-foreground) !important; }
+.segmented:focus { outline: none; }

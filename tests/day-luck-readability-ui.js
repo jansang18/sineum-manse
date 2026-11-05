@@ -133,7 +133,7 @@ async function inspect(page, label, fixture) {
       await page.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
       await page.type('#inBirth', '19860219');
       await page.type('#inTime', '1430');
-      await page.click('#calcBtn');
+      await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
       await page.waitForSelector('#view-result.active .pillar-block');
       for (const selector of ['#daeunScroll .luck-item', '#seunScroll .luck-item', '#woonScroll .luck-item']) {
         await page.waitForSelector(selector);

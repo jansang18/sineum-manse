@@ -66,7 +66,7 @@ async function inspect(width) {
     });
     await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
     await page.type('#inBirth', '20031231');
-    await page.click('#calcBtn');
+    await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
     await page.waitForSelector('.pillar-block .han');
     await page.$eval('#daeunScroll .luck-item', element => element.click());
     await page.waitForSelector('#seunScroll .luck-block .han');
@@ -254,7 +254,7 @@ async function inspectUnavailableMetrics() {
       try {
         await page.goto(pageUrl, { waitUntil: 'domcontentloaded' });
         await page.type('#inBirth', '20031231');
-        await page.click('#calcBtn');
+        await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
         await page.waitForSelector('.pillar-block .han');
         await settle(page);
         const state = await page.$$eval('.pillar-block .han', elements => elements.map(element => {

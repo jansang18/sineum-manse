@@ -222,7 +222,7 @@ async function dailyCalendar(page, label) {
   await page.click('#tab-input');
   await page.type('#inBirth', '19860219');
   await page.type('#inTime', '1430');
-  await page.click('#calcBtn');
+  await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
   await page.waitForSelector('#view-result.active .pillar-block');
   // Locate the real decade which contains the hand-chosen test year, then use
   // actual decade/year/month controls rather than invoke renderDay in a test.

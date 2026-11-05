@@ -1633,7 +1633,7 @@ async function fillAndCalculate(page) {
     const time = document.getElementById('inTime');
     time.value = '1430';
     time.dispatchEvent(new Event('input', { bubbles: true }));
-    document.getElementById('calcBtn').click();
+    if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); document.getElementById('calcBtn').click();
   });
   await sleep(600);
 }
@@ -1927,7 +1927,7 @@ async function inspectLunarInput(page, width) {
       calendar: 'lunar', gender: 'M', unknown: true
     });
 
-    document.getElementById('calcBtn').click();
+    if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); document.getElementById('calcBtn').click();
     return {
       selected: {
         active: lunarButton.classList.contains('active'),

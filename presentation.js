@@ -13,17 +13,17 @@
     const name = nameOf(record);
     const date = [record?.year, String(record?.month || '').padStart(2,'0'), String(record?.day || '').padStart(2,'0')].join('.');
     if (context === 'saved') return name || `${date} · ${record?.gender === 'M' ? '남성' : '여성'}`;
-    if (context === 'natal') return name || '나의 원국';
-    if (context === 'share') return name ? `${name}님의 사주` : '나의 사주';
-    if (context === 'fortune') return `${name ? name + '님의' : '나의'} ${year ? year + '년 운세' : '올해운'}`;
-    return name || '나의 명반';
+    if (context === 'natal') return name || '이 명식';
+    if (context === 'share') return name ? `${name}님의 사주` : '이 명식의 사주';
+    if (context === 'fortune') return `${name ? name + '님의' : '이 명식의'} ${year ? year + '년 운세' : '올해운'}`;
+    return name || '이 명식';
   }
   function readingText(value, record) {
     let text = String(value || '');
     if (nameOf(record)) return text;
     return text.replaceAll('이름 없음의 명식은', '이 명식은')
       .replaceAll('이름 없음님의 명식은', '이 명식은')
-      .replaceAll('이름 없음님의', '나의')
+      .replaceAll('이름 없음님의', '이 명식의')
       .replaceAll('이름 없음님은', '이 명식의 주인은')
       .replaceAll('이름 없음', '이 명식');
   }

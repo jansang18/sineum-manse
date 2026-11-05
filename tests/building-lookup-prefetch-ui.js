@@ -32,7 +32,7 @@ const replyRegistry = (page, index, payload = body(), status = 200) => page.eval
 const inputState = page => page.evaluate(() => ({
   name: document.getElementById('inputName').value, birth: document.getElementById('inBirth').value,
   time: document.getElementById('inTime').value, calendar: document.querySelector('#segCal .active').dataset.val,
-  gender: document.querySelector('#segGender .active').dataset.val, tab: document.querySelector('.tab.active').dataset.tab,
+  gender: document.querySelector('#segGender .active')?.dataset.val, tab: document.querySelector('.tab.active').dataset.tab,
   clicks: window.__lookupCalcClicks,
 }));
 

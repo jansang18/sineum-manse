@@ -68,7 +68,7 @@ async function run(page, url, width, theme) {
   await inspectText(page, `${label}-building`);
   await page.$eval('.building-lookup', el => { el.open = false; });
   await page.keyboard.press('Tab');
-  await page.focus('#calcBtn');
+  await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.focus('#calcBtn');
   const focus = await page.$eval('#calcBtn', el => { const s = getComputedStyle(el); return { width: s.outlineWidth, offset: s.outlineOffset, color: s.outlineColor, gold: getComputedStyle(document.body).getPropertyValue('--apple-focus').trim() }; });
   check(focus.width === '2px' && focus.offset === '2px', `${label}: keyboard focus needs 2px/2px (${focus.width}/${focus.offset})`);
   await page.click('.tab[data-tab="saved"]'); await settle(page);
@@ -84,7 +84,7 @@ async function run(page, url, width, theme) {
   if ([390, 1440].includes(width)) await page.screenshot({ path: path.join(output, `${label}-saved.png`) });
   await page.click('.tab[data-tab="input"]');
   await page.type('#inBirth', '19890319'); await page.type('#inTime', '1430');
-  await page.click('#calcBtn'); await page.waitForSelector('#daeunScroll .luck-item'); await settle(page);
+  await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn'); await page.waitForSelector('#daeunScroll .luck-item'); await settle(page);
   await inspectText(page, `${label}-result`);
   if ([390, 1440].includes(width)) await page.screenshot({ path: path.join(output, `${label}-result.png`) });
   const badges = await page.$$eval('.pillars-4 .he-tag', els => els.map(el => {

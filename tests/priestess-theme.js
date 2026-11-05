@@ -148,7 +148,7 @@ async function inspectTheme(page, width, scheme) {
     await preparePage(resultPage, 390, scheme);
     await resultPage.type('#inBirth', '19860219');
     await resultPage.type('#inTime', '1430');
-    await resultPage.click('#calcBtn');
+    await resultPage.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await resultPage.click('#calcBtn');
     await resultPage.waitForSelector('#view-result:not([hidden])');
     await settleTheme(resultPage);
     const result = await resultPage.evaluate(() => {

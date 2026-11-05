@@ -32,7 +32,7 @@ async function run(browser, baseUrl, width, scheme) {
     await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.type('#inBirth', '19890319');
     await page.type('#inTime', '1430');
-    await page.click('#calcBtn');
+    await page.evaluate(() => { if (!document.querySelector('#segGender .active')) document.querySelector('#segGender [data-val="M"]').click(); }); await page.click('#calcBtn');
     await page.waitForSelector('#view-result:not([hidden]) .pillar-block .han');
     await page.$eval('#tab-fortune', element => element.click());
     await page.waitForSelector('#view-fortune:not([hidden]) .unified-reading');

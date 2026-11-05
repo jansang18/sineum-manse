@@ -1678,11 +1678,11 @@
   }
 </style>
   <link rel="preload" href="noto-serif-kr-hanja-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="apple.css?v=20261105-tools">
+  <link rel="stylesheet" href="apple.css?v=20261106-label">
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
   <link rel="stylesheet" href="reading.css?v=20261027-design10">
   <link rel="stylesheet" href="building-lookup.css?v=20261027-design10">
-  <script src="presentation.js?v=20261027-design10"></script>
+  <script src="presentation.js?v=20261106-label"></script>
 </head>
 <body>
 <script>document.body.classList.toggle('dark', document.documentElement.dataset.theme === 'dark');</script>
@@ -1756,10 +1756,11 @@
     <div class="field field-row">
       <div class="field-half">
         <label class="field-label" id="segGenderLabel">성별</label>
-        <div class="segmented" id="segGender" role="radiogroup" aria-labelledby="segGenderLabel">
-          <button type="button" role="radio" aria-checked="true" data-val="M" class="active">남자</button>
+        <div class="segmented" id="segGender" role="radiogroup" aria-labelledby="segGenderLabel" aria-required="true" tabindex="-1">
+          <button type="button" role="radio" aria-checked="false" data-val="M">남자</button>
           <button type="button" role="radio" aria-checked="false" data-val="F">여자</button>
         </div>
+        <p id="segGenderError" class="input-field-error" hidden></p>
       </div>
       <div class="field-half">
         <label class="field-label" id="segCalLabel">양/음력</label>
@@ -12649,12 +12650,16 @@ syncTabA11y($('.tab.active'));
 function bindSegmented(root) {
   (root || document).querySelectorAll('.segmented').forEach(seg => {
     seg.setAttribute('role', 'radiogroup');
-    const sync = () => seg.querySelectorAll('button').forEach(button => {
-      const checked = button.classList.contains('active');
-      button.setAttribute('role', 'radio');
-      button.setAttribute('aria-checked', String(checked));
-      button.tabIndex = checked ? 0 : -1;
-    });
+    const sync = () => {
+      seg.querySelectorAll('button').forEach(button => {
+        const checked = button.classList.contains('active');
+        button.setAttribute('role', 'radio');
+        button.setAttribute('aria-checked', String(checked));
+        button.tabIndex = checked ? 0 : -1;
+      });
+      // 아무것도 고르지 않은 묶음도 키보드로 들어올 수 있어야 한다.
+      if (!seg.querySelector('button.active')) { const first = seg.querySelector('button'); if (first) first.tabIndex = 0; }
+    };
     const buttons = [...seg.querySelectorAll('button')];
     buttons.forEach(b => {
       if (b.__segBound) return;
@@ -12663,6 +12668,7 @@ function bindSegmented(root) {
         seg.querySelectorAll('button').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         sync();
+        if (seg.id === 'segGender') { seg.classList.remove('field-err'); seg.removeAttribute('aria-invalid'); const note = document.getElementById('segGenderError'); if (note) { note.textContent = ''; note.hidden = true; } }
       });
       b.addEventListener('keydown', event => {
         if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
@@ -12720,7 +12726,10 @@ function clearInErr() {
 
 onTap($('#calcBtn'), () => {
   const name = $('#inputName').value.trim();
-  const gender = $('#segGender .active').dataset.val;
+  const buildingInput = window.jansangBuildingLookup?.getInputRecord();
+  // 건물 명식은 성별이 없어 기존 계산 기준을 유지한다. 사람 명식은 대운 방향이 갈리므로 꼭 고른다.
+  const gender = $('#segGender .active')?.dataset.val || (buildingInput ? 'M' : '');
+  if (!gender) return showInErr('성별을 골라 주세요. 대운 방향이 성별로 달라집니다.', '#segGender');
   const calendar = $('#segCal .active').dataset.val;
   const birthRaw = $('#inBirth').value.trim();
   const timeRaw = $('#inTime').value.trim();
@@ -16047,7 +16056,7 @@ clearLegacyAppCaching().catch((error) => {
    ============================================ */
 </script>
 <script src="chart-insight.js?v=20261105-tools"></script>
-<script src="share.js?v=20261105-tools"></script>
+<script src="share.js?v=20261106-label"></script>
 <script src="nav.js"></script>
 <script src="hanja-alignment.js?v=20261105-tools" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>

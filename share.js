@@ -94,7 +94,7 @@
     var age = (new Date().getFullYear()) - s.year;
     c.fillStyle = THEME.text;
     c.font = '800 54px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
-    c.fillText(window.MansePresentation?.chartLabel(s, 'natal') || s.name || '나의 원국', W / 2, 292, W - 100);
+    c.fillText(window.MansePresentation?.chartLabel(s, 'natal') || s.name || '이 명식', W / 2, 292, W - 100);
     c.fillStyle = THEME.sub;
     c.font = '500 27px -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif';
     c.fillText(s.buildingRegistry ? '건물 · 사용승인일 기준' : (s.gender === 'M' ? '남성' : '여성') + ' · 만 ' + age + '세', W / 2, 340);
@@ -258,7 +258,7 @@
     m.onclick = function (e) { if (e.target === m) closeShareCardModal(); };
     document.getElementById('shareCardDo').onclick = function () {
       cv.toBlob(async function (blob) {
-        var label = window.MansePresentation?.chartLabel(s, 'share') || '나의 사주';
+        var label = window.MansePresentation?.chartLabel(s, 'share') || '이 명식의 사주';
         var file = new File([blob], label + '_잔상_만세력.png', { type: 'image/png' });
         var txt = label + ' · 잔상 만세력\njansang18.github.io/sineum-manse';
         try {
