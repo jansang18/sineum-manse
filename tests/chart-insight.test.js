@@ -45,3 +45,20 @@ test('모르는 시주는 비교에서 빠진다', () => {
   assert.ok(list.includes('일주 ↔ 일간 丁壬 합'));
   assert.equal(list.some(text => text.includes('시간') || text.includes('시지')), false);
 });
+
+test('index.html의 12신살·합충이 판독 도구와 같은 기준을 쓴다', () => {
+  const fs = require('node:fs'); const path = require('node:path'); const vm = require('node:vm');
+  const lines = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8').split('\n');
+  const find = prefix => lines.findIndex(line => line.startsWith(prefix));
+  const tables = lines.slice(find('const STEM = '), find('function hourToBranch')).join('\n');
+  const logic = lines.slice(find('function calcShinsal'), find('function calcDaeun')).join('\n');
+  const box = {}; vm.runInNewContext(`${tables}\n${logic}\nObject.assign(globalThis,{calcShinsal,analyzeInter});`, box);
+  for (let year = 0; year < 12; year++) for (let branch = 0; branch < 12; branch++) {
+    const r = box.calcShinsal(year, 0, [branch], 0);
+    const name = Object.keys(r.twelve)[0];
+    assert.equal(name, insight.twelveSinsal(year, branch), `년지 ${year} 지지 ${branch}`);
+  }
+  assert.equal(box.analyzeInter([8, 4, 2], 0, 0, 0, -1).hap.some(t => t.includes('반합')), false);
+  assert.equal(box.analyzeInter([8, 0, 2], 0, 0, 0, -1).hap.some(t => t.includes('반합')), true);
+  assert.equal(box.analyzeInter([2, 5, 0], 0, 0, 0, -1).hyeong.length, 1);
+});

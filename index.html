@@ -12456,7 +12456,8 @@ function renderSamePillars60(saju, existingReport) {
 
 function calcShinsal(yB, dB, all, dS) {
   const r = { twelve: {}, guiin: [], special: [] };
-  const sam = {0:[8,0,4],1:[8,0,4],2:[8,0,4],3:[11,3,7],4:[11,3,7],5:[11,3,7],6:[2,6,10],7:[2,6,10],8:[2,6,10],9:[5,9,1],10:[5,9,1],11:[5,9,1]};
+  // 년지가 속한 삼합국: 申子辰·亥卯未·寅午戌·巳酉丑
+  const sam = {8:[8,0,4],0:[8,0,4],4:[8,0,4], 11:[11,3,7],3:[11,3,7],7:[11,3,7], 2:[2,6,10],6:[2,6,10],10:[2,6,10], 5:[5,9,1],9:[5,9,1],1:[5,9,1]};
   const names = ['겁살','재살','천살','지살','연살','월살','망신','장성','반안','역마','육해','화개'];
   const start = sam[yB][0];
   const k = (start - 3 + 12) % 12;
@@ -12500,14 +12501,16 @@ function analyzeInter(br, yS, mS, dS, hS) {
   sam.forEach(([g,n]) => {
     const p = g.filter(x => br.includes(x));
     if (p.length >= 3) r.hap.push(`삼합 ${n}(${p.map(x=>BRANCH_KOR[x]).join('')})`);
-    else if (p.length === 2) r.hap.push(`반합 ${n}(${p.map(x=>BRANCH_KOR[x]).join('')})`);
+    else if (p.length === 2 && p.some(x => [0,3,6,9].includes(x))) r.hap.push(`반합 ${n}(${p.map(x=>BRANCH_KOR[x]).join('')})`);
   });
   bang.forEach(([g,n]) => {
     const p = g.filter(x => br.includes(x));
     if (p.length >= 3) r.hap.push(`방합 ${n}(${p.map(x=>BRANCH_KOR[x]).join('')})`);
   });
   if ([2,5,8].every(x => br.includes(x))) r.hyeong.push('인사신 삼형');
+  else [[2,5],[5,8],[2,8]].forEach(([x,y]) => { for (let i = 0; i < br.length; i++) for (let j = i+1; j < br.length; j++) if ((br[i]===x&&br[j]===y)||(br[i]===y&&br[j]===x)) r.hyeong.push(`${pN[i]}·${pN[j]} 형(${BRANCH_KOR[br[i]]}${BRANCH_KOR[br[j]]})`); });
   if ([1,10,7].every(x => br.includes(x))) r.hyeong.push('축술미 삼형');
+  else [[1,10],[10,7],[1,7]].forEach(([x,y]) => { for (let i = 0; i < br.length; i++) for (let j = i+1; j < br.length; j++) if ((br[i]===x&&br[j]===y)||(br[i]===y&&br[j]===x)) r.hyeong.push(`${pN[i]}·${pN[j]} 형(${BRANCH_KOR[br[i]]}${BRANCH_KOR[br[j]]})`); });
   if (br.includes(0) && br.includes(3)) r.hyeong.push('자묘 상형');
   [[4,'진진'],[6,'오오'],[9,'유유'],[11,'해해']].forEach(([b,n]) => {
     if (br.filter(x => x === b).length >= 2) r.hyeong.push(`${n} 자형`);
@@ -13098,7 +13101,7 @@ function analyzeHap(branches) {
   // 삼합: 2개 이상 모이면 표시
   for (const h of SAMHAP) {
     const cnt = has(h.members);
-    if (cnt >= 2) {
+    if (cnt === 3 || (cnt === 2 && h.members.filter(b => branches.includes(b)).some(b => [0,3,6,9].includes(b)))) {
       const label = cnt === 3 ? h.name : (h.name.replace('국', '') + '반합');
       branches.forEach((b, i) => {
         if (h.members.includes(b)) result[i].sam = label;
@@ -13108,8 +13111,8 @@ function analyzeHap(branches) {
   // 방합
   for (const h of BANGHAP) {
     const cnt = has(h.members);
-    if (cnt >= 2) {
-      const label = cnt === 3 ? h.name : (h.name.replace('방', '') + '방반');
+    if (cnt === 3) {
+      const label = h.name;
       branches.forEach((b, i) => {
         if (h.members.includes(b)) result[i].bang = label;
       });
