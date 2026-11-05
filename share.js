@@ -156,7 +156,7 @@
     c.fillStyle = col.bg;
     rr(c, x, y, size, size, 22); c.fill();
     c.fillStyle = col.fg;
-    c.font = '900 ' + Math.round(size * 0.62) + 'px "Batang","바탕",serif';
+    c.font = '700 ' + Math.round(size * 0.62) + 'px "Jansang Hanja","Noto Serif KR","Batang","바탕",serif';
     c.textBaseline = 'middle';
     c.fillText(isStem ? STEM[idx] : BRANCH[idx], cx, y + size / 2 + size * 0.04);
     c.textBaseline = 'alphabetic';
@@ -276,7 +276,13 @@
 
   window.shareCard = function (s) {
     if (!s) return;
-    try { showModal(drawCard(s), s); }
-    catch (e) { alert('카드 생성 중 오류: ' + e.message); }
+    var draw = function () {
+      try { showModal(drawCard(s), s); }
+      catch (e) { alert('카드 생성 중 오류: ' + e.message); }
+    };
+    // 캔버스는 글꼴이 준비되기 전에 그리면 대체 글꼴로 굳어진다. 늦어도 1.5초 뒤에는 그린다.
+    var fonts = document.fonts, face = '700 64px "Jansang Hanja"';
+    if (!fonts || typeof fonts.load !== 'function' || fonts.check(face, '甲癸')) { draw(); return; }
+    Promise.race([fonts.load(face, '甲癸'), new Promise(function (done) { setTimeout(done, 1500); })]).then(draw, draw);
   };
 })();

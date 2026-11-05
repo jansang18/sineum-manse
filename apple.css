@@ -1,8 +1,26 @@
+/* 간지 22자만 담은 Noto Serif KR. 다른 글자는 다음 글꼴로 넘어간다. 라이선스: noto-serif-kr-OFL.txt */
+@font-face {
+  font-family: "Jansang Hanja";
+  src: url("noto-serif-kr-hanja-500.woff2") format("woff2");
+  font-weight: 100 599;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+4E01, U+4E11, U+4E19, U+4E59, U+4EA5, U+5348, U+536F, U+58EC, U+5B50, U+5BC5, U+5DF1, U+5DF3, U+5E9A, U+620A, U+620C, U+672A, U+7532, U+7533, U+7678, U+8F9B, U+8FB0, U+9149;
+}
+@font-face {
+  font-family: "Jansang Hanja";
+  src: url("noto-serif-kr-hanja-700.woff2") format("woff2");
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+4E01, U+4E11, U+4E19, U+4E59, U+4EA5, U+5348, U+536F, U+58EC, U+5B50, U+5BC5, U+5DF1, U+5DF3, U+5E9A, U+620A, U+620C, U+672A, U+7532, U+7533, U+7678, U+8F9B, U+8FB0, U+9149;
+}
+
 /* JANSANG: one ink-and-gold foundation for every screen and component. */
 :root {
   color-scheme: light;
   --app-font-ui: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", "Segoe UI", sans-serif;
-  --app-font-display: "Noto Serif KR", "Batang", serif;
+  --app-font-display: "Jansang Hanja", "Noto Serif KR", "Batang", serif;
   --app-font-body: 1rem;
   --app-title-size: clamp(20px, 2.4vw, 24px);
   --app-section-title-size: clamp(18px, 2vw, 20px);
