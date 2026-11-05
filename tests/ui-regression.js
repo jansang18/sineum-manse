@@ -1174,11 +1174,10 @@ async function inspectFinalSecurityRuntime(page, width) {
   const state = await page.evaluate(async () => {
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     const listSavedKeys = async () => {
-      const result = await window.storage.list('saju:');
-      return result && Array.isArray(result.keys) ? result.keys : [];
+      return (await SavedStore.page(null, 100000)).map(record => record.id);
     };
 
-    for (const key of await listSavedKeys()) await window.storage.delete(key);
+    for (const id of await listSavedKeys()) await SavedStore.remove(id);
     localStorage.removeItem('saju_list');
 
     const sample = {
@@ -1217,7 +1216,7 @@ async function inspectFinalSecurityRuntime(page, width) {
     await wait(50);
 
     keys = await listSavedKeys();
-    const stored = keys[0] ? JSON.parse((await window.storage.get(keys[0])).value) : null;
+    const stored = keys[0] ? await SavedStore.get(keys[0]) : null;
     const cards = [...document.querySelectorAll('#savedContent .saved-card')];
     const importState = {
       xssExecuted: window.__backupXssExecuted,
@@ -1258,7 +1257,7 @@ async function inspectFinalSecurityRuntime(page, width) {
       window.fetch = originalFetch;
     }
 
-    for (const key of keys) await window.storage.delete(key);
+    for (const id of keys) await SavedStore.remove(id);
     localStorage.removeItem('saju_list');
     applyTheme('light');
     await wait(300);
@@ -1308,12 +1307,12 @@ async function inspectFinalSecurityRuntime(page, width) {
     };
   });
 
-  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const safeId = /^[\w-]{1,64}$/;
   assert.equal(state.importState.xssExecuted, 0, `${width}px malicious backup executed script`);
   assert.equal(state.importState.executableNodes, 0, `${width}px imported markup became executable DOM`);
   assert.equal(state.importState.keys.length, 1, `${width}px invalid imported schemas must be rejected`);
-  assert.ok(uuid.test(state.importState.stored.id), `${width}px imported id is not a UUID: ${state.importState.stored.id}`);
-  assert.equal(state.importState.keys[0], `saju:${state.importState.stored.id}`);
+  assert.ok(safeId.test(state.importState.stored.id), `${width}px imported id is unsafe: ${state.importState.stored.id}`);
+  assert.equal(state.importState.keys[0], state.importState.stored.id);
   assert.deepEqual(state.importState.cardIds, [state.importState.stored.id]);
   assert.match(state.importState.cardText[0], /<img src=x onerror=/, 'malicious display text must remain inert text');
   assert.equal(Object.hasOwn(state.importState.stored, 'unexpected'), false, 'unknown import fields must be dropped');
@@ -1413,8 +1412,7 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
   const state = await page.evaluate(async () => {
     const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
     const listKeys = async () => {
-      const result = await window.storage.list('saju:');
-      return result && Array.isArray(result.keys) ? result.keys : [];
+      return (await SavedStore.page(null, 100000)).map(record => record.id);
     };
     const attackerNodes = root => [
       ...root.querySelectorAll('img[src="x"], [onerror], [onload], script[data-attacker]')
@@ -1426,7 +1424,7 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
       text: root.textContent
     });
 
-    for (const key of await listKeys()) await window.storage.delete(key);
+    for (const id of await listKeys()) await SavedStore.remove(id);
     localStorage.removeItem('saju_list');
     window.__x = 0;
     window.alert = () => {};
@@ -1482,7 +1480,7 @@ async function inspectImportedFieldDownstreamSafety(page, width) {
     window.closeAppModal(document.getElementById('similarModal'));
     await wait(230);
 
-    for (const key of await listKeys()) await window.storage.delete(key);
+    for (const id of await listKeys()) await SavedStore.remove(id);
     localStorage.removeItem('saju_list');
     return {
       maliciousName,
@@ -2911,14 +2909,14 @@ async function inspectAppleSecondaryScreens(page, width) {
 
       document.querySelector('.tab[data-tab="saved"]').click();
       const savedId = `task5-${theme}`;
-      await window.storage.set(`saju:${savedId}`, JSON.stringify({
+      await SavedStore.put({
         ...currentSaju,
         id: savedId,
         name: `실제저장-${theme}`,
         memo: 'Task 5 QA',
         fav: true,
         savedAt: Date.now()
-      }));
+      });
       await renderSaved();
       await wait(180);
       const savedCardElement = document.querySelector(`.saved-card[data-id="${savedId}"]`);
@@ -3040,7 +3038,7 @@ async function inspectAppleSecondaryScreens(page, width) {
         viewportHeight: window.innerHeight,
         width
       };
-      await window.storage.delete(`saju:${savedId}`);
+      await SavedStore.remove(savedId);
       surfaceProbe.remove();
       return result;
     }, { theme, width });
@@ -3760,15 +3758,16 @@ async function inspectWidth(browser, width) {
       let alerts = 0;
       window.alert = () => { alerts++; };
       try {
-        const before = new Set((await window.storage.list('saju:')).keys || []);
+        const before = new Set((await SavedStore.page(null, 100000)).map(record => record.id));
         document.getElementById('saveBtn').click();
         document.getElementById('saveConfirm').click();
         await new Promise(resolve => setTimeout(resolve, 100));
         const toast = document.getElementById('appToast');
-        const after = await window.storage.list('saju:');
-        await Promise.all((after.keys || [])
-          .filter(key => !before.has(key))
-          .map(key => window.storage.delete(key)));
+        const after = await SavedStore.page(null, 100000);
+        await Promise.all(after
+          .map(record => record.id)
+          .filter(id => !before.has(id))
+          .map(id => SavedStore.remove(id)));
         return { alerts, className: toast.className, text: toast.textContent };
       } finally {
         window.alert = nativeAlert;

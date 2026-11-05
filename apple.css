@@ -2603,3 +2603,9 @@ button.cal-title { min-height: 44px; border: 0; background: transparent; color: 
   #view-result.active .result-right .luck-section { margin-top: 0 !important; }
   #view-result.active .oguk-card .result-head.view-head { min-height: 0; margin-bottom: 8px !important; }
 }
+
+/* 저장 명반 대량 처리 */
+.saved-progress, .saved-list-status { margin: 8px 0; color: var(--apple-secondary); font-size: 13px; text-align: center; }
+.saved-list-status:empty { display: none; }
+.saved-sentinel { height: 1px; }
+#similarSearch { margin-bottom: 10px; }

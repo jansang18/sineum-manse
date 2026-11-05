@@ -1678,7 +1678,7 @@
   }
 </style>
   <link rel="preload" href="noto-serif-kr-hanja-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="apple.css?v=20261106-fold">
+  <link rel="stylesheet" href="apple.css?v=20261106-saved100k">
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
   <link rel="stylesheet" href="reading.css?v=20261027-design10">
   <link rel="stylesheet" href="building-lookup.css?v=20261027-design10">
@@ -13665,12 +13665,12 @@ onTap($('#saveConfirm'), async () => {
   const memo = $('#saveMemo').value.trim();
   const updating = Boolean(currentSaju.id);
   const record = { ...currentSaju, name, memo, savedAt: currentSaju.savedAt || Date.now(), id: currentSaju.id || 'saju_' + Date.now() };
-  try { await window.storage.set('saju:' + record.id, JSON.stringify(record)); }
-  catch (e) {
-    const list = JSON.parse(localStorage.getItem('saju_list') || '[]');
-    const index = list.findIndex(item => item.id === record.id);
-    if (index >= 0) list[index] = record; else list.push(record);
-    localStorage.setItem('saju_list', JSON.stringify(list));
+  try {
+    if (!updating && await SavedStore.count() >= SavedStore.MAX_RECORDS) { alert('명반은 10만 개까지 저장할 수 있습니다. 정리한 뒤 다시 저장해 주세요.'); return; }
+    await SavedStore.put(record);
+  } catch (e) {
+    alert('저장하지 못했습니다. 기기 저장 공간을 확인해 주세요.');
+    return;
   }
   Object.assign(currentSaju, { name, memo, savedAt: record.savedAt, id: record.id });
   const heading = document.querySelector('.oguk-card .result-head .name');
@@ -13699,7 +13699,7 @@ function makeSavedElement(tag, className, text) {
 
 function makeSavedToolbar(count) {
   const toolbar = makeSavedElement('div', 'saved-toolbar');
-  const exportButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', count ? `내보내기 (${count})` : '내보내기'), 'upload');
+  const exportButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', count ? `내보내기 (${count.toLocaleString()})` : '내보내기'), 'upload');
   exportButton.type = 'button';
   exportButton.id = 'savedExportBtn';
   const importButton = MansePresentation.prependIcon(makeSavedElement('button', 'bb', '불러오기'), 'download');
@@ -13757,21 +13757,85 @@ function makeSavedCard(record) {
   return card;
 }
 
-async function renderSaved() {
-  let list = [];
+/** 저장된 작은 기록에서 원국 전체를 다시 계산한다. */
+function hydrateSaved(rec) {
   try {
-    const res = await window.storage.list('saju:');
-    if (res && res.keys) for (const k of res.keys) {
-      const r = await window.storage.get(k);
-      if (r) list.push(JSON.parse(r.value));
+    const full = calcSaju({ year: rec.year, month: rec.month, day: rec.day, hour: rec.hour || 0, minute: rec.minute || 0, calendar: 'solar', gender: rec.gender, unknown: Boolean(rec.unknown) });
+    for (const key of ['id', 'name', 'memo', 'fav', 'savedAt', 'entered', 'buildingRegistry']) if (rec[key] !== undefined) full[key] = rec[key];
+    return full;
+  } catch (e) { return rec; }
+}
+
+let savedView = { token: 0, query: '', after: null, loading: false, finished: false, observer: null };
+const SAVED_PAGE = 50;
+
+async function loadSavedPage() {
+  const view = savedView, token = view.token;
+  if (view.loading || view.finished) return;
+  view.loading = true;
+  const list = $('#savedListEl'), status = $('#savedListStatus');
+  if (!list) { view.loading = false; return; }
+  try {
+    let items;
+    if (view.query) {
+      const found = await SavedStore.search(view.query, {
+        after: view.after, limit: SAVED_PAGE, isStale: () => token !== savedView.token,
+        onProgress: scanned => { if (token === savedView.token && status) status.textContent = `${scanned.toLocaleString()}개 확인하며 찾는 중…`; }
+      });
+      if (token !== savedView.token) return;
+      items = found.items; view.after = found.next; view.finished = found.finished;
+    } else {
+      items = await SavedStore.page(view.after, SAVED_PAGE);
+      if (token !== savedView.token) return;
+      if (items.length) view.after = items[items.length - 1].o;
+      if (items.length < SAVED_PAGE) view.finished = true;
     }
-  } catch (e) { list = JSON.parse(localStorage.getItem('saju_list') || '[]'); }
+    for (const record of items) list.appendChild(makeSavedCard(record));
+    if (status) status.textContent = view.finished && !list.children.length ? '찾는 명반이 없습니다.' : '';
+  } finally {
+    if (token === savedView.token) view.loading = false;
+  }
+  // 화면이 아직 차지 않았으면 이어서 읽는다.
+  const sentinel = $('#savedSentinel');
+  if (!view.finished && sentinel && sentinel.getBoundingClientRect().top < innerHeight + 600) loadSavedPage();
+}
 
-  list = list.filter(record => record && typeof record === 'object');
+function resetSavedList(query) {
+  savedView = { ...savedView, token: savedView.token + 1, query, after: null, loading: false, finished: false };
+  $('#savedListEl')?.replaceChildren();
+  const status = $('#savedListStatus');
+  if (status) status.textContent = '';
+  return loadSavedPage();
+}
+
+async function openSavedRecord(id) {
+  const rec = await SavedStore.get(id);
+  if (!rec) return;
+  currentSaju = hydrateSaved(rec);
+  selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
+  renderResult();
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  $$('.tab')[1].classList.add('active');
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $('#view-result').classList.add('active');
+  syncTabA11y($$('.tab')[1]);
+  $('#bottomBar').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+async function renderSaved() {
+  const total = await SavedStore.count();
   const content = $('#savedContent');
-  content.replaceChildren(makeSavedToolbar(list.length));
+  savedView.observer?.disconnect();
+  content.replaceChildren(makeSavedToolbar(total));
+  const progress = makeSavedElement('p', 'saved-progress');
+  progress.id = 'savedProgress';
+  progress.setAttribute('role', 'status');
+  progress.hidden = true;
+  content.append(progress);
+  bindSavedToolbar(total);
 
-  if (list.length === 0) {
+  if (total === 0) {
     const empty = makeSavedElement('div', 'saved-empty');
     const mark = MansePresentation.prependIcon(makeSavedElement('div', 'empty-mark'), 'sparkle');
     const heading = makeSavedElement('h3', '', '아직 저장된 명반이 없습니다');
@@ -13782,86 +13846,72 @@ async function renderSaved() {
     action.dataset.goInput = '';
     empty.append(mark, heading, copy, action);
     content.appendChild(empty);
-    bindSavedToolbar(list);
     action.addEventListener('click', () => {
       document.querySelector('.tab[data-tab="input"]')?.click();
     });
     return;
   }
-  list.sort((a, b) => (b.fav?1:0)-(a.fav?1:0) || b.savedAt - a.savedAt);
 
   const search = document.createElement('input');
   search.id = 'savedSearch';
   search.className = 'input';
-  search.placeholder = '이름·메모 검색';
-  search.setAttribute('aria-label', '저장한 명반 이름·메모 검색');
+  search.placeholder = '이름·메모·생년월일 검색';
+  search.setAttribute('aria-label', '저장한 명반 이름·메모·생년월일 검색');
   search.style.marginBottom = '10px';
-  search.addEventListener('input', () => filterSaved(search.value));
+  let searchTimer = 0;
+  search.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => resetSavedList(search.value.trim()), 250);
+  });
   const cards = makeSavedElement('div', 'saved-list');
   cards.id = 'savedListEl';
-  for (const record of list) cards.appendChild(makeSavedCard(record));
-  content.append(search, cards);
+  const status = makeSavedElement('p', 'saved-list-status');
+  status.id = 'savedListStatus';
+  status.setAttribute('role', 'status');
+  const sentinel = makeSavedElement('div', 'saved-sentinel');
+  sentinel.id = 'savedSentinel';
+  sentinel.setAttribute('aria-hidden', 'true');
+  content.append(search, cards, status, sentinel);
 
-  bindSavedToolbar(list);
-
-  $$('.saved-card').forEach(c => {
-    c.addEventListener('click', async e => {
-      if (e.target.classList.contains('sdelete')) return;
-      const id = c.dataset.id;
-      let rec;
-      try { const r = await window.storage.get('saju:' + id); if (r) rec = JSON.parse(r.value); }
-      catch (err) {
-        const arr = JSON.parse(localStorage.getItem('saju_list') || '[]');
-        rec = arr.find(x => x.id === id);
-      }
-      if (rec) {
-        currentSaju = rec;
-        selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
-        renderResult();
-        $$('.tab').forEach(x => x.classList.remove('active'));
-        $$('.tab')[1].classList.add('active');
-        $$('.view').forEach(v => v.classList.remove('active'));
-        $('#view-result').classList.add('active');
-        syncTabA11y($$('.tab')[1]);
-        $('#bottomBar').style.display = 'flex';
-        window.scrollTo(0, 0);
-      }
-    });
-  });
-  $$('.sdelete').forEach(b => {
-      b.addEventListener('click', async e => {
-        e.stopPropagation();
-        if (!confirm('삭제하시겠습니까?')) return;
-        const id = b.dataset.del;
-        try { await window.storage.delete('saju:' + id); }
-        catch (err) {
-          const arr = JSON.parse(localStorage.getItem('saju_list') || '[]');
-          localStorage.setItem('saju_list', JSON.stringify(arr.filter(x => x.id !== id)));
-        }
-        renderSaved();
-      });
-    });
-  $$('.sfav').forEach(btn => {
-    btn.addEventListener('click', async e => {
+  cards.addEventListener('click', async e => {
+    const del = e.target.closest('.sdelete'), fav = e.target.closest('.sfav'), card = e.target.closest('.saved-card');
+    if (del) {
       e.stopPropagation();
-      await toggleFav(btn.dataset.fav);
-      renderSaved();
-    });
+      if (!confirm('삭제하시겠습니까?')) return;
+      await SavedStore.remove(del.dataset.del);
+      card?.remove();
+      const left = await SavedStore.count();
+      if (left === 0) { renderSaved(); return; }
+      const label = $('#savedExportBtn');
+      if (label?.lastChild) label.lastChild.textContent = `내보내기 (${left.toLocaleString()})`;
+      return;
+    }
+    if (fav) {
+      e.stopPropagation();
+      const next = await toggleFav(fav.dataset.fav);
+      fav.textContent = next ? '★' : '☆';
+      fav.classList.toggle('on', next);
+      fav.setAttribute('aria-label', next ? '즐겨찾기 해제' : '즐겨찾기');
+      return;
+    }
+    if (card) openSavedRecord(card.dataset.id);
   });
+
+  savedView.observer = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) loadSavedPage();
+  }, { rootMargin: '600px' });
+  savedView.observer.observe(sentinel);
+  await resetSavedList('');
 }
 
 async function updateSavedRecord(id, patch) {
-  try { const r = await window.storage.get('saju:' + id); if (r) { const rec = JSON.parse(r.value); Object.assign(rec, patch); await window.storage.set('saju:' + id, JSON.stringify(rec)); return; } } catch (e) {}
-  const arr = JSON.parse(localStorage.getItem('saju_list') || '[]'); const i = arr.findIndex(x => x.id === id); if (i >= 0) { Object.assign(arr[i], patch); localStorage.setItem('saju_list', JSON.stringify(arr)); }
+  return SavedStore.update(id, patch);
 }
 async function toggleFav(id) {
-  let cur = false;
-  try { const r = await window.storage.get('saju:' + id); if (r) cur = !!JSON.parse(r.value).fav; } catch (e) { const arr = JSON.parse(localStorage.getItem('saju_list') || '[]'); const rec = arr.find(x => x.id === id); cur = rec && !!rec.fav; }
-  await updateSavedRecord(id, { fav: !cur });
-}
-function filterSaved(q) {
-  q = (q || '').trim().toLowerCase();
-  document.querySelectorAll('#savedListEl .saved-card').forEach(c => { const t = c.innerText.toLowerCase(); c.style.display = (!q || t.includes(q)) ? '' : 'none'; });
+  const rec = await SavedStore.get(id);
+  if (!rec) return false;
+  await SavedStore.update(id, { fav: !rec.fav });
+  return !rec.fav;
 }
 
 /* 사주 유사도 계산 — 8글자 중 몇 개 일치하는지로 점수화 */
@@ -13901,28 +13951,31 @@ function calcSajuSimilarity(a, b) {
 
 async function findSimilarSaju() {
   if (!currentSaju) { alert('먼저 사주를 펼쳐주세요.'); return; }
-  // 저장 목록 불러오기
-  let list = [];
-  try {
-    const res = await window.storage.list('saju:');
-    if (res && res.keys) for (const k of res.keys) {
-      const r = await window.storage.get(k);
-      if (r) list.push(JSON.parse(r.value));
-    }
-  } catch (err) {
-    list = JSON.parse(localStorage.getItem('saju_list') || '[]');
-  }
-
   // 지금 보는 명식 자신은 답에서 뺀다.
   const base = currentSaju;
-  list = list.filter(rec => !(rec.id && rec.id === base.id) && !(rec.name === base.name && rec.year === base.year && rec.month === base.month && rec.day === base.day && rec.hStem === base.hStem));
+  const isSelf = rec => (rec.id && rec.id === base.id) || (rec.name === base.name && rec.year === base.year && rec.month === base.month && rec.day === base.day && rec.hStem === base.hStem);
   const body = $('#similarModal .similar-body');
-  if (list.length === 0) {
+  const TOP = 100;
+  body.innerHTML = '<p class="similar-intro" id="similarScan" role="status">저장 명반을 살펴보는 중…</p>';
+  window.openAppModal($('#similarModal'));
+  let scored = [], seen = 0;
+  await SavedStore.scan(batch => {
+    for (const rec of batch) {
+      if (isSelf(rec)) continue;
+      seen++;
+      scored.push({ rec, sim: calcSajuSimilarity(base, rec) });
+    }
+    // 전체를 모두 들고 있지 않도록 상위만 남긴다.
+    if (scored.length > TOP * 4) { scored.sort((x, y) => y.sim.score - x.sim.score); scored.length = TOP; }
+    const note = document.getElementById('similarScan');
+    if (note) note.textContent = `${seen.toLocaleString()}개 살펴보는 중…`;
+  }, 10000);
+  scored.sort((x, y) => y.sim.score - x.sim.score);
+  scored = scored.slice(0, TOP);
+  if (seen === 0) {
     body.innerHTML = `<div class="similar-empty">비교할 다른 저장 명반이 없습니다.<br>저장 탭에 사주를 모아두면 나란히 볼 수 있어요.</div>`;
-    window.openAppModal($('#similarModal'));
     return;
   }
-  const scored = list.map(rec => ({ rec, sim: calcSajuSimilarity(base, rec) })).sort((x, y) => y.sim.score - x.sim.score);
   const baseName = (base.name && base.name !== '이름 없음') ? base.name : '현재 사주';
   const card = ({ rec, sim }) => {
     const sCls = sim.score >= 75 ? 'high' : sim.score >= 50 ? 'mid' : 'low';
@@ -13947,22 +14000,45 @@ async function findSimilarSaju() {
     </div>`;
   };
   const showList = () => {
-    body.innerHTML = `<p class="similar-intro"><b>${escapeHtml(baseName)}</b>와 닮은 순서로 저장 명반을 보여 줍니다.</p><div class="similar-list">${scored.map(card).join('')}</div>`;
-    body.querySelectorAll('.similar-card').forEach(c => {
-      const item = scored.find(x => String(x.rec.id) === c.dataset.id);
-      if (!item) return;
-      c.querySelector('[data-compare]').addEventListener('click', () => showCompare(item.rec));
-      c.querySelector('[data-open]').addEventListener('click', () => {
-        currentSaju = item.rec;
-        selectedFortuneYear = null;
-        renderResult(item.rec);
-        window.closeAppModal($('#similarModal'));
-        $$('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelector('.tab[data-tab="result"]').classList.add('active');
-        $$('.view').forEach(v => v.classList.remove('active'));
-        $('#view-result').classList.add('active');
-        syncTabA11y(document.querySelector('.tab[data-tab="result"]'));
+    const more = seen > TOP ? ` 전체 ${seen.toLocaleString()}개 중 가장 닮은 ${TOP}개입니다.` : '';
+    body.innerHTML = `<p class="similar-intro"><b>${escapeHtml(baseName)}</b>와 닮은 순서로 저장 명반을 보여 줍니다.${more}</p>
+      <input class="input" id="similarSearch" placeholder="다른 명반 이름·생년월일로 찾기" aria-label="비교할 명반 찾기">
+      <div class="similar-list" id="similarList"></div><p class="saved-list-status" id="similarSearchStatus" role="status"></p>`;
+    const listEl = body.querySelector('#similarList');
+    const fill = entries => {
+      listEl.innerHTML = entries.map(card).join('');
+      listEl.querySelectorAll('.similar-card').forEach(c => {
+        const item = entries.find(x => String(x.rec.id) === c.dataset.id);
+        if (!item) return;
+        c.querySelector('[data-compare]').addEventListener('click', () => showCompare(hydrateSaved(item.rec)));
+        c.querySelector('[data-open]').addEventListener('click', () => {
+          currentSaju = hydrateSaved(item.rec);
+          selectedFortuneYear = null;
+          selectedDaeun = null; selectedSeun = null; selectedWoon = null;
+          renderResult();
+          window.closeAppModal($('#similarModal'));
+          $$('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelector('.tab[data-tab="result"]').classList.add('active');
+          $$('.view').forEach(v => v.classList.remove('active'));
+          $('#view-result').classList.add('active');
+          syncTabA11y(document.querySelector('.tab[data-tab="result"]'));
+        });
       });
+    };
+    fill(scored);
+    let timer = 0, ticket = 0;
+    body.querySelector('#similarSearch').addEventListener('input', event => {
+      clearTimeout(timer);
+      const text = event.target.value.trim(), mine = ++ticket;
+      const note = body.querySelector('#similarSearchStatus');
+      timer = setTimeout(async () => {
+        if (!text) { note.textContent = ''; fill(scored); return; }
+        const found = await SavedStore.search(text, { limit: 30, isStale: () => mine !== ticket, onProgress: n => { if (mine === ticket) note.textContent = `${n.toLocaleString()}개 확인하며 찾는 중…`; } });
+        if (mine !== ticket) return;
+        const entries = found.items.filter(rec => !isSelf(rec)).map(rec => ({ rec, sim: calcSajuSimilarity(base, rec) }));
+        note.textContent = entries.length ? '' : '찾는 명반이 없습니다.';
+        fill(entries);
+      }, 250);
     });
   };
   const miniChart = rec => {
@@ -13987,7 +14063,6 @@ async function findSimilarSaju() {
     body.closest('.modal')?.scrollTo?.({ top: 0 });
   };
   showList();
-  window.openAppModal($('#similarModal'));
 }
 
 function createSecureUuid() {
@@ -14043,7 +14118,7 @@ function normalizeImportedRecord(input) {
   return {
     ...calculated,
     ...(buildingRegistry ? { buildingRegistry } : {}),
-    id: createSecureUuid(),
+    id: typeof input.id === 'string' && /^[\w-]{1,64}$/.test(input.id) ? input.id : 'r_' + SavedStore.hash([input.name, year, month, day, hour, minute, unknown, gender].join('|')),
     name: (input.name || '이름 없음').trim().slice(0, 40) || '이름 없음',
     memo: (input.memo || '').trim().slice(0, 240),
     fav: input.fav === true,
@@ -14054,48 +14129,87 @@ function normalizeImportedRecord(input) {
 async function importSavedRecords(records) {
   if (!Array.isArray(records)) return { added: 0, skipped: 0 };
   const accepted = [];
-  let skipped = Math.max(0, records.length - 500);
-  for (const input of records.slice(0, 500)) {
+  let skipped = 0;
+  for (const input of records) {
     const record = normalizeImportedRecord(input);
-    if (record) accepted.push(record);
-    else skipped++;
+    if (record) accepted.push(record); else skipped++;
   }
-
-  try {
-    for (const record of accepted) {
-      await window.storage.set(`saju:${record.id}`, JSON.stringify(record));
-    }
-  } catch (error) {
-    const existing = JSON.parse(localStorage.getItem('saju_list') || '[]');
-    localStorage.setItem('saju_list', JSON.stringify(existing.concat(accepted)));
-  }
+  await SavedStore.putMany(accepted);
   return { added: accepted.length, skipped };
 }
 
-function bindSavedToolbar(list) {
+/** 큰 백업 파일을 조금씩 읽어 묶음으로 넣는다. 같은 기록을 다시 넣으면 덮어쓴다. */
+async function importSavedFile(file, onProgress) {
+  const before = await SavedStore.count();
+  let batch = [], read = 0, skipped = 0, over = 0, recordsFinished = false;
+  const scanner = SavedStore.recordScanner(piece => {
+    if (piece === null) { recordsFinished = true; return; }
+    let record = null;
+    try { record = normalizeImportedRecord(JSON.parse(piece)); } catch (e) {}
+    if (!record) { skipped++; return; }
+    if (batch.length + read >= SavedStore.MAX_RECORDS - before) { over++; return; }
+    batch.push(record);
+  });
+  const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done || recordsFinished) break;
+    scanner.push(value);
+    if (!scanner.started() && scanner.head().length > 4096) throw new Error('지원하지 않는 백업 형식입니다.');
+    if (batch.length) {
+      const part = batch; batch = [];
+      for (let i = 0; i < part.length; i += 2000) {
+        await SavedStore.putMany(part.slice(i, i + 2000));
+        read += Math.min(2000, part.length - i);
+        onProgress?.(read);
+        await SavedStore.yieldToUi();
+      }
+    }
+  }
+  await reader.cancel().catch(() => {});
+  if (!scanner.started()) throw new Error('지원하지 않는 백업 형식입니다.');
+  if (!recordsFinished) throw new Error('파일이 중간에 잘렸습니다.');
+  const head = scanner.head().trim();
+  if (head) {
+    let info = null;
+    try { info = JSON.parse(head.replace(/,?\s*"records"\s*:\s*$/, '') + '}'); } catch (e) {}
+    if (info && info.version !== undefined && info.version !== 1 && read === 0) throw new Error('지원하지 않는 백업 버전입니다.');
+  }
+  const after = await SavedStore.count();
+  return { added: after - before, replaced: read - (after - before), skipped, over };
+}
+
+function bindSavedToolbar(total) {
   const expBtn = $('#savedExportBtn');
   const impBtn = $('#savedImportBtn');
   const fileIn = $('#savedImportFile');
   if (!expBtn || !impBtn || !fileIn) return;
+  const showProgress = text => {
+    const el = $('#savedProgress');
+    if (!el) return;
+    el.hidden = !text;
+    el.textContent = text || '';
+  };
 
-  expBtn.addEventListener('click', () => {
-    if (!list.length) { alert('내보낼 명반이 없습니다.'); return; }
-    const payload = {
-      app: '잔상 만세력',
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      count: list.length,
-      records: list
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    a.href = url;
-    a.download = `잔상만세력_백업_${ts}.json`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  expBtn.addEventListener('click', async () => {
+    if (!total) { alert('내보낼 명반이 없습니다.'); return; }
+    expBtn.disabled = true;
+    try {
+      const { blob } = await SavedStore.exportBlob((done, all) => showProgress(`내보내는 중 ${done.toLocaleString()} / ${all.toLocaleString()}`));
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0,10).replace(/-/g,'');
+      a.href = url;
+      a.download = `잔상만세력_백업_${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      // 큰 파일은 저장 창이 읽는 동안 주소가 살아 있어야 한다.
+      setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 600000);
+      showProgress('');
+    } catch (err) {
+      showProgress('');
+      alert('내보내지 못했습니다. 기기 저장 공간을 확인해 주세요.');
+    } finally { expBtn.disabled = false; }
   });
 
   impBtn.addEventListener('click', () => fileIn.click());
@@ -14103,29 +14217,26 @@ function bindSavedToolbar(list) {
   fileIn.addEventListener('change', async e => {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
+    impBtn.disabled = true;
     try {
-      if (f.size > 2 * 1024 * 1024) throw new Error('백업 파일은 2MB 이하여야 합니다.');
-      const text = await f.text();
-      const data = JSON.parse(text);
-      if (!Array.isArray(data) && (!data || typeof data !== 'object' || Array.isArray(data.records) === false)) {
-        throw new Error('지원하지 않는 백업 형식입니다.');
-      }
-      if (!Array.isArray(data) && data.version !== undefined && data.version !== 1) {
-        throw new Error('지원하지 않는 백업 버전입니다.');
-      }
-      if (!Array.isArray(data) && data.app !== undefined && (
-        typeof data.app !== 'string' || data.app.length > 40
-      )) throw new Error('잘못된 앱 식별자입니다.');
-      const records = Array.isArray(data) ? data : data.records;
-      if (!records.length) { alert('가져올 명반이 없습니다.'); fileIn.value=''; return; }
-      const { added, skipped } = await importSavedRecords(records);
-      alert(`${added}개 가져왔습니다${skipped?` (${skipped}개 형식 오류로 건너뜀)`:''}.`);
+      showProgress('파일을 읽는 중…');
+      const result = await importSavedFile(f, done => showProgress(`${done.toLocaleString()}개 넣는 중…`));
+      showProgress('');
+      if (!result.added && !result.replaced && !result.skipped) { alert('가져올 명반이 없습니다.'); }
+      else alert(`${result.added.toLocaleString()}개 가져왔습니다` +
+        (result.replaced > 0 ? ` (이미 있던 ${result.replaced.toLocaleString()}개는 새 내용으로 바꿈)` : '') +
+        (result.skipped ? ` (${result.skipped.toLocaleString()}개 형식 오류로 건너뜀)` : '') +
+        (result.over ? ` (10만 개를 넘는 ${result.over.toLocaleString()}개는 넣지 않음)` : '') + '.');
       fileIn.value = '';
       renderSaved();
     } catch (err) {
-      alert('파일을 읽을 수 없습니다. 잔상 만세력에서 내보낸 JSON 파일인지 확인해주세요.');
+      showProgress('');
+      alert(err && err.name === 'QuotaExceededError'
+        ? '기기 저장 공간이 부족합니다. 여기까지 넣은 명반은 남아 있습니다.'
+        : '파일을 읽을 수 없습니다. 잔상 만세력에서 내보낸 JSON 파일인지 확인해주세요.');
       fileIn.value = '';
-    }
+      renderSaved();
+    } finally { impBtn.disabled = false; }
   });
 }
 
@@ -16058,6 +16169,7 @@ clearLegacyAppCaching().catch((error) => {
    홈화면 추가 안내 — 제거됨
    ============================================ */
 </script>
+<script src="saved-store.js?v=20261106-saved100k"></script>
 <script src="chart-insight.js?v=20261105-tools"></script>
 <script src="share.js?v=20261106-label"></script>
 <script src="nav.js"></script>
