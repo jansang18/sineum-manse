@@ -1,5 +1,5 @@
-// Preserve the approved 30% reduction from the 00f3b01 daily calendar, its
-// seven weekday columns, square cells, and independently scrollable phone view.
+// 2026-11-06: the daily calendar fills its card (up to 960px) with seven equal
+// weekday columns, never scrolls sideways, and keeps every label at 12px or more.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,12 +40,13 @@ async function inspect(page, label, fixture) {
   });
   check(state.pageOverflow <= 1, `${label}: page overflows by ${state.pageOverflow}px`);
   check(state.role === 'region' && state.tabIndex === 0 && state.name?.includes('일운'), `${label}: calendar needs a named keyboard-scrollable region`);
-  // The previous release used a 960px cap, 72px minimum cells and six 8px gaps.
-  // Compare rendered geometry with that independent baseline, not new CSS tokens.
-  const previousCell = Math.max(72, (Math.min(960, state.parent.width) - 48) / 7);
-  const expectedCell = previousCell * 0.7;
-  check(Math.abs(state.grid.width - Math.min(state.parent.width, expectedCell * 7 + 33.6)) <= 1,
-    `${label}: reduced calendar wastes space or exceeds its intended width`);
+  // Cards narrower than 300px keep 44px cells and scroll; wider cards fill
+  // the card (phones up to 400px also use the card's 10px side padding).
+  const narrowCard = state.parent.width < 300;
+  const fill = state.parent.width <= 400 && !narrowCard ? state.parent.width + 20 : Math.min(state.parent.width, 960);
+  check(Math.abs(state.grid.width - fill) <= 1,
+    `${label}: calendar must fill its card (${state.grid.width}, expected ${fill})`);
+  if (!narrowCard) check(state.scrollWidth <= state.grid.width + 1, `${label}: calendar must not scroll sideways`);
   check(state.weekdays.map(day => day.text).join('') === '일월화수목금토', `${label}: weekday order changed`);
   // Latest approved accessibility floor supersedes the former 9.8px labels;
   // retain the 30% box reduction and the independent geometry baseline above.
@@ -53,21 +54,15 @@ async function inspect(page, label, fixture) {
   check(state.blanks === fixture.start && state.days.length === fixture.count, `${label}: month length/weekday placeholders changed`);
   for (const [index, day] of state.days.entries()) {
     check(day.day === index + 1, `${label}: date order changed`);
-    check(Math.abs(day.width - expectedCell) <= 0.15 && Math.abs(day.width - day.height) <= 1,
-      `${label}: day ${day.day} must be a 30% smaller square (${day.width}x${day.height}, expected ${expectedCell})`);
     check(Math.abs(day.width - state.days[0].width) <= 1, `${label}: unequal daily boxes`);
     const weekday = state.weekdays[(fixture.start + index) % 7];
     check(Math.abs(day.left - weekday.left) <= 1 && Math.abs(day.width - weekday.width) <= 1, `${label}: day ${day.day} moved out of its weekday column`);
     for (const [i, text] of day.text.entries()) {
-      const previousFont = text.name === 'd-han' ? Math.min(32, Math.max(24, state.viewport * 0.025))
-        : text.name === 'd-num' ? Math.min(16, Math.max(14, state.viewport * 0.013))
-          : Math.min(14, Math.max(12, state.viewport * 0.011));
-      check(Math.abs(text.font - Math.max(12, previousFont * 0.7)) <= 0.05,
-        `${label}: ${text.name} ${text.font}px must preserve the reduction without going below12px`);
+      check(text.font >= 12 - 0.05, `${label}: ${text.name} ${text.font}px is below the 12px floor`);
       check(text.text.length > 0 && text.innerOverflow <= 1, `${label}: day ${day.day} text is missing or clipped`);
       check(Math.max(day.left - text.left, text.right - day.right, day.top - text.top, text.bottom - day.bottom) <= 1,
         `${label}: day ${day.day} ${text.name} exceeds its box`);
-      if (text.name === 'd-han') check(Math.abs((text.top + text.bottom - day.top - day.bottom) / 2) <= 2,
+      if (text.name === 'd-han' && day.height <= day.width * 1.05) check(Math.abs((text.top + text.bottom - day.top - day.bottom) / 2) <= 2,
         `${label}: day ${day.day} Hanja is not vertically centered`);
       for (const other of day.text.slice(0, i)) {
         check(Math.min(text.right, other.right) - Math.max(text.left, other.left) <= 1 ||

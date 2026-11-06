@@ -2609,3 +2609,81 @@ button.cal-title { min-height: 44px; border: 0; background: transparent; color: 
 .saved-list-status:empty { display: none; }
 .saved-sentinel { height: 1px; }
 #similarSearch { margin-bottom: 10px; }
+
+/* 월운 12개를 한눈에, 일운 달력은 카드 폭에 꽉 차게 (2026-11-06) */
+#woonArea { container-type: inline-size; container-name: woon; }
+#woonScroll.woon-grid {
+  grid-auto-flow: row !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  grid-auto-columns: auto !important;
+  gap: 10px 6px !important;
+  overflow: visible !important;
+  justify-content: stretch !important;
+  padding-inline: 0 !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+#woonScroll.woon-grid .luck-item { min-width: 0 !important; }
+@container woon (max-width: 620px) {
+  #woonScroll.woon-grid { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+}
+@container woon (max-width: 330px) {
+  #woonScroll.woon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+}
+
+.day-grid {
+  width: 100% !important;
+  max-width: 960px;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: clamp(3px, 1.1cqi, 8px) !important;
+  overflow: visible !important;
+}
+.day-scroll-hint { display: none !important; }
+.day-item,
+.day-item.empty { aspect-ratio: 1 / 0.86; }
+.day-item .d-han { font-size: clamp(16px, 3.1cqi, 26px) !important; }
+.day-item .d-num { font-size: clamp(12px, 1.6cqi, 14px) !important; }
+.day-item .d-kor,
+.day-item .d-kor-t { font-size: clamp(12px, 1.6cqi, 14px) !important; }
+
+/* 좁은 화면: 십신 두 개를 위아래로 쌓아 글자가 겹치지 않게 */
+@container (max-width: 520px) {
+  .day-item,
+  .day-item.empty { aspect-ratio: auto; }
+  .day-item:not(.empty) {
+    grid-template-rows: auto auto auto auto;
+    gap: 2px;
+    padding: 5px 0 6px !important;
+  }
+  .day-item .d-num,
+  .day-item .d-kor,
+  .day-item .d-kor-t {
+    position: static !important;
+    width: 100% !important;
+  }
+  .day-item .d-han { grid-area: auto; margin-block: 1px 2px !important; }
+}
+#woonScroll.woon-grid .luck-item { display: flex !important; flex-direction: column; align-items: center; }
+#woonScroll.woon-grid .luck-item > * { max-width: 100%; }
+
+/* 좁은 폰에서는 일운 달력을 카드 안쪽 여백까지 써서 칸을 44px 이상으로 */
+@container (max-width: 400px) {
+  .day-grid {
+    width: calc(100% + 20px) !important;
+    max-width: none;
+    margin-inline: -10px !important;
+    gap: 3px !important;
+  }
+}
+#woonScroll.woon-grid .luck-item .luck-block { width: var(--app-flow-cell) !important; height: auto; }
+
+/* 아주 좁은 화면(카드 300px 미만)은 칸을 44px로 지키고 옆으로 넘긴다 */
+@container (max-width: 300px) {
+  .day-grid {
+    width: 100% !important;
+    margin-inline: 0 !important;
+    grid-template-columns: repeat(7, 44px) !important;
+    overflow-x: auto !important;
+  }
+  .day-scroll-hint { display: block !important; }
+}

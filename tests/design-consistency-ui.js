@@ -238,7 +238,7 @@ async function runViewport(browser, baseUrl, width, scheme) {
     });
     const days = await boxes(page, '.day-grid .day-item:not(.empty)', '.d-han');
     days.forEach(day => {
-      check(closeEnough(day.width, day.height), `${label}: day cell is not square (${day.width}x${day.height})`);
+      check(closeEnough(day.height, days[0].height), `${label}: day cell rows differ in height`);
       if (width >= 390) check(day.width >= 43.5 && day.height >= 43.5, `${label}: day cell below 44px (${day.width}x${day.height})`);
       check(closeEnough(day.width, days[0].width), `${label}: day cell columns differ in width`);
     });
