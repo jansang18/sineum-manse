@@ -1678,7 +1678,7 @@
   }
 </style>
   <link rel="preload" href="noto-serif-kr-hanja-700.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="apple.css?v=20261106-seg">
+  <link rel="stylesheet" href="apple.css?v=20261106-flow">
   <link rel="stylesheet" href="calendar-notes.css?v=20261007-softpink">
   <link rel="stylesheet" href="reading.css?v=20261027-design10">
   <link rel="stylesheet" href="building-lookup.css?v=20261027-design10">
@@ -1714,39 +1714,6 @@
       <h2>사주 입력</h2>
       <p>생년월일과 태어난 시간을 입력하면 원국과 운의 흐름을 펼칩니다.</p>
     </header>
-    <button type="button" class="person-search-btn lookup-trigger" id="personSearchBtn">
-      <svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
-      <span class="lookup-copy"><strong>인물 검색</strong><small>연예인·유명인 생년월일 자동 입력</small></span>
-      <svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
-    </button>
-
-    <details class="building-lookup" id="buildingLookup">
-      <summary class="lookup-trigger"><svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1"/></svg><span class="lookup-copy"><strong>건물 날짜 조회</strong><small class="building-summary-note">주소로 사용승인일 찾기</small></span><svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></summary>
-      <div class="building-lookup-body">
-        <form id="buildingLookupForm">
-          <label for="buildingQuery">도로명·지번 주소 또는 건물명</label>
-          <div class="building-search-row">
-            <input class="input" id="buildingQuery" type="search" maxlength="200" placeholder="예: 도곡렉슬아파트, 서울 강남구 선릉로 221" autocomplete="street-address" enterkeyhint="search" aria-describedby="buildingStatus">
-            <button type="submit" id="buildingSearchBtn" class="building-button">조회</button>
-          </div>
-        </form>
-        <p id="buildingStatus" class="building-status" role="status" aria-live="polite">주소를 선택하면 사용승인일 기준 만세력이 바로 열립니다.</p>
-        <div id="buildingPlaces" class="building-places" aria-label="주소 검색 결과"></div>
-        <div id="buildingRecordField" hidden>
-          <label for="buildingRecords">건물·동 선택</label>
-          <select class="input" id="buildingRecords"></select>
-        </div>
-        <div id="buildingResult" class="building-result" hidden>
-          <p id="buildingName" class="building-result-name"></p>
-          <p id="buildingAddress" class="building-result-address"></p>
-          <dl><div><dt>사용승인일</dt><dd><time id="buildingApprovalDate"></time></dd></div></dl>
-          <p id="buildingSource" class="building-source"></p>
-          <p class="building-date-note">건축물대장에 기록된 사용승인일입니다. 실제 공사 완료일과 다를 수 있습니다.</p>
-          <button type="button" id="buildingApplyBtn" class="building-button building-apply">이 건물 만세력 보기</button>
-        </div>
-      </div>
-    </details>
-
     <div class="input-card">
     <div class="field">
       <label class="field-label" for="inputName">이름</label>
@@ -1787,6 +1754,42 @@
 
     <button type="button" class="primary-btn" id="calcBtn">사주 펼치기</button>
     <div id="inErr" role="alert"></div>
+
+    <div class="input-lookups">
+    <button type="button" class="person-search-btn lookup-trigger" id="personSearchBtn">
+      <svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+      <span class="lookup-copy"><strong>인물 검색</strong><small>연예인·유명인 생년월일 자동 입력</small></span>
+      <svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg>
+    </button>
+
+    <details class="building-lookup" id="buildingLookup">
+      <summary class="lookup-trigger"><svg class="lookup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 21V3h14v18M3 21h18M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1"/></svg><span class="lookup-copy"><strong>건물 날짜 조회</strong><small class="building-summary-note">주소로 사용승인일 찾기</small></span><svg class="lookup-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></summary>
+      <div class="building-lookup-body">
+        <form id="buildingLookupForm">
+          <label for="buildingQuery">도로명·지번 주소 또는 건물명</label>
+          <div class="building-search-row">
+            <input class="input" id="buildingQuery" type="search" maxlength="200" placeholder="예: 도곡렉슬아파트, 서울 강남구 선릉로 221" autocomplete="street-address" enterkeyhint="search" aria-describedby="buildingStatus">
+            <button type="submit" id="buildingSearchBtn" class="building-button">조회</button>
+          </div>
+        </form>
+        <p id="buildingStatus" class="building-status" role="status" aria-live="polite">주소를 선택하면 사용승인일 기준 만세력이 바로 열립니다.</p>
+        <div id="buildingPlaces" class="building-places" aria-label="주소 검색 결과"></div>
+        <div id="buildingRecordField" hidden>
+          <label for="buildingRecords">건물·동 선택</label>
+          <select class="input" id="buildingRecords"></select>
+        </div>
+        <div id="buildingResult" class="building-result" hidden>
+          <p id="buildingName" class="building-result-name"></p>
+          <p id="buildingAddress" class="building-result-address"></p>
+          <dl><div><dt>사용승인일</dt><dd><time id="buildingApprovalDate"></time></dd></div></dl>
+          <p id="buildingSource" class="building-source"></p>
+          <p class="building-date-note">건축물대장에 기록된 사용승인일입니다. 실제 공사 완료일과 다를 수 있습니다.</p>
+          <button type="button" id="buildingApplyBtn" class="building-button building-apply">이 건물 만세력 보기</button>
+        </div>
+      </div>
+    </details>
+
+    </div>
 
     <section class="input-guide" aria-labelledby="inputGuideTitle">
       <h3 id="inputGuideTitle">명반을 펼친 뒤, 이렇게 읽어보세요</h3>
@@ -12884,6 +12887,7 @@ function renderResult() {
       setSelectedLuckItem('#daeunScroll', el);
       revealLuckItem(document.getElementById('daeunScroll'), el);
       renderSeun();
+      openCurrentYearMonth();
     }
   }
 
@@ -13191,6 +13195,23 @@ function revealLuckItem(container, item) {
     const centered = itemCenter - container.clientWidth / 2;
     container.scrollLeft = Math.max(0, Math.min(maxLeft, centered));
   });
+}
+
+/* 처음 열 때 올해 세운과 이번 달 월운을 골라 일운 달력까지 바로 보인다. */
+function openCurrentYearMonth() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth() + 1;
+  const seun = document.querySelector(`#seunScroll .luck-item[data-year="${year}"]`);
+  if (!seun) return;
+  selectedSeun = year; selectedWoon = null;
+  setSelectedLuckItem('#seunScroll', seun);
+  revealLuckItem(document.getElementById('seunScroll'), seun);
+  renderWoon();
+  const woon = document.querySelector(`#woonScroll .luck-item[data-month="${month}"]`);
+  if (!woon) return;
+  selectedWoon = { y: year, m: month };
+  setSelectedLuckItem('#woonScroll', woon);
+  renderDay();
 }
 
 function renderSeun() {
@@ -13668,6 +13689,7 @@ onTap($('#saveConfirm'), async () => {
   try {
     if (!updating && await SavedStore.count() >= SavedStore.MAX_RECORDS) { alert('명반은 10만 개까지 저장할 수 있습니다. 정리한 뒤 다시 저장해 주세요.'); return; }
     await SavedStore.put(record);
+    savedView.total = -1;
   } catch (e) {
     alert('저장하지 못했습니다. 기기 저장 공간을 확인해 주세요.');
     return;
@@ -13766,7 +13788,7 @@ function hydrateSaved(rec) {
   } catch (e) { return rec; }
 }
 
-let savedView = { token: 0, query: '', after: null, loading: false, finished: false, observer: null };
+let savedView = { token: 0, query: '', after: null, loading: false, finished: false, observer: null, total: -1 };
 const SAVED_PAGE = 50;
 
 async function loadSavedPage() {
@@ -13808,9 +13830,19 @@ function resetSavedList(query) {
   return loadSavedPage();
 }
 
+/* 저장 목록에서 명반을 열면 돌아올 자리를 기억한다(뒤로 가기·저장 탭). */
+let savedReturn = null;
+window.manseBackToSaved = () => {
+  const active = document.querySelector('.tab.active');
+  if (!savedReturn || !active || active.dataset.tab !== 'result') return false;
+  document.querySelector('.tab[data-tab="saved"]').click();
+  return true;
+};
+
 async function openSavedRecord(id) {
   const rec = await SavedStore.get(id);
   if (!rec) return;
+  savedReturn = { scrollY: window.scrollY };
   currentSaju = hydrateSaved(rec);
   selectedDaeun = null; selectedSeun = null; selectedWoon = null; selectedFortuneYear = null;
   renderResult();
@@ -13826,6 +13858,14 @@ async function openSavedRecord(id) {
 async function renderSaved() {
   const total = await SavedStore.count();
   const content = $('#savedContent');
+  const back = savedReturn;
+  savedReturn = null;
+  // 검색 결과와 목록이 그대로면 다시 그리지 않고 보던 자리로 돌아간다.
+  if (savedView.total === total && total > 0 && content.querySelector('#savedListEl')) {
+    if (back) requestAnimationFrame(() => window.scrollTo(0, back.scrollY));
+    return;
+  }
+  savedView.total = total;
   savedView.observer?.disconnect();
   content.replaceChildren(makeSavedToolbar(total));
   const progress = makeSavedElement('p', 'saved-progress');
@@ -13881,6 +13921,7 @@ async function renderSaved() {
       await SavedStore.remove(del.dataset.del);
       card?.remove();
       const left = await SavedStore.count();
+      savedView.total = left;
       if (left === 0) { renderSaved(); return; }
       const label = $('#savedExportBtn');
       if (label?.lastChild) label.lastChild.textContent = `내보내기 (${left.toLocaleString()})`;
@@ -13901,7 +13942,9 @@ async function renderSaved() {
     if (entries.some(entry => entry.isIntersecting)) loadSavedPage();
   }, { rootMargin: '600px' });
   savedView.observer.observe(sentinel);
-  await resetSavedList('');
+  search.value = savedView.query || '';
+  await resetSavedList(savedView.query || '');
+  if (back) requestAnimationFrame(() => window.scrollTo(0, back.scrollY));
 }
 
 async function updateSavedRecord(id, patch) {
@@ -14228,6 +14271,7 @@ function bindSavedToolbar(total) {
         (result.skipped ? ` (${result.skipped.toLocaleString()}개 형식 오류로 건너뜀)` : '') +
         (result.over ? ` (10만 개를 넘는 ${result.over.toLocaleString()}개는 넣지 않음)` : '') + '.');
       fileIn.value = '';
+      savedView.total = -1;
       renderSaved();
     } catch (err) {
       showProgress('');
@@ -14235,6 +14279,7 @@ function bindSavedToolbar(total) {
         ? '기기 저장 공간이 부족합니다. 여기까지 넣은 명반은 남아 있습니다.'
         : '파일을 읽을 수 없습니다. 잔상 만세력에서 내보낸 JSON 파일인지 확인해주세요.');
       fileIn.value = '';
+      savedView.total = -1;
       renderSaved();
     } finally { impBtn.disabled = false; }
   });
@@ -16172,7 +16217,7 @@ clearLegacyAppCaching().catch((error) => {
 <script src="saved-store.js?v=20261106-saved100k"></script>
 <script src="chart-insight.js?v=20261105-tools"></script>
 <script src="share.js?v=20261106-olivewine"></script>
-<script src="nav.js"></script>
+<script src="nav.js?v=20261106-savedback"></script>
 <script src="hanja-alignment.js?v=20261105-tools" defer></script>
 <script src="building-lookup.js?v=2.3.2-hanja-lookup"></script>
 <script src="reading-navigation.js?v=20261027-design10"></script>

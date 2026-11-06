@@ -2702,3 +2702,14 @@ button.cal-title { min-height: 44px; border: 0; background: transparent; color: 
   font-weight: 800 !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .22) !important;
 }
+
+/* 동선: 입력 칸이 맨 위, 인물 검색·건물 조회는 그 아래 작게 */
+.input-lookups { display: grid; gap: 8px; margin-top: 14px; }
+.input-lookups .person-search-btn,
+.input-lookups .lookup-trigger { margin-top: 0 !important; min-height: 48px !important; }
+#view-input .input-card { margin-top: 14px !important; }
+
+/* 아래 버튼 줄을 작게 하고, 내용 끝이 버튼에 가리지 않게 여백을 둔다 */
+.bottom-bar { padding: 5px 6px calc(8px + env(safe-area-inset-bottom)) !important; gap: 6px !important; }
+.bottom-bar .bb { min-height: 44px !important; padding: 6px 8px !important; font-size: 14px !important; }
+#view-result.active { padding-bottom: calc(68px + env(safe-area-inset-bottom)) !important; }

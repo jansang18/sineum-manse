@@ -23,6 +23,8 @@
   }
   function handleBack() {
     if (closeTopOverlay()) return true;
+    // 저장 목록에서 연 명반이면 그 목록(검색 결과 포함)으로 돌아간다.
+    if (typeof window.manseBackToSaved === 'function' && window.manseBackToSaved()) return true;
     if (goHomeIfNeeded()) return true;
     return false;
   }

@@ -85,7 +85,7 @@ async function inspectTheme(page, width, scheme) {
       inputDecoration: getComputedStyle(document.querySelector('.input-card'), '::after').content,
       tabs: rect('.tabs'),
       inputHeader: rect('#view-input .view-head'),
-      firstControl: rect('.person-search-btn'),
+      firstControl: rect('#view-input .input-card'),
       button: rect('#calcBtn'),
       viewport: document.documentElement.clientWidth,
       scrollWidth: document.documentElement.scrollWidth,
