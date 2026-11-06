@@ -2687,3 +2687,18 @@ button.cal-title { min-height: 44px; border: 0; background: transparent; color: 
   }
   .day-scroll-hint { display: block !important; }
 }
+
+/* 성별·양음력: 선택된 칸을 강조색으로 꽉 채워 한눈에 구분 */
+.segmented button:not(.active):not([aria-checked="true"]) {
+  background: transparent !important;
+  color: var(--apple-secondary) !important;
+  font-weight: 500 !important;
+}
+.segmented button.active,
+.segmented button[aria-checked="true"],
+.segmented button[aria-pressed="true"] {
+  background: var(--apple-accent) !important;
+  color: var(--apple-on-accent) !important;
+  font-weight: 800 !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .22) !important;
+}
