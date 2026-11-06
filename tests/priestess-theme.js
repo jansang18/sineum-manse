@@ -13,8 +13,8 @@ const url = pathToFileURL(path.join(root, 'index.html')).href;
 assert.ok(fs.statSync(path.join(root, 'apple.css')).size > 0, 'apple.css is missing or empty');
 
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
-assert.equal(manifest.background_color, '#f4f1e9');
-assert.equal(manifest.theme_color, '#111a20');
+assert.equal(manifest.background_color, '#f6f1ea');
+assert.equal(manifest.theme_color, '#1b1e18');
 
 async function settleTheme(page) {
   await page.evaluate(async () => {

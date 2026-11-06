@@ -15,7 +15,7 @@ const root = process.env.DESIGN_ROOT || path.resolve(__dirname, '..');
       const result = await page.evaluate(() => ({html:getComputedStyle(document.documentElement).backgroundColor,body:getComputedStyle(document.body).backgroundColor,scheme:getComputedStyle(document.documentElement).colorScheme,meta:[...document.querySelectorAll('meta[name="theme-color"]')].filter(m=>!m.media||matchMedia(m.media).matches).map(m=>m.content)}));
       assert.equal(result.html,result.body,`${theme}: root backdrop does not match body`);
       assert.equal(result.scheme,theme,`${theme}: native color scheme is not explicit`);
-      assert.ok(result.meta.includes(theme==='dark'?'#0b1115':'#f4f1e9'),`${theme}: meta follows OS instead of selected theme`);
+      assert.ok(result.meta.includes(theme==='dark'?'#121410':'#f6f1ea'),`${theme}: meta follows OS instead of selected theme`);
       await page.click('#themeToggleBtn');
       const flipped=await page.evaluate(()=>({dark:document.documentElement.classList.contains('dark'),body:document.body.classList.contains('dark')}));
       assert.equal(flipped.dark,flipped.body,'theme toggle root and body diverge');

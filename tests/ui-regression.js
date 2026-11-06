@@ -2610,7 +2610,7 @@ async function collectLuckFlowReachability(page) {
 }
 
 async function inspectAppleDesign(page, width) {
-  const expectedAccents = { light: '#795d31', dark: '#c5a76f' };
+  const expectedAccents = { light: '#6b2430', dark: '#d9c79a' };
   const expectedAccentColors = {
     light: 'rgb(121, 93, 49)',
     dark: 'rgb(197, 167, 111)'
@@ -4210,8 +4210,8 @@ async function inspectWidth(browser, width) {
     const appleCss = fs.readFileSync(path.join(UI_ROOT, 'apple.css'), 'utf8');
     const indexHtml = fs.readFileSync(path.join(UI_ROOT, 'index.html'), 'utf8');
     const webManifest = JSON.parse(fs.readFileSync(path.join(WEB_ROOT, 'manifest.webmanifest'), 'utf8'));
-    assert.match(appleCss, /--apple-accent:\s*#795d31/i);
-    assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#c5a76f/i);
+    assert.match(appleCss, /--apple-accent:\s*#6b2430/i);
+    assert.match(appleCss, /body\.dark[\s\S]*--apple-accent:\s*#d9c79a/i);
     assert.doesNotMatch(appleCss, /#d8b56a|#f0d69a|#a97732/i);
     assert.match(indexHtml, /<link[^>]+href="apple\.css(?:\?[^"]*)?"/i, 'the canonical theme must be loaded');
     assert.doesNotMatch(indexHtml, /<link[^>]+href="(?:polish|luxury|priestess)\.css(?:\?[^"]*)?"/i, 'archived competing themes must not be loaded');
